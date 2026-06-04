@@ -45,12 +45,14 @@ interface DatabaseSchema {
 const app = express();
 const port = Number(process.env.PORT || 4000);
 
-const allowedOrigins = [
+const defaultOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
 ];
+const envOrigins = String(process.env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
+const allowedOrigins = envOrigins.length ? [...defaultOrigins, ...envOrigins] : defaultOrigins;
 const localOriginPattern = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/;
 
 app.use(cors({
@@ -443,4 +445,9 @@ app.post('/api/users/update', async (req, res) => {
 
 app.listen(port, () => {
   console.log(`Backend API server is running on http://localhost:${port}`);
+});
+
+// Simple health route to confirm the API is reachable (useful for Render or other hosts)
+app.get('/', (req, res) => {
+  res.send('API is running');
 });
