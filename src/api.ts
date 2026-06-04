@@ -6,6 +6,7 @@ export interface UserProfile {
   profession: string;
   gender: string;
   photoUrl: string;
+  role?: string;
   name?: string;
 }
 
@@ -43,9 +44,15 @@ const apiFetch = async <T>(path: string, options?: RequestInit): Promise<T> => {
   const apiBase = getApiBase();
   const target = apiBase.endsWith('/') ? `${apiBase.slice(0, -1)}${path}` : `${apiBase}${path}`;
   try {
+    const headers = new Headers(options && (options as any).headers ? (options as any).headers : undefined);
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('siteAuthToken');
+      if (token) headers.set('Authorization', `Bearer ${token}`);
+    }
     const response = await fetch(target, {
       credentials: 'include',
       ...options,
+      headers,
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -101,8 +108,8 @@ export const saveTierProgress = async (tierProgress: number[]): Promise<void> =>
   });
 };
 
-export const loginUser = async (email: string, password: string): Promise<{ user: UserProfile; mustChangePassword: boolean }> => {
-  return apiFetch<{ user: UserProfile; mustChangePassword: boolean }>('/api/users/login', {
+export const loginUser = async (email: string, password: string): Promise<{ user: UserProfile; mustChangePassword: boolean; token?: string }> => {
+  return apiFetch<{ user: UserProfile; mustChangePassword: boolean; token?: string }>('/api/users/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),

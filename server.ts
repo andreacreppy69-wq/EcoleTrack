@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 import initSqlJs from 'sql.js';
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { fileURLToPath } from 'url';
 
@@ -18,6 +19,7 @@ interface UserRecord {
   profession: string;
   gender: string;
   photoUrl: string;
+  role?: string;
   password: string;
   createdAt: string;
   mustChangePassword: boolean;
@@ -163,6 +165,7 @@ db.run(`CREATE TABLE IF NOT EXISTS users (
   dob TEXT,
   profession TEXT,
   gender TEXT,
+  role TEXT DEFAULT 'user',
   photoUrl TEXT,
   password TEXT,
   createdAt TEXT,
@@ -194,6 +197,62 @@ db.run(`CREATE TABLE IF NOT EXISTS tier_progress (
 
 saveDb();
 
+// Ensure a default admin account exists (use env vars to override)
+const DEFAULT_ADMIN_EMAIL = String(process.env.DEFAULT_ADMIN_EMAIL || 'admin@admin.com').toLowerCase();
+const DEFAULT_ADMIN_PASSWORD = String(process.env.DEFAULT_ADMIN_PASSWORD || 'Admin@123');
+const ensureDefaultAdmin = () => {
+  const existing = getUserByEmail(DEFAULT_ADMIN_EMAIL);
+  if (!existing) {
+    const hashed = bcrypt.hashSync(DEFAULT_ADMIN_PASSWORD, 10);
+    runWrite(
+      `INSERT INTO users (firstName, lastName, name, email, dob, profession, gender, role, photoUrl, password, createdAt, mustChangePassword)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['Admin', 'Root', 'Admin Root', DEFAULT_ADMIN_EMAIL, '', 'Administrator', '', 'admin', '', hashed, new Date().toLocaleString('fr-FR'), 0],
+    );
+    console.log(`Default admin created: ${DEFAULT_ADMIN_EMAIL}`);
+  }
+};
+// call ensureDefaultAdmin() after helper functions are defined
+
+// In-memory session store: token -> { email, role, createdAt }
+const sessions = new Map<string, { email: string; role: string; createdAt: number }>();
+const SESSION_TTL_MS = 1000 * 60 * 60 * 24; // 24h
+
+const createSession = (email: string, role: string) => {
+  const token = crypto.randomBytes(24).toString('hex');
+  sessions.set(token, { email: email.toLowerCase(), role, createdAt: Date.now() });
+  return token;
+};
+
+const getSession = (token: string | undefined) => {
+  if (!token) return undefined;
+  const s = sessions.get(token);
+  if (!s) return undefined;
+  if (Date.now() - s.createdAt > SESSION_TTL_MS) {
+    sessions.delete(token);
+    return undefined;
+  }
+  return s;
+};
+
+const requireAdmin = (req: any, res: any, next: any) => {
+  try {
+    const auth = String(req.headers.authorization || '');
+    const m = auth.match(/^Bearer\s+(.+)$/i);
+    if (!m) return res.status(401).json({ error: 'Token d\'authentification manquant.' });
+    const token = m[1];
+    const s = getSession(token);
+    if (!s) return res.status(401).json({ error: 'Session invalide ou expirée.' });
+    const user = getUserByEmail(s.email);
+    if (!user) return res.status(401).json({ error: 'Utilisateur introuvable pour la session.' });
+    if ((user.role || 'user') !== 'admin') return res.status(403).json({ error: 'Accès refusé: privilèges administrateur requis.' });
+    req.auth = s;
+    next();
+  } catch (e) {
+    return res.status(500).json({ error: 'Erreur d\'authentification.' });
+  }
+};
+
 const existingTier = queryOne('SELECT id FROM tier_progress WHERE id = 1');
 if (!existingTier) {
   runWrite('INSERT INTO tier_progress (id, p1, p2, p3, p4) VALUES (1, ?, ?, ?, ?)', [15, 0, 0, 0]);
@@ -211,8 +270,8 @@ if (!dbFileExists && fs.existsSync(legacyJsonPath)) {
     users.forEach((user: UserRecord) => {
       runWrite(
         `INSERT OR IGNORE INTO users (
-          firstName, lastName, name, email, dob, profession, gender, photoUrl, password, createdAt, mustChangePassword
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          firstName, lastName, name, email, dob, profession, gender, role, photoUrl, password, createdAt, mustChangePassword
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           user.firstName || '',
           user.lastName || '',
@@ -221,6 +280,7 @@ if (!dbFileExists && fs.existsSync(legacyJsonPath)) {
           user.dob,
           user.profession,
           user.gender,
+          user.role || 'user',
           user.photoUrl,
           user.password,
           user.createdAt,
@@ -283,6 +343,7 @@ const sanitizeUser = (user: UserRecord) => ({
   dob: user.dob,
   profession: user.profession,
   gender: user.gender || '',
+  role: user.role || 'user',
   photoUrl: user.photoUrl || '',
   createdAt: user.createdAt,
   mustChangePassword: user.mustChangePassword,
@@ -296,6 +357,7 @@ const rowsToUser = (row: any): UserRecord => ({
   dob: row.dob,
   profession: row.profession,
   gender: row.gender || '',
+  role: row.role || 'user',
   photoUrl: row.photoUrl || '',
   password: row.password,
   createdAt: row.createdAt,
@@ -311,6 +373,9 @@ const getUserByEmail = (email: string): UserRecord | undefined => {
   const row = queryOne('SELECT * FROM users WHERE lower(email) = ? LIMIT 1', [email.toLowerCase()]);
   return row ? rowsToUser(row) : undefined;
 };
+
+// create default admin now that DB helpers are available
+ensureDefaultAdmin();
 
 const getActivityLogs = () => queryAll('SELECT email, action, createdAt FROM activity ORDER BY id DESC LIMIT 50');
 const getMessagesFromDb = () => queryAll('SELECT name, email, message, createdAt FROM messages ORDER BY id DESC LIMIT 50');
@@ -344,7 +409,11 @@ const logActivity = async (email: string, action: string) => {
 };
 
 app.get('/api/users', (req, res) => {
-  const users = getUsersFromDb().map(sanitizeUser);
+  const roleFilter = String(req.query.role || '').trim().toLowerCase();
+  let users = getUsersFromDb().map(sanitizeUser);
+  if (roleFilter) {
+    users = users.filter((u) => String(u.role || 'user').toLowerCase() === roleFilter);
+  }
   res.json({ users });
 });
 
@@ -501,11 +570,12 @@ app.post('/api/users/login', async (req, res) => {
   }
 
   await logActivity(user.email, 'Connexion');
-  return res.json({ user: sanitizeUser(user), mustChangePassword: user.mustChangePassword });
+  const token = createSession(user.email, user.role || 'user');
+  return res.json({ user: sanitizeUser(user), mustChangePassword: user.mustChangePassword, token });
 });
 
-app.post('/api/users/create', async (req, res) => {
-  const { firstName, lastName, name, email, dob, profession, gender, photoUrl, password, mustChangePassword } = req.body;
+app.post('/api/users/create', requireAdmin, async (req, res) => {
+  const { firstName, lastName, name, email, dob, profession, gender, role, photoUrl, password, mustChangePassword } = req.body;
   const rawFirstName = String(firstName || '').trim();
   const rawLastName = String(lastName || '').trim();
   const fallbackName = String(name || '').trim();
@@ -533,10 +603,14 @@ app.post('/api/users/create', async (req, res) => {
   const createdAt = new Date().toLocaleString('fr-FR');
   const hashedPassword = bcrypt.hashSync(resolvedPassword, 10);
   const mustChange = mustChangePassword === false ? false : true;
+  // validate role
+  const normalizedRole = String(role || 'user').trim().toLowerCase();
+  const allowedRoles = ['admin', 'user'];
+  const finalRole = allowedRoles.includes(normalizedRole) ? normalizedRole : 'user';
 
   runWrite(
-    `INSERT INTO users (firstName, lastName, name, email, dob, profession, gender, photoUrl, password, createdAt, mustChangePassword)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO users (firstName, lastName, name, email, dob, profession, gender, role, photoUrl, password, createdAt, mustChangePassword)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       resolvedFirstName,
       resolvedLastName,
@@ -545,14 +619,24 @@ app.post('/api/users/create', async (req, res) => {
       String(dob).trim(),
       String(profession).trim(),
       resolvedGender,
+      finalRole,
       String(photoUrl || ''),
       hashedPassword,
       createdAt,
       mustChange ? 1 : 0,
     ],
   );
-
-  await logActivity(lowerEmail, 'Compte utilisateur créé par l’administrateur');
+  // log activity under the admin who made the request (if available)
+  try {
+    const auth = (req as any).auth;
+    if (auth && auth.email) {
+      await logActivity(String(auth.email), `Compte utilisateur créé: ${lowerEmail}`);
+    } else {
+      await logActivity(lowerEmail, 'Compte utilisateur créé par un administrateur');
+    }
+  } catch (e) {
+    await logActivity(lowerEmail, 'Compte utilisateur créé par administrateur (journal impossible)');
+  }
   return res.status(201).json({ success: true });
 });
 

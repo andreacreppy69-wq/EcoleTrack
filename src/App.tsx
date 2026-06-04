@@ -107,6 +107,7 @@ export default function App() {
   const [registerDob, setRegisterDob] = useState<string>('');
   const [registerProfession, setRegisterProfession] = useState<string>('');
   const [registerGender, setRegisterGender] = useState<string>('');
+  const [registerRole, setRegisterRole] = useState<string>('user');
   const [registerPhotoUrl, setRegisterPhotoUrl] = useState<string>('');
   const [registerError, setRegisterError] = useState<string>('');
   const [showRegisterPassword, setShowRegisterPassword] = useState<boolean>(false);
@@ -798,6 +799,7 @@ export default function App() {
         dob: registerDob,
         profession: registerProfession.trim(),
         gender: registerGender.trim(),
+        role: registerRole,
         photoUrl: registerPhotoUrl,
         password: registerPassword.trim(),
       });
@@ -846,17 +848,11 @@ export default function App() {
       return;
     }
 
-    if (loginEmail.trim().toLowerCase() === ADMIN_EMAIL && loginPassword === ADMIN_PASSWORD) {
-      setIsAdminAuthenticated(true);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('siteAdminAuthenticated', 'true');
-        window.location.href = '/admin';
-      }
-      return;
-    }
-
     try {
-      const { user, mustChangePassword } = await loginUser(loginEmail.trim(), loginPassword);
+      const { user, mustChangePassword, token } = await loginUser(loginEmail.trim(), loginPassword);
+      if (token && typeof window !== 'undefined') {
+        localStorage.setItem('siteAuthToken', token);
+      }
       setProfile(user);
       setProfileDraft(user);
       setCurrentUserEmail(user.email);
@@ -871,6 +867,12 @@ export default function App() {
       }
 
       setIsRegistered(true);
+      // mark admin authenticated if role === admin
+      const isAdmin = String(user.role || '').toLowerCase() === 'admin';
+      setIsAdminAuthenticated(isAdmin);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('siteAdminAuthenticated', isAdmin ? 'true' : 'false');
+      }
       logUserActivity(user.email, 'Connexion');
       setLoginEmail('');
       setLoginPassword('');
@@ -1646,6 +1648,20 @@ export default function App() {
                       <option value="Homme">Homme</option>
                       <option value="Femme">Femme</option>
                       <option value="Autre">Autre</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-2">
+                      Rôle du compte <span className="text-red-500 font-bold">*</span>
+                    </label>
+                    <select
+                      value={registerRole}
+                      onChange={(e) => setRegisterRole(e.target.value)}
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-green"
+                    >
+                      <option value="user">Utilisateur</option>
+                      <option value="admin">Administrateur</option>
                     </select>
                   </div>
 
