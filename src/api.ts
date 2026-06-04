@@ -29,8 +29,11 @@ const getApiBase = () => {
 
   // In production on Vercel, the frontend is deployed separately from the Render backend.
   // Use the Render API URL when the Vite env variable is not configured.
-  if (import.meta.env.PROD && typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app')) {
-    return 'https://ecoletrack-5481.onrender.com';
+  if (import.meta.env.PROD && typeof window !== 'undefined') {
+    const hostname = String(window.location.hostname).toLowerCase();
+    if (hostname.endsWith('.vercel.app') || hostname === 'ecolestrack.vercel.app' || hostname === 'ecoletrack.vercel.app') {
+      return 'https://ecoletrack-5481.onrender.com';
+    }
   }
 
   return '';
