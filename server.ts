@@ -1,10 +1,11 @@
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
-import { Low } from 'lowdb';
-import { JSONFile } from 'lowdb/node';
+import initSqlJs from 'sql.js';
 import bcrypt from 'bcryptjs';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
 
@@ -86,14 +87,147 @@ app.use((req, res, next) => {
 // Ensure preflight OPTIONS requests to API routes are handled
 app.options('/api/*', cors());
 
-const dbPath = path.resolve(process.cwd(), 'database.json');
-const adapter = new JSONFile<DatabaseSchema>(dbPath);
-const db = new Low<DatabaseSchema>(adapter, { users: [], activity: [], messages: [], tierProgress: [15, 0, 0, 0] });
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const dbFilename = process.env.DATABASE_FILE || 'database.sqlite';
+const dbPath = path.resolve(process.cwd(), dbFilename);
+const sqlWasmPath = path.resolve(__dirname, '../node_modules/sql.js/dist/sql-wasm.wasm');
 
-await db.read();
-if (!db.data) {
-  db.data = { users: [], activity: [], messages: [], tierProgress: [15, 0, 0, 0] };
-  await db.write();
+if (!process.env.DATABASE_FILE) {
+  console.warn('ATTENTION: database storage est en local. Les comptes utilisateurs risquent d\'être perdus lors d\'un redeploy. Définissez DATABASE_FILE sur un volume persistant.');
+}
+
+const SQL = await initSqlJs({
+  locateFile: () => sqlWasmPath,
+});
+
+const dbFileExists = fs.existsSync(dbPath);
+const db = dbFileExists
+  ? new SQL.Database(new Uint8Array(fs.readFileSync(dbPath)))
+  : new SQL.Database();
+
+const saveDb = () => {
+  const data = db.export();
+  fs.writeFileSync(dbPath, Buffer.from(data));
+};
+
+const runWrite = (sql: string, params: any[] = []) => {
+  const stmt = db.prepare(sql);
+  stmt.run(params);
+  stmt.free();
+  saveDb();
+};
+
+const queryAll = (sql: string, params: any[] = []) => {
+  const stmt = db.prepare(sql);
+  stmt.bind(params);
+  const rows: any[] = [];
+  while (stmt.step()) {
+    rows.push(stmt.getAsObject());
+  }
+  stmt.free();
+  return rows;
+};
+
+const queryOne = (sql: string, params: any[] = []) => {
+  const stmt = db.prepare(sql);
+  stmt.bind(params);
+  const row = stmt.step() ? stmt.getAsObject() : undefined;
+  stmt.free();
+  return row;
+};
+
+db.run(`CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  firstName TEXT,
+  lastName TEXT,
+  name TEXT,
+  email TEXT UNIQUE,
+  dob TEXT,
+  profession TEXT,
+  gender TEXT,
+  photoUrl TEXT,
+  password TEXT,
+  createdAt TEXT,
+  mustChangePassword INTEGER
+)`);
+
+db.run(`CREATE TABLE IF NOT EXISTS activity (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT,
+  action TEXT,
+  createdAt TEXT
+)`);
+
+db.run(`CREATE TABLE IF NOT EXISTS messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT,
+  email TEXT,
+  message TEXT,
+  createdAt TEXT
+)`);
+
+db.run(`CREATE TABLE IF NOT EXISTS tier_progress (
+  id INTEGER PRIMARY KEY,
+  p1 INTEGER NOT NULL,
+  p2 INTEGER NOT NULL,
+  p3 INTEGER NOT NULL,
+  p4 INTEGER NOT NULL
+)`);
+
+saveDb();
+
+const existingTier = queryOne('SELECT id FROM tier_progress WHERE id = 1');
+if (!existingTier) {
+  runWrite('INSERT INTO tier_progress (id, p1, p2, p3, p4) VALUES (1, ?, ?, ?, ?)', [1, 15, 0, 0, 0]);
+}
+
+const legacyJsonPath = path.resolve(process.cwd(), 'database.json');
+if (!dbFileExists && fs.existsSync(legacyJsonPath)) {
+  try {
+    const legacyData = JSON.parse(fs.readFileSync(legacyJsonPath, 'utf8'));
+    const users = Array.isArray(legacyData.users) ? legacyData.users : [];
+    const activity = Array.isArray(legacyData.activity) ? legacyData.activity : [];
+    const messages = Array.isArray(legacyData.messages) ? legacyData.messages : [];
+    const tierProgress = Array.isArray(legacyData.tierProgress) ? legacyData.tierProgress : [15, 0, 0, 0];
+
+    users.forEach((user: UserRecord) => {
+      runWrite(
+        `INSERT OR IGNORE INTO users (
+          firstName, lastName, name, email, dob, profession, gender, photoUrl, password, createdAt, mustChangePassword
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          user.firstName || '',
+          user.lastName || '',
+          user.name || '',
+          user.email,
+          user.dob,
+          user.profession,
+          user.gender,
+          user.photoUrl,
+          user.password,
+          user.createdAt,
+          user.mustChangePassword ? 1 : 0,
+        ],
+      );
+    });
+
+    activity.forEach((item: ActivityRecord) => {
+      runWrite('INSERT INTO activity (email, action, createdAt) VALUES (?, ?, ?)', [item.email, item.action, item.createdAt]);
+    });
+
+    messages.forEach((item: MessageRecord) => {
+      runWrite('INSERT INTO messages (name, email, message, createdAt) VALUES (?, ?, ?, ?)', [item.name, item.email, item.message, item.createdAt]);
+    });
+
+    runWrite('INSERT OR REPLACE INTO tier_progress (id, p1, p2, p3, p4) VALUES (1, ?, ?, ?, ?)', [
+      Number(tierProgress[0] ?? 15),
+      Number(tierProgress[1] ?? 0),
+      Number(tierProgress[2] ?? 0),
+      Number(tierProgress[3] ?? 0),
+    ]);
+  } catch (error) {
+    console.warn('Migration de database.json vers SQLite échouée :', error);
+  }
 }
 
 type NameSource = { firstName?: string; lastName?: string; name?: string };
@@ -123,14 +257,6 @@ const normalizeUserRecord = (user: UserRecord): UserRecord => {
   return { ...user, firstName, lastName, gender, name };
 };
 
-db.data!.users = db.data!.users.map(normalizeUserRecord);
-await db.write();
-
-if (!Array.isArray(db.data.tierProgress) || db.data.tierProgress.length !== 4) {
-  db.data.tierProgress = [15, 0, 0, 0];
-  await db.write();
-}
-
 const sanitizeUser = (user: UserRecord) => ({
   firstName: String(user.firstName || '').trim(),
   lastName: String(user.lastName || '').trim(),
@@ -144,38 +270,82 @@ const sanitizeUser = (user: UserRecord) => ({
   mustChangePassword: user.mustChangePassword,
 });
 
-const logActivity = async (email: string, action: string) => {
-  const createdAt = new Date().toLocaleString('fr-FR');
-  db.data!.activity.unshift({ email, action, createdAt });
-  db.data!.activity = db.data!.activity.slice(0, 50);
-  await db.write();
+const rowsToUser = (row: any): UserRecord => ({
+  firstName: row.firstName || '',
+  lastName: row.lastName || '',
+  name: row.name || `${row.firstName || ''} ${row.lastName || ''}`.trim(),
+  email: row.email,
+  dob: row.dob,
+  profession: row.profession,
+  gender: row.gender || '',
+  photoUrl: row.photoUrl || '',
+  password: row.password,
+  createdAt: row.createdAt,
+  mustChangePassword: Boolean(row.mustChangePassword),
+});
+
+const getUsersFromDb = (): UserRecord[] => {
+  const rows = queryAll('SELECT * FROM users ORDER BY id DESC');
+  return rows.map(rowsToUser);
 };
 
-app.get('/api/users', async (req, res) => {
-  await db.read();
-  const users = db.data!.users.slice().reverse().map(sanitizeUser);
+const getUserByEmail = (email: string): UserRecord | undefined => {
+  const row = queryOne('SELECT * FROM users WHERE lower(email) = ? LIMIT 1', [email.toLowerCase()]);
+  return row ? rowsToUser(row) : undefined;
+};
+
+const getActivityLogs = () => queryAll('SELECT email, action, createdAt FROM activity ORDER BY id DESC LIMIT 50');
+const getMessagesFromDb = () => queryAll('SELECT name, email, message, createdAt FROM messages ORDER BY id DESC LIMIT 50');
+
+const getTierProgressFromDb = () => {
+  const row = queryOne('SELECT p1, p2, p3, p4 FROM tier_progress WHERE id = 1');
+  return row ? [row.p1, row.p2, row.p3, row.p4] : [15, 0, 0, 0];
+};
+
+const updateTierProgressInDb = (tierProgress: number[]) => {
+  runWrite('UPDATE tier_progress SET p1 = ?, p2 = ?, p3 = ?, p4 = ? WHERE id = 1', [
+    tierProgress[0],
+    tierProgress[1],
+    tierProgress[2],
+    tierProgress[3],
+  ]);
+};
+
+const deleteOldActivity = () => {
+  runWrite('DELETE FROM activity WHERE id NOT IN (SELECT id FROM activity ORDER BY id DESC LIMIT 50)');
+};
+
+const deleteOldMessages = () => {
+  runWrite('DELETE FROM messages WHERE id NOT IN (SELECT id FROM messages ORDER BY id DESC LIMIT 50)');
+};
+
+const logActivity = async (email: string, action: string) => {
+  const createdAt = new Date().toLocaleString('fr-FR');
+  runWrite('INSERT INTO activity (email, action, createdAt) VALUES (?, ?, ?)', [email, action, createdAt]);
+  deleteOldActivity();
+};
+
+app.get('/api/users', (req, res) => {
+  const users = getUsersFromDb().map(sanitizeUser);
   res.json({ users });
 });
 
-app.get('/api/users/:email', async (req, res) => {
-  await db.read();
+app.get('/api/users/:email', (req, res) => {
   const email = String(req.params.email).toLowerCase();
-  const user = db.data!.users.find((item) => item.email.toLowerCase() === email);
+  const user = getUserByEmail(email);
   if (!user) {
     return res.status(404).json({ error: 'Utilisateur introuvable.' });
   }
   return res.json({ user: sanitizeUser(user) });
 });
 
-app.get('/api/activity', async (req, res) => {
-  await db.read();
-  const activity = db.data!.activity.slice(0, 50);
+app.get('/api/activity', (req, res) => {
+  const activity = getActivityLogs();
   res.json({ activity });
 });
 
-app.get('/api/messages', async (req, res) => {
-  await db.read();
-  const messages = db.data!.messages.slice(0, 50);
+app.get('/api/messages', (req, res) => {
+  const messages = getMessagesFromDb();
   res.json({ messages });
 });
 
@@ -185,23 +355,22 @@ app.post('/api/messages', async (req, res) => {
     return res.status(400).json({ error: 'Nom, email et message sont requis.' });
   }
 
-  await db.read();
   const createdAt = new Date().toLocaleString('fr-FR');
-  db.data!.messages.unshift({
-    name: String(name).trim(),
-    email: String(email).trim().toLowerCase(),
-    message: String(message).trim(),
+  runWrite('INSERT INTO messages (name, email, message, createdAt) VALUES (?, ?, ?, ?)', [
+    String(name).trim(),
+    String(email).trim().toLowerCase(),
+    String(message).trim(),
     createdAt,
-  });
-  db.data!.messages = db.data!.messages.slice(0, 50);
-  await db.write();
+  ]);
+  deleteOldMessages();
+
   await logActivity(String(email).trim().toLowerCase(), 'Requête sécurisée envoyée');
   return res.json({ success: true });
 });
 
-app.get('/api/tier-progress', async (req, res) => {
-  await db.read();
-  res.json({ tierProgress: db.data!.tierProgress });
+app.get('/api/tier-progress', (req, res) => {
+  const tierProgress = getTierProgressFromDb();
+  res.json({ tierProgress });
 });
 
 app.post('/api/tier-progress', async (req, res) => {
@@ -211,11 +380,10 @@ app.post('/api/tier-progress', async (req, res) => {
       return res.status(400).json({ error: 'Progression invalide. Quatre valeurs numériques entre 0 et 100 sont requises.' });
     }
 
-    await db.read();
-    db.data!.tierProgress = tierProgress.map((value: number) => Math.round(Math.max(0, Math.min(100, value))));
-    await db.write();
+    const normalizedProgress = tierProgress.map((value: number) => Math.round(Math.max(0, Math.min(100, value))));
+    updateTierProgressInDb(normalizedProgress);
     await logActivity('admin@admin.com', 'Progression des paliers mise à jour');
-    return res.json({ success: true, tierProgress: db.data!.tierProgress });
+    return res.json({ success: true, tierProgress: normalizedProgress });
   } catch (error: any) {
     console.error('Erreur lors de la mise à jour des paliers :', error);
     return res.status(500).json({ error: 'Erreur interne lors de la mise à jour des paliers.' });
@@ -276,15 +444,13 @@ app.post('/api/pay/callback', async (req, res) => {
   const orderId = String(callbackPayload.orderId || callbackPayload.order_id || callbackPayload.reference || callbackPayload.tx_reference || 'unknown');
   const status = String(callbackPayload.status || callbackPayload.payment_status || callbackPayload.transaction_status || 'inconnu');
 
-  await db.read();
   const createdAt = new Date().toLocaleString('fr-FR');
-  db.data!.activity.unshift({
-    email: customerEmail,
-    action: `Callback PayGateGlobal reçu : commande=${orderId}, statut=${status}`,
+  runWrite('INSERT INTO activity (email, action, createdAt) VALUES (?, ?, ?)', [
+    customerEmail,
+    `Callback PayGateGlobal reçu : commande=${orderId}, statut=${status}`,
     createdAt,
-  });
-  db.data!.activity = db.data!.activity.slice(0, 50);
-  await db.write();
+  ]);
+  deleteOldActivity();
 
   console.log('PayGate callback reçu :', callbackPayload);
 
@@ -306,8 +472,7 @@ app.post('/api/users/login', async (req, res) => {
     return res.status(400).json({ error: 'Email et mot de passe requis.' });
   }
 
-  await db.read();
-  const user = db.data!.users.find((item) => item.email.toLowerCase() === String(email).toLowerCase());
+  const user = getUserByEmail(String(email));
   if (!user) {
     return res.status(404).json({ error: 'Aucun compte trouvé avec cet email.' });
   }
@@ -342,10 +507,8 @@ app.post('/api/users/create', async (req, res) => {
     return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères.' });
   }
 
-  await db.read();
   const lowerEmail = String(email).toLowerCase();
-  const existing = db.data!.users.find((user) => user.email.toLowerCase() === lowerEmail);
-  if (existing) {
+  if (getUserByEmail(lowerEmail)) {
     return res.status(409).json({ error: 'Un compte existe déjà avec cette adresse email.' });
   }
 
@@ -353,20 +516,21 @@ app.post('/api/users/create', async (req, res) => {
   const hashedPassword = bcrypt.hashSync(resolvedPassword, 10);
   const mustChange = mustChangePassword === false ? false : true;
 
-  db.data!.users.push({
-    firstName: resolvedFirstName,
-    lastName: resolvedLastName,
-    name: resolvedName,
-    email: lowerEmail,
-    dob: String(dob).trim(),
-    profession: String(profession).trim(),
-    gender: resolvedGender,
-    photoUrl: String(photoUrl || ''),
-    password: hashedPassword,
-    createdAt,
-    mustChangePassword: mustChange,
-  });
-  await db.write();
+  db.prepare(`INSERT INTO users (firstName, lastName, name, email, dob, profession, gender, photoUrl, password, createdAt, mustChangePassword)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(
+      resolvedFirstName,
+      resolvedLastName,
+      resolvedName,
+      lowerEmail,
+      String(dob).trim(),
+      String(profession).trim(),
+      resolvedGender,
+      String(photoUrl || ''),
+      hashedPassword,
+      createdAt,
+      mustChange ? 1 : 0,
+    );
 
   await logActivity(lowerEmail, 'Compte utilisateur créé par l’administrateur');
   return res.status(201).json({ success: true });
@@ -378,16 +542,14 @@ app.post('/api/users/change-password', async (req, res) => {
     return res.status(400).json({ error: 'Email et nouveau mot de passe requis.' });
   }
 
-  await db.read();
   const lowerEmail = String(email).toLowerCase();
-  const user = db.data!.users.find((item) => item.email.toLowerCase() === lowerEmail);
+  const user = getUserByEmail(lowerEmail);
   if (!user) {
     return res.status(404).json({ error: 'Utilisateur introuvable.' });
   }
 
-  user.password = bcrypt.hashSync(String(newPassword), 10);
-  user.mustChangePassword = false;
-  await db.write();
+  db.prepare('UPDATE users SET password = ?, mustChangePassword = 0 WHERE lower(email) = ?')
+    .run(bcrypt.hashSync(String(newPassword), 10), lowerEmail);
 
   await logActivity(lowerEmail, 'Modification du mot de passe');
   return res.json({ success: true });
@@ -399,16 +561,14 @@ app.post('/api/users/reset-password', async (req, res) => {
     return res.status(400).json({ error: 'Email et nouveau mot de passe requis.' });
   }
 
-  await db.read();
   const lowerEmail = String(email).toLowerCase();
-  const user = db.data!.users.find((item) => item.email.toLowerCase() === lowerEmail);
+  const user = getUserByEmail(lowerEmail);
   if (!user) {
     return res.status(404).json({ error: 'Utilisateur introuvable.' });
   }
 
-  user.password = bcrypt.hashSync(String(newPassword), 10);
-  user.mustChangePassword = true;
-  await db.write();
+  db.prepare('UPDATE users SET password = ?, mustChangePassword = 1 WHERE lower(email) = ?')
+    .run(bcrypt.hashSync(String(newPassword), 10), lowerEmail);
 
   await logActivity(lowerEmail, 'Mot de passe administrateur réinitialisé');
   return res.json({ success: true });
@@ -425,37 +585,35 @@ app.post('/api/users/update', async (req, res) => {
     return res.status(400).json({ error: 'Tous les champs obligatoires sont requis (Email, DOB, Profession, Nom, Prénom).' });
   }
 
-  await db.read();
   const lowerOldEmail = String(oldEmail).toLowerCase();
   const lowerNewEmail = String(email).toLowerCase();
-  const user = db.data!.users.find((item) => item.email.toLowerCase() === lowerOldEmail);
+  const user = getUserByEmail(lowerOldEmail);
   if (!user) {
     return res.status(404).json({ error: 'Utilisateur introuvable.' });
   }
 
-  if (lowerOldEmail !== lowerNewEmail) {
-    const existing = db.data!.users.find((item) => item.email.toLowerCase() === lowerNewEmail);
-    if (existing) {
-      return res.status(409).json({ error: 'Un compte existe déjà avec cette adresse email.' });
-    }
+  if (lowerOldEmail !== lowerNewEmail && getUserByEmail(lowerNewEmail)) {
+    return res.status(409).json({ error: 'Un compte existe déjà avec cette adresse email.' });
   }
 
-  user.firstName = resolvedFirstName;
-  user.lastName = resolvedLastName;
-  user.name = resolvedName;
-  user.email = lowerNewEmail;
-  user.dob = String(dob).trim();
-  user.profession = String(profession).trim();
-  if (resolvedGender) {
-    user.gender = resolvedGender;
-  }
-  user.photoUrl = String(photoUrl || '');
-  await db.write();
+  db.prepare(`UPDATE users SET firstName = ?, lastName = ?, name = ?, email = ?, dob = ?, profession = ?, gender = ?, photoUrl = ? WHERE lower(email) = ?`)
+    .run(
+      resolvedFirstName,
+      resolvedLastName,
+      resolvedName,
+      lowerNewEmail,
+      String(dob).trim(),
+      String(profession).trim(),
+      resolvedGender,
+      String(photoUrl || ''),
+      lowerOldEmail,
+    );
 
   await logActivity(lowerNewEmail, 'Profil utilisateur modifié');
+  const updatedUser = getUserByEmail(lowerNewEmail);
   return res.json({
     success: true,
-    user: sanitizeUser(user),
+    user: updatedUser ? sanitizeUser(updatedUser) : null,
   });
 });
 
