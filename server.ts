@@ -308,16 +308,21 @@ app.post('/api/users/create', async (req, res) => {
   const rawFirstName = String(firstName || '').trim();
   const rawLastName = String(lastName || '').trim();
   const fallbackName = String(name || '').trim();
-  const resolvedFirstName = rawFirstName || fallbackName.split(' ').slice(0, -1).join(' ').trim();
-  const resolvedLastName = rawLastName || fallbackName.split(' ').slice(-1).join('').trim();
+  const nameWords = fallbackName.split(' ').filter(Boolean);
+  const resolvedFirstName = rawFirstName || nameWords.slice(0, -1).join(' ').trim() || fallbackName;
+  const resolvedLastName = rawLastName || (nameWords.length > 1 ? nameWords.slice(-1).join('').trim() : '');
   const resolvedName = String(name || `${resolvedFirstName} ${resolvedLastName}`).trim();
   const resolvedGender = String(gender || '').trim();
+  const rawPassword = String(password || '').trim();
+  const resolvedPassword = rawPassword || '123456';
 
-  if ((!resolvedFirstName || !resolvedLastName) || !email || !dob || !profession || !resolvedGender) {
+  if (!resolvedFirstName || !email || !dob || !profession || !resolvedGender) {
     return res.status(400).json({ error: 'Tous les champs obligatoires sont requis.' });
   }
 
-  const resolvedPassword = '123456';
+  if (rawPassword && rawPassword.length < 6) {
+    return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères.' });
+  }
 
   await db.read();
   const lowerEmail = String(email).toLowerCase();

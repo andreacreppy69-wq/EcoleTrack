@@ -764,11 +764,12 @@ export default function App() {
   const handleRegisterSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!registerFirstName.trim() || !registerLastName.trim() || !registerEmail.trim() || !registerDob.trim() || !registerProfession.trim() || !registerGender.trim()) {
+    if (!registerFirstName.trim() || !registerLastName.trim() || !registerEmail.trim() || !registerDob.trim() || !registerProfession.trim() || !registerGender.trim() || !registerPassword.trim()) {
       const errors: string[] = [];
       if (!registerFirstName.trim()) errors.push('Prénom(s)');
       if (!registerLastName.trim()) errors.push('Nom');
       if (!registerEmail.trim()) errors.push('Email');
+      if (!registerPassword.trim()) errors.push('Mot de passe temporaire');
       if (!registerDob.trim()) errors.push('Date de naissance');
       if (!registerProfession.trim()) errors.push('Profession');
       if (!registerGender.trim()) errors.push('Sexe');
@@ -777,6 +778,10 @@ export default function App() {
     }
     if (!registerEmail.includes('@')) {
       setRegisterError('Veuillez saisir une adresse email valide.');
+      return;
+    }
+    if (registerPassword.trim().length < 6) {
+      setRegisterError('Le mot de passe doit contenir au moins 6 caractères.');
       return;
     }
 
@@ -789,7 +794,7 @@ export default function App() {
         profession: registerProfession.trim(),
         gender: registerGender.trim(),
         photoUrl: registerPhotoUrl,
-        password: '123456',
+        password: registerPassword.trim(),
       });
 
       logUserActivity(registerEmail.trim(), 'Compte utilisateur créé par l’administrateur');
