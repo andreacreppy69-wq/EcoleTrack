@@ -435,7 +435,9 @@ app.post('/api/users/update', async (req, res) => {
     user: sanitizeUser(user),
   });
 });
-
+app.get("/", (req, res) => {
+  res.send("EcoleTrack API is running");
+});
 app.listen(port, () => {
   console.log(`Backend API server is running on http://localhost:${port}`);
 });
