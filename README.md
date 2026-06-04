@@ -18,4 +18,3 @@ View your app in AI Studio: https://ai.studio/apps/fa4f6bd3-5be5-4e38-9c78-4c13d
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
-"# EcoleTrack" 
