@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SchoolTrack - Campagne de Financement Participatif</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brandBlue: '#0f2d52',
+            brandGreen: '#19a463',
+            brandGreenHover: '#13814d'
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .hover-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .hover-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    }
+    .step-active {
+      border-color: #19a463;
+      background-color: rgba(25, 164, 99, 0.05);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased">
+
+  <!-- TOP ANNOUNCEMENT BAR -->
+  <div class="bg-brandBlue text-white text-xs py-2.5 px-4 font-medium transition-all">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-brandGreen animate-pulse"></span>
+        <span>Campagne Active : Application de suivi scolaire en temps réel — AYISSOU Koffi Elom</span>
+      </div>
+      <div class="flex items-center gap-4 text-slate-350 select-none">
+        <span>Objectif de collecte : 21 000 000 FCFA</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVIGATION HEADER -->
+  <header class="sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-100 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-brandBlue rounded-xl flex items-center justify-center text-white font-extrabold shadow-md">
+          <i class="fa-solid fa-graduation-cap text-brandGreen text-lg"></i>
+        </div>
+        <div>
+          <span class="font-extrabold text-brandBlue tracking-tight text-xl block leading-none">SchoolTrack</span>
+          <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest block mt-1">MÉCÉNAT ÉDUCATIF</span>
+        </div>
+      </div>
+
+      <!-- Nav Links -->
+      <nav class="hidden lg:flex items-center gap-1 text-sm font-semibold text-slate-600">
+        <a href="#probleme" class="px-4 py-2 rounded-xl hover:text-brandBlue hover:bg-slate-50 transition-colors">Le Constat</a>
+        <a href="#solution" class="px-4 py-2 rounded-xl hover:text-brandBlue hover:bg-slate-50 transition-colors">La Solution</a>
+        <a href="#pourquoi" class="px-4 py-2 rounded-xl hover:text-brandBlue hover:bg-slate-50 transition-colors">Pourquoi Investir ?</a>
+        <a href="#budget" class="px-4 py-2 rounded-xl hover:text-brandBlue hover:bg-slate-50 transition-colors">Répartition</a>
+        <a href="#impact" class="px-4 py-2 rounded-xl hover:text-brandBlue hover:bg-slate-50 transition-colors">Témoignages</a>
+        <a href="#contact" class="px-4 py-2 rounded-xl hover:text-brandBlue hover:bg-slate-50 transition-colors">Contact</a>
+      </nav>
+
+      <div>
+        <a href="#simulateur" class="px-5 py-2.5 bg-brandGreen hover:bg-brandGreenHover text-white rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow-md flex items-center gap-2">
+          <span>Je participe</span>
+          <i class="fa-solid fa-chevron-right text-[10px]"></i>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO SECTION WITH PROGRESS BAR -->
+  <section class="bg-brandBlue text-white relative pt-12 pb-20 px-4 overflow-hidden">
+    <!-- Overlay effects -->
+    <div class="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-brandGreen/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-10 right-10 w-[300px] h-[300px] bg-sky-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+    <div class="max-w-7xl mx-auto relative z-10">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        
+        <!-- Left Side: Copy and Title -->
+        <div class="lg:col-span-7 space-y-6">
+          <div class="inline-flex items-center gap-2 px-3 py-1 bg-brandGreen/10 text-brandGreen text-xs font-semibold uppercase tracking-wider rounded-full border border-brandGreen/20">
+            <i class="fa-solid fa-earth-africa"></i>
+            <span>Innovation Éducative — Afrique de l'Ouest</span>
+          </div>
+
+          <h1 class="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-[1.12]">
+            Investissez dans l’avenir de l’éducation avec l’Application de suivi scolaire en temps réel.
+          </h1>
+
+          <p class="text-slate-300 text-base md:text-lg leading-relaxed font-light">
+            “Un projet innovant qui améliore la communication entre écoles et parents, réduit l’échec scolaire et garantit un suivi académique efficace.”
+          </p>
+
+          <div class="flex flex-wrap gap-4 pt-2">
+            <a href="#simulateur" class="px-6 py-3.5 bg-brandGreen hover:bg-brandGreenHover text-white font-extrabold rounded-xl transition-all shadow-lg text-sm flex items-center gap-2">
+              <span>Contribuer dès maintenant</span>
+              <i class="fa-solid fa-arrow-down-long text-xs animate-bounce"></i>
+            </a>
+            <a href="#solution" class="px-6 py-3.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/50 text-slate-200 font-bold rounded-xl transition-all text-sm block">
+              Découvrir la solution
+            </a>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4 pt-6 border-t border-slate-800">
+            <div>
+              <span class="block text-2xl font-black text-brandGreen font-mono">21M <span class="text-sm font-normal">FCFA</span></span>
+              <span class="block text-[11px] text-slate-400 mt-1">Budget Total requis</span>
+            </div>
+            <div>
+              <span class="block text-2xl font-black text-white">SaaS + SMS</span>
+              <span class="block text-[11px] text-slate-400 mt-1">Multi-canal hybride</span>
+            </div>
+            <div>
+              <span class="block text-2xl font-black text-white">Pilote</span>
+              <span class="block text-[11px] text-slate-400 mt-1">Prêt pour déploiement</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: Live Campaign progress Card -->
+        <div class="lg:col-span-5 bg-white/5 backdrop-blur-xs border border-white/10 p-6 sm:p-8 rounded-3xl shadow-2xl space-y-6">
+          <div class="flex justify-between items-center">
+            <span class="px-3 py-1 bg-yellow-500/15 text-yellow-400 text-xs font-bold rounded-full flex items-center gap-1.5 border border-yellow-500/10">
+              <i class="fa-solid fa-hourglass-half"></i>
+              <span>Campagne en cours</span>
+            </span>
+            <span class="text-xs text-slate-400 font-mono">Sandbox local activé</span>
+          </div>
+
+          <div>
+            <span class="text-[10px] uppercase text-slate-400 tracking-widest font-semibold block">Montant collecté</span>
+            <div class="flex items-baseline gap-2 mt-1">
+              <span id="collected-amount" class="text-3xl sm:text-4xl font-black text-brandGreen font-mono tracking-tight">12 450 000 FCFA</span>
+            </div>
+            <span class="text-xs text-slate-400 block mt-1">
+              sur l'objectif de financement estimé de <strong class="text-white">21 000 000 FCFA</strong>
+            </span>
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-xs font-semibold">
+              <span class="text-slate-400">Progression globale</span>
+              <span id="progress-percentage-text" class="text-brandGreen font-mono font-bold">59.3% financé</span>
+            </div>
+            <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
+              <div id="progress-bar-fill" class="bg-brandGreen h-full rounded-full transition-all duration-1000" style="width: 59.3%"></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 py-3 border-y border-white/10">
+            <div>
+              <span id="backers-count" class="block text-xl font-bold text-white font-mono">142</span>
+              <span class="block text-[11px] text-slate-400 mt-1">Soutiens enregistrés</span>
+            </div>
+            <div>
+              <span class="block text-xl font-bold text-white font-mono">Zone Ouest</span>
+              <span class="block text-[11px] text-slate-400 mt-1">Togo, Bénin &amp; plus</span>
+            </div>
+          </div>
+
+          <div class="p-4 bg-white/5 rounded-2xl border border-white/5 text-slate-300 text-xs flex items-start gap-3">
+            <i class="fa-solid fa-lock text-brandGreen mt-0.5"></i>
+            <p class="leading-relaxed">
+              <strong>Simulateur local :</strong> Vous pouvez tester les options de dons et voir l'impact en temps réel de votre participation fictive sur les compteurs ci-dessus.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 1: PRESENTATION DU PROBLEME -->
+  <section id="probleme" class="py-20 bg-white border-b border-slate-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        
+        <!-- Left Visual Card -->
+        <div class="lg:col-span-5 relative">
+          <div class="absolute -inset-4 bg-brandBlue/5 rounded-3xl -rotate-2 pointer-events-none"></div>
+          
+          <div class="relative rounded-2xl overflow-hidden shadow-xl border border-slate-100">
+            <!-- Modern illustrative vector / Unsplash visual representing dedicated young African pupils -->
+            <img 
+              src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=600&h=450" 
+              alt="Élèves motivés travaillant ensemble"
+              class="w-full h-[320px] md:h-[380px] object-cover hover:scale-105 transition-transform duration-500"
+            />
+            
+            <div class="absolute bottom-4 left-4 right-4 bg-brandBlue/90 backdrop-blur-md p-4 rounded-xl text-white text-xs flex items-center gap-3">
+              <i class="fa-solid fa-triangle-exclamation text-brandGreen font-bold animate-pulse text-lg"></i>
+              <p class="leading-relaxed">
+                9 parents d'élèves sur 10 déplorent n'avoir aucun accès immédiat aux absences ou fiches de notes journalières.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Text Panel -->
+        <div class="lg:col-span-7 space-y-6">
+          <div>
+            <span class="text-xs font-bold text-red-500 uppercase tracking-widest block mb-1">Le Problème Scolaire Éducatif</span>
+            <h2 class="text-3xl font-extrabold text-brandBlue tracking-tight leading-snug">
+              Des retours d'information trop tardifs pour agir.
+            </h2>
+          </div>
+
+          <div class="bg-slate-50 border-l-4 border-brandBlue p-5 rounded-r-2xl">
+            <p class="text-slate-800 text-base italic leading-relaxed font-semibold">
+              “Aujourd’hui, les parents découvrent trop tard les absences ou les mauvais résultats. La communication scolaire reste lente et inefficace.”
+            </p>
+          </div>
+
+          <p class="text-slate-600 text-sm leading-relaxed">
+            Pour beaucoup de familles, l'échec scolaire est constaté lors de la remise des livrets trimestriels. Sans suivi immédiat, les élèves accumulent des lacunes qui auraient facilement pu être évitées par un dialogue constructif et instantané entre l'administration de l'établissement et la famille.
+          </p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+            <div class="flex items-start gap-3">
+              <div class="p-2 bg-red-100 text-red-600 rounded-lg">
+                <i class="fa-solid fa-circle-exclamation text-sm"></i>
+              </div>
+              <div>
+                <span class="font-bold text-xs text-slate-800 block">Communication en retard</span>
+                <span class="text-[11px] text-slate-500 leading-snug block">Aucune transmission en direct des alertes ou des justificatifs d’absence.</span>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <div class="p-2 bg-red-100 text-red-600 rounded-lg">
+                <i class="fa-solid fa-chart-line-down text-sm"></i>
+              </div>
+              <div>
+                <span class="font-bold text-xs text-slate-800 block">Échecs scolaires cumulatifs</span>
+                <span class="text-[11px] text-slate-500 leading-snug block">L'écart d'information rend l'intervention à la maison lente et inefficace.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 2: NOTRE SOLUTION WITH INTERACTIVE FLOW SCHEMA -->
+  <section id="solution" class="py-20 bg-slate-50 border-b border-slate-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 space-y-12">
+      
+      <div class="max-w-3xl mx-auto text-center space-y-4">
+        <span class="text-xs font-bold text-brandGreen uppercase tracking-widest block">Notre Vision</span>
+        <h2 class="text-3xl md:text-4xl font-extrabold text-brandBlue tracking-tight leading-snug">
+          Une application mobile et web qui connecte instantanément parents, enseignants et administration.
+        </h2>
+        <div class="w-12 h-1 bg-brandGreen mx-auto rounded-full"></div>
+        <p class="text-slate-600 text-sm md:text-base leading-relaxed">
+          Un cadre technologique léger et abordable, disponible hors ligne comme en ligne, reliant toute la sphère éducative d’Afrique de l'Ouest.
+        </p>
+      </div>
+
+      <!-- INTERACTIVE FLOW WORKSPACE -->
+      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-8">
+        
+        <div class="text-center">
+          <span class="px-2.5 py-1 bg-brandBlue/10 text-brandBlue text-xs font-bold uppercase rounded-full">
+            Schéma interactif instantané 
+          </span>
+          <h3 class="text-xl font-extrabold text-brandBlue mt-2">Parents ↔ Application ↔ École</h3>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 relative items-center">
+          
+          <!-- Parent Block -->
+          <div id="flow-parents" onclick="selectFlow('parents')" class="cursor-pointer flex flex-col items-center p-6 bg-white border border-slate-250 rounded-2xl text-center shadow-sm hover:border-brandGreen transition-all select-none step-active">
+            <div class="w-14 h-14 bg-brandGreen/10 text-brandGreen rounded-full flex items-center justify-center text-xl mb-3">
+              <i class="fa-solid fa-users"></i>
+            </div>
+            <h4 class="font-bold text-slate-800 text-sm">Les Parents</h4>
+            <span class="text-[10px] text-slate-500 mt-1 uppercase font-bold">Consulter &amp; Agir</span>
+          </div>
+
+          <!-- Application Gateway Block -->
+          <div id="flow-app" onclick="selectFlow('app')" class="cursor-pointer flex flex-col items-center p-6 bg-white border border-slate-250 rounded-2xl text-center shadow-sm hover:border-brandGreen transition-all select-none">
+            <div class="w-14 h-14 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center text-xl mb-3">
+              <i class="fa-solid fa-mobile-screen-button"></i>
+            </div>
+            <h4 class="font-bold text-slate-800 text-sm">Application Cloud SF</h4>
+            <span class="text-[10px] text-slate-500 mt-1 uppercase font-bold">Acheminement &amp; SMS</span>
+          </div>
+
+          <!-- School Block -->
+          <div id="flow-school" onclick="selectFlow('school')" class="cursor-pointer flex flex-col items-center p-6 bg-white border border-slate-250 rounded-2xl text-center shadow-sm hover:border-brandGreen transition-all select-none">
+            <div class="w-14 h-14 bg-brandBlue/10 text-brandBlue rounded-full flex items-center justify-center text-xl mb-3">
+              <i class="fa-solid fa-school"></i>
+            </div>
+            <h4 class="font-bold text-slate-800 text-sm">L’Administration</h4>
+            <span class="text-[10px] text-slate-500 mt-1 uppercase font-bold">Émission en direct</span>
+          </div>
+
+        </div>
+
+        <!-- Flow Description Wrapper (Updated by Vanilla JS below) -->
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 min-h-[120px]">
+          <h4 id="flow-output-title" class="font-bold text-brandBlue text-sm mb-2 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-brandGreen block"></span>
+            Interface Parents
+          </h4>
+          <p id="flow-output-text" class="text-xs text-slate-600 leading-relaxed">
+            Grâce à l'application mobile et à la passerelle SMS SchoolTrack, les parents d'élèves reçoivent des alertes immédiates sur leur téléphone en cas d'absence. Ils ont également la possibilité de justifier l'absence de leur enfant directement via l'application, de consulter ses notes et devoirs en temps réel, ou encore d'effectuer des paiements sécurisés pour les frais scolaires.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Icon-Based 3 Core pillars as requested -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <div class="bg-white p-6 rounded-2xl border border-slate-150 hover-card shadow-xs">
+          <div class="w-12 h-12 bg-slate-50 text-brandGreen rounded-xl flex items-center justify-center text-xl mb-4 shadow-xs">
+            <i class="fa-solid fa-mobile-retro"></i>
+          </div>
+          <h4 class="font-bold text-brandBlue text-base mb-2">📱 Suivi en temps réel</h4>
+          <p class="text-slate-605 text-xs leading-relaxed">
+            Dès qu'un enseignant marque l'absence d'un élève ou formule un avis important, notre application en informe automatiquement le parent par notification ou message instantané.
+          </p>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-150 hover-card shadow-xs">
+          <div class="w-12 h-12 bg-slate-50 text-brandBlue rounded-xl flex items-center justify-center text-xl mb-4 shadow-xs">
+            <i class="fa-solid fa-people-roof"></i>
+          </div>
+          <h4 class="font-bold text-brandBlue text-base mb-2">👨‍👩‍👧 Implication parentale</h4>
+          <p class="text-slate-605 text-xs leading-relaxed">
+            En un claquement de doigts, le parent se sent pleinement impliqué. Il est ainsi plus enclin à accompagner, épauler et motiver son enfant au quotidien.
+          </p>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-150 hover-card shadow-xs">
+          <div class="w-12 h-12 bg-slate-50 text-brandGreen rounded-xl flex items-center justify-center text-xl mb-4 shadow-xs">
+            <i class="fa-solid fa-graduation-cap"></i>
+          </div>
+          <h4 class="font-bold text-brandBlue text-base mb-2">🎓 Réussite scolaire</h4>
+          <p class="text-slate-605 text-xs leading-relaxed">
+            Le lien de transparence ainsi créé garantit à l'élève un encadrement solide et un accompagnement efficace, prévenant activement le décrochage scolaire.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SECTION 3: POURQUOI INVESTIR ? -->
+  <section id="pourquoi" class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 space-y-12">
+      
+      <div class="max-w-3xl mx-auto text-center space-y-4">
+        <span class="text-xs font-bold text-brandBlue uppercase tracking-widest block font-bold">Rentabilité &amp; Impact social</span>
+        <h2 class="text-3xl font-extrabold text-brandBlue tracking-tight leading-snug">
+          Pourquoi investir ?
+        </h2>
+        <div class="w-12 h-1 bg-brandBlue mx-auto rounded-full"></div>
+        <p class="text-slate-600 text-sm">
+          Découvrez la viabilité économique de cette initiative tech panafricaine prometteuse.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        
+        <!-- Card 1 -->
+        <div class="bg-slate-50 border border-slate-150 p-6 rounded-2xl space-y-4 flex flex-col justify-between hover-card">
+          <div class="space-y-3">
+            <div class="w-10 h-10 bg-brandGreen/10 text-brandGreen rounded-xl flex items-center justify-center text-lg shadow-sm">
+              <i class="fa-solid fa-coins"></i>
+            </div>
+            <h4 class="font-bold text-base text-brandBlue">Revenus garantis</h4>
+            <p class="text-slate-600 text-xs leading-relaxed">
+              Mise en œuvre de frais de service minimes et d'intégrations de frais d'écolages, intégrés de manière récurrente au contrat d'abonnement.
+            </p>
+          </div>
+          <span class="text-[10px] font-bold text-brandGreen uppercase bg-brandGreen/10 px-2.5 py-1 rounded w-fit">Frais intégrés</span>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="bg-slate-50 border border-slate-150 p-6 rounded-2xl space-y-4 flex flex-col justify-between hover-card">
+          <div class="space-y-3">
+            <div class="w-10 h-10 bg-brandBlue/10 text-brandBlue rounded-xl flex items-center justify-center text-lg shadow-sm">
+              <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <h4 class="font-bold text-base text-brandBlue">Marché large</h4>
+            <p class="text-slate-600 text-xs leading-relaxed">
+              Toutes les écoles primaires et secondaires constituent notre cœur de cible. La demande de numérisation est immense de la part des parents.
+            </p>
+          </div>
+          <span class="text-[10px] font-bold text-brandBlue uppercase bg-brandBlue/10 px-2.5 py-1 rounded w-fit font-bold">Marché immense</span>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="bg-slate-50 border border-slate-150 p-6 rounded-2xl space-y-4 flex flex-col justify-between hover-card">
+          <div class="space-y-3">
+            <div class="w-10 h-10 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center text-lg shadow-sm">
+              <i class="fa-solid fa-heart"></i>
+            </div>
+            <h4 class="font-bold text-base text-brandBlue">Impact social fort</h4>
+            <p class="text-slate-600 text-xs leading-relaxed">
+              Action directe sur la réduction constatée de l’échec scolaire et du décrochage en maintenant les familles étroitement liées à la vie scolaire.
+            </p>
+          </div>
+          <span class="text-[10px] font-bold text-rose-600 uppercase bg-rose-50 px-2.5 py-1 rounded w-fit">Impact fort t1</span>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="bg-slate-50 border border-slate-150 p-6 rounded-2xl space-y-4 flex flex-col justify-between hover-card">
+          <div class="space-y-3">
+            <div class="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center text-lg shadow-sm">
+              <i class="fa-solid fa-rocket"></i>
+            </div>
+            <h4 class="font-bold text-base text-brandBlue">Potentiel panafricain</h4>
+            <p class="text-slate-600 text-xs leading-relaxed">
+              Doté d'une extensibilité robuste pour être facilement déployé et adopté par les établissements scolaires en Afrique de l'Ouest, subsaharienne et au-delà.
+            </p>
+          </div>
+          <span class="text-[10px] font-bold text-yellow-600 uppercase bg-yellow-50 px-2.5 py-1 rounded w-fit">Expansion</span>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SECTION 4: BUDGET & OBJECTIFS DE COLLECTE WITH CHARTJS -->
+  <section id="budget" class="py-20 bg-slate-50 border-y border-slate-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 space-y-12">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        
+        <!-- Left details panel -->
+        <div class="lg:col-span-5 space-y-6">
+          <div>
+            <span class="text-xs font-bold text-brandGreen uppercase tracking-widest block mb-1">Engagements de rigueur</span>
+            <h2 class="text-3xl font-extrabold text-brandBlue tracking-tight leading-snug">
+              Budget &amp; Objectif de collecte
+            </h2>
+          </div>
+
+          <div class="p-6 bg-white border border-slate-200 rounded-2xl space-y-2 shadow-xs">
+            <span class="text-slate-500 text-xs block">Coût estimatif pour le lancement :</span>
+            <span class="text-3xl font-black text-brandBlue block font-mono">21 000 000 FCFA</span>
+            <span class="text-xs text-brandGreen font-bold flex items-center gap-1.5 mt-1">
+              <i class="fa-solid fa-shield-halved"></i>
+              <span>Gestion transparente, imputable et contrôlée</span>
+            </span>
+          </div>
+
+          <p class="text-slate-600 text-sm leading-relaxed">
+            Chaque franc collecté est scrupuleusement alloué selon nos prévisions techniques, commerciales et administratives. L’objectif de collecte permettra de financer le développement de l'application et sa mise en œuvre pilote.
+          </p>
+
+          <blockquote class="bg-emerald-500/10 border-l-4 border-brandGreen p-4 rounded-r-xl text-xs text-emerald-800 leading-relaxed">
+            <strong>Engagement :</strong> <br>
+            “Chaque contribution sera utilisée exclusivement pour le développement et le déploiement de l’application.”
+          </blockquote>
+        </div>
+
+        <!-- Right: Interactive Chart.js and breakdown details -->
+        <div class="lg:col-span-7 bg-white p-6 sm:p-8 rounded-3xl border border-slate-250 shadow-sm space-y-6">
+          <h3 class="font-bold text-brandBlue text-lg text-center lg:text-left">Graphique de répartition des fonds</h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+            
+            <!-- Centered Chart.js visual canvas -->
+            <div class="md:col-span-5 relative w-[180px] h-[180px] mx-auto">
+              <canvas id="budgetChart" width="180" height="180"></canvas>
+            </div>
+
+            <!-- Custom breakdown label links -->
+            <div class="md:col-span-7 space-y-3.5">
+              
+              <div class="flex items-start gap-3">
+                <span class="w-3.5 h-3.5 rounded-full bg-[#0f2d52] inline-block mt-0.5"></span>
+                <div>
+                  <h5 class="font-bold text-xs text-slate-800">Développement Technique (40%)</h5>
+                  <span class="text-[10px] text-slate-500 font-mono">8 400 000 FCFA</span>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-3">
+                <span class="w-3.5 h-3.5 rounded-full bg-[#19a463] inline-block mt-0.5"></span>
+                <div>
+                  <h5 class="font-bold text-xs text-slate-800">Marketing &amp; Déploiement (25%)</h5>
+                  <span class="text-[10px] text-slate-500 font-mono">5 250 000 FCFA</span>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-3">
+                <span class="w-3.5 h-3.5 rounded-full bg-[#3b82f6] inline-block mt-0.5"></span>
+                <div>
+                  <h5 class="font-bold text-xs text-slate-800">Infrastructures &amp; Cloud (20%)</h5>
+                  <span class="text-[10px] text-slate-500 font-mono">4 200 000 FCFA</span>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-3">
+                <span class="w-3.5 h-3.5 rounded-full bg-[#f59e0b] inline-block mt-0.5"></span>
+                <div>
+                  <h5 class="font-bold text-xs text-slate-800">Support &amp; Juridique (15%)</h5>
+                  <span class="text-[10px] text-slate-500 font-mono">3 150 000 FCFA</span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SECTION 5: APPEL A L'ACTION WITH PARTICIPATION SIMULATOR -->
+  <section id="simulateur" class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 space-y-12">
+      
+      <div class="max-w-3xl mx-auto text-center space-y-4">
+        <span class="text-xs font-bold text-brandGreen uppercase tracking-widest block font-bold">Investissement Participatif</span>
+        <h2 class="text-3xl md:text-4xl font-extrabold text-brandBlue tracking-tight leading-snug">
+          Je simule une participation d'honneur
+        </h2>
+        <div class="w-12 h-1 bg-brandGreen mx-auto rounded-full"></div>
+        <p class="text-slate-600 text-sm md:text-base">
+          Faites l'expérience du flux de paiement. Sélectionnez ou définissez votre montant. Les chiffres de la campagne s'actualiseront immédiatement après votre simulation !
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        
+        <!-- Interactive Simulator Widget -->
+        <div class="lg:col-span-7 bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-800 space-y-6 relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-brandGreen/10 rounded-full blur-2xl pointer-events-none"></div>
+
+          <!-- Sandbox Header -->
+          <div class="flex justify-between items-center pb-4 border-b border-slate-800">
+            <span class="text-xs font-bold text-slate-350 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-shield-halved text-brandGreen"></i>
+              <span>Simulator Sandbox</span>
+            </span>
+            <span class="text-[10px] font-mono text-slate-500">Secured with Wave &amp; Cards</span>
+          </div>
+
+          <!-- Checkout steps container -->
+          <div id="checkout-view" class="space-y-6">
+            
+            <!-- Step 1: choosing tiers list -->
+            <div id="step-1-tiers" class="space-y-4">
+              <h3 class="font-extrabold text-lg text-slate-100 mb-2">Choisissez votre formule d'investissement :</h3>
+              
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                
+                <!-- Tier 1 -->
+                <div onclick="selectWidgetTier('bronze', 5000)" class="cursor-pointer p-4 bg-slate-800/40 border border-slate-800 hover:border-brandGreen rounded-xl transition-all flex flex-col justify-between" id="tier-card-bronze">
+                  <div class="flex justify-between items-center">
+                    <span class="text-[10px] font-bold text-brandGreen bg-brandGreen/10 px-2 py-0.5 rounded">Bronze</span>
+                    <span class="font-extrabold font-mono text-white text-sm">5 000 FCFA</span>
+                  </div>
+                  <h5 class="font-bold text-sm text-slate-200 mt-3">Soutien Sympatisant</h5>
+                  <p class="text-[11px] text-slate-400 mt-1">Mention de votre nom de donateur sur notre mur d'honneur officiel.</p>
+                </div>
+
+                <!-- Tier 2 -->
+                <div onclick="selectWidgetTier('argent', 15000)" class="cursor-pointer p-4 bg-slate-800/40 border border-slate-800 hover:border-brandGreen rounded-xl transition-all flex flex-col justify-between step-active" id="tier-card-argent">
+                  <div class="flex justify-between items-center">
+                    <span class="text-[10px] font-bold text-brandGreen bg-brandGreen/10 px-2 py-0.5 rounded">Argent</span>
+                    <span class="font-extrabold font-mono text-white text-sm">15 000 FCFA</span>
+                  </div>
+                  <h5 class="font-bold text-sm text-slate-200 mt-3">Soutien Parent</h5>
+                  <p class="text-[11px] text-slate-400 mt-1">Abonnement gratuit pendant 1 an offert pour la famille de votre choix.</p>
+                </div>
+
+                <!-- Tier 3 -->
+                <div onclick="selectWidgetTier('or', 50000)" class="cursor-pointer p-4 bg-slate-800/40 border border-slate-800 hover:border-brandGreen rounded-xl transition-all flex flex-col justify-between" id="tier-card-or">
+                  <div class="flex justify-between items-center">
+                    <span class="text-[10px] font-bold text-brandGreen bg-brandGreen/10 px-2 py-0.5 rounded">Or</span>
+                    <span class="font-extrabold font-mono text-white text-sm">50 000 FCFA</span>
+                  </div>
+                  <h5 class="font-bold text-sm text-slate-200 mt-3">Soutien de l'École</h5>
+                  <p class="text-[11px] text-slate-400 mt-1">Abonnement à vie + invitation à la table de gouvernance des pilotes.</p>
+                </div>
+
+                <!-- Tier 4 -->
+                <div onclick="selectWidgetTier('platine', 150000)" class="cursor-pointer p-4 bg-slate-800/40 border border-slate-800 hover:border-brandGreen rounded-xl transition-all flex flex-col justify-between" id="tier-card-platine">
+                  <div class="flex justify-between items-center">
+                    <span class="text-[10px] font-bold text-brandGreen bg-brandGreen/10 px-2 py-0.5 rounded">Platine</span>
+                    <span class="font-extrabold font-mono text-white text-sm">150 000 FCFA</span>
+                  </div>
+                  <h5 class="font-bold text-sm text-slate-200 mt-3">Mécène Fondateur</h5>
+                  <p class="text-[11px] text-slate-400 mt-1">Plaque physique gravée à l'effigie de votre aide dans l'école pilote.</p>
+                </div>
+
+              </div>
+
+              <!-- Manual Custom Amount Option -->
+              <div class="p-4 bg-slate-800/20 border border-slate-800 rounded-xl space-y-3">
+                <label class="flex items-center gap-2.5 font-bold text-xs text-slate-300">
+                  <input type="checkbox" id="custom-donation-toggle" onchange="toggleCustomDonationInput(this)" class="accent-brandGreen rounded">
+                  <span>Saisir un autre montant personnalisé (FCFA)</span>
+                </label>
+                <div id="custom-donation-input-container" class="hidden">
+                  <div class="relative max-w-xs">
+                    <input type="number" id="custom-donation-value" oninput="updateCustomAmountValue(this.value)" placeholder="Saisir montant" class="bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-2 text-xs font-mono text-white w-full pr-14 focus:outline-none focus:border-brandGreen">
+                    <span class="absolute right-3 top-2 font-mono text-[10px] text-slate-500">FCFA</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Button target -->
+              <button onclick="goToCheckoutDetails()" class="w-full py-3.5 bg-brandGreen hover:bg-brandGreenHover text-slate-900 font-extrabold rounded-xl transition-all text-xs text-center block">
+                Valider et continuer <span id="payment-summary-value" class="font-mono ml-1">15 000 FCFA</span>
+              </button>
+            </div>
+
+            <!-- Step 2: Information form -->
+            <div id="step-2-form" class="hidden space-y-4">
+              <div class="flex items-center justify-between pb-2">
+                <h4 class="font-bold text-slate-200 text-sm">Vos Informations &amp; Téléphone</h4>
+                <button onclick="backToStepTiers()" class="text-xs text-brandGreen hover:underline">Modifier montant</button>
+              </div>
+
+              <div class="space-y-3.5">
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">Votre Nom Complet</label>
+                  <input type="text" id="backer-name-input" required placeholder="Ex: AYISSOU Koffi Elom" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-xs text-white focus:outline-none focus:border-brandGreen">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">Votre Adresse E-mail</label>
+                  <input type="email" id="backer-email-input" required placeholder="contact@ayissou-scolaire.tg" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-xs text-white focus:outline-none focus:border-brandGreen">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">Méthode de contribution Mobile Money</label>
+                  <div class="grid grid-cols-3 gap-2">
+                    
+                    <button onclick="setBillingGateway('wave')" id="gateway-wave" type="button" class="p-2 border border-brandGreen bg-brandGreen/10 rounded-lg text-center font-bold text-[10px] text-brandGreen hover:bg-brandGreen/5">
+                      <i class="fa-solid fa-mobile-screen block text-xs mb-1"></i> Wave
+                    </button>
+
+                    <button onclick="setBillingGateway('mtn')" id="gateway-mtn" type="button" class="p-2 border border-slate-800 bg-slate-950 rounded-lg text-center font-bold text-[10px] text-slate-400 hover:bg-slate-800">
+                      <i class="fa-solid fa-mobile-screen block text-xs mb-1"></i> MTN Money
+                    </button>
+
+                    <button onclick="setBillingGateway('orange')" id="gateway-orange" type="button" class="p-2 border border-slate-800 bg-slate-950 rounded-lg text-center font-bold text-[10px] text-slate-400 hover:bg-slate-800">
+                      <i class="fa-solid fa-mobile-screen block text-xs mb-1"></i> Orange M.
+                    </button>
+
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">Numéro Mobile Money (Saisie libre)</label>
+                  <input type="tel" id="backer-phone-input" required placeholder="Ex: 91 55 12 95" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-brandGreen">
+                </div>
+              </div>
+
+              <div class="flex gap-3 pt-2">
+                <button onclick="backToStepTiers()" class="w-1/3 py-3 border border-slate-700 hover:bg-slate-800 text-slate-350 font-bold rounded-lg text-xs">Retour</button>
+                <button onclick="triggerSimulatedSuccess()" class="w-2/3 py-3 bg-brandGreen hover:bg-brandGreenHover text-slate-900 font-extrabold rounded-lg text-xs flex items-center justify-center gap-1.5 shadow">
+                  <i class="fa-solid fa-shield-halved"></i>
+                  <span>Confirmer le paiement fictif</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Step 3: Success Notification -->
+            <div id="step-3-success" class="hidden text-center py-6 space-y-4">
+              <div class="w-16 h-16 bg-brandGreen/10 border border-brandGreen/20 text-brandGreen rounded-full flex items-center justify-center mx-auto mb-2">
+                <i class="fa-solid fa-circle-check text-3xl animate-bounce"></i>
+              </div>
+
+              <div class="space-y-1">
+                <h3 class="text-xl font-bold text-slate-100 flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-star text-yellow-400 text-sm"></i>
+                  <span>Fonds simulés reçus !</span>
+                </h3>
+                <p id="success-feedback-text" class="text-xs text-slate-400 leading-relaxed max-w-sm mx-auto">
+                  Merci pour votre simulation. Votre contribution d'honneur a été ajoutée avec succès au compteur de la campagne en temps réel !
+                </p>
+              </div>
+
+              <div class="bg-slate-800/40 p-4 border border-slate-850 rounded-2xl max-w-xs mx-auto text-left text-xs space-y-1.5 font-mono">
+                <div class="flex justify-between items-center border-b border-white/5 pb-1 mb-1">
+                  <span class="text-[10px] text-slate-500">RÉCÉPISSÉ EN LIGNE</span>
+                  <span class="font-extrabold text-brandGreen text-[11px]" id="receipt-summary-amount">15 000 FCFA</span>
+                </div>
+                <p class="text-slate-300">Donateur : <strong class="text-white" id="receipt-summary-name">-</strong></p>
+                <p class="text-[10px] text-slate-400">Ce don fictif nous motive dans l'élaboration et le déploiement de SchoolTrack en Afrique de l’Ouest.</p>
+              </div>
+
+              <div class="pt-4 flex gap-3 max-w-xs mx-auto">
+                <button onclick="backToStepTiers()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition-all">
+                  Refaire une simulation
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Supporters Ledger panel -->
+        <div class="lg:col-span-5 bg-slate-50 border border-slate-200 rounded-3xl p-6 sm:p-8 flex flex-col justify-between space-y-6">
+          <div>
+            <h3 class="font-extrabold text-brandBlue text-lg">Soutiens Récents de la Campagne</h3>
+            <p class="text-slate-500 text-xs mt-0.5">Mise à jour en temps réel des simulations de contributions</p>
+          </div>
+
+          <!-- Dynamic Backers Scroll List -->
+          <div id="backers-dynam-ledger" class="flex-grow space-y-3.5 overflow-y-auto max-h-[300px] pr-2">
+            
+            <!-- Default Backer 1 -->
+            <div class="p-3.5 bg-white border border-slate-100 rounded-xl flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-brandBlue/10 text-brandBlue flex items-center justify-center text-xs">
+                  <i class="fa-solid fa-user-check"></i>
+                </div>
+                <div>
+                  <h5 class="font-bold text-xs text-slate-800">M. Mensah Lawson</h5>
+                  <span class="text-[9px] text-slate-400 font-mono">Il y a 14 min • Or</span>
+                </div>
+              </div>
+              <span class="font-mono text-xs font-extrabold text-brandBlue">+50 000 FCFA</span>
+            </div>
+
+            <!-- Default Backer 2 -->
+            <div class="p-3.5 bg-white border border-slate-100 rounded-xl flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-brandBlue/10 text-brandBlue flex items-center justify-center text-xs">
+                  <i class="fa-solid fa-user-check"></i>
+                </div>
+                <div>
+                  <h5 class="font-bold text-xs text-slate-800">Dr. Afiwa Koffi</h5>
+                  <span class="text-[9px] text-slate-400 font-mono">Il y a 1 heure • Platine</span>
+                </div>
+              </div>
+              <span class="font-mono text-xs font-extrabold text-brandBlue">+150 000 FCFA</span>
+            </div>
+
+            <!-- Default Backer 3 -->
+            <div class="p-3.5 bg-white border border-slate-100 rounded-xl flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-brandBlue/10 text-brandBlue flex items-center justify-center text-xs">
+                  <i class="fa-solid fa-user-check"></i>
+                </div>
+                <div>
+                  <h5 class="font-bold text-xs text-slate-800">Sodji Kodjo</h5>
+                  <span class="text-[9px] text-slate-400 font-mono">Il y a 3 heures • Argent</span>
+                </div>
+              </div>
+              <span class="font-mono text-xs font-extrabold text-brandBlue">+15 000 FCFA</span>
+            </div>
+
+          </div>
+
+          <p class="text-[11px] italic text-slate-500 bg-brandBlue/5 p-4 rounded-xl leading-relaxed">
+            « Rejoignez-nous pour transformer l’éducation en Afrique. Votre investissement n’est pas seulement financier, il est social et durable. »
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SECTION 6: IMPACT SOCIAL & TEMOIGNAGES -->
+  <section id="impact" class="py-20 bg-slate-50 border-t border-slate-101">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 space-y-12">
+      
+      <div class="max-w-3xl mx-auto text-center space-y-4">
+        <span class="text-xs font-bold text-brandGreen uppercase tracking-widest block">Témoignages du Terrain</span>
+        <h2 class="text-3xl font-extrabold text-brandBlue tracking-tight leading-snug">
+          Qu'en pensent les acteurs de l'éducation ?
+        </h2>
+        <div class="w-12 h-1 bg-brandGreen mx-auto rounded-full"></div>
+        <p class="text-slate-600 text-sm">
+          Familiarisez-vous avec les retours fictifs et prévus d'implication des professeurs, directeurs et parents d'élèves.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Testimony 1 -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-150 relative shadow-xs flex flex-col justify-between hover-card">
+          <blockquote class="text-xs text-slate-600 italic leading-relaxed mb-6">
+            “C'est exactement le type d'outil qu'il nous faut au Togo. Parfois, j'apprends très tard que mon fils n'était pas en classe. Cette réactivité renforcera la confiance.”
+          </blockquote>
+          <div class="flex items-center gap-3 border-t border-slate-100 pt-4">
+            <img class="w-9 h-9 rounded-full object-cover" src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=100&h=100" alt="Mme SESSOU">
+            <div>
+              <span class="block font-bold text-xs text-slate-800">Mme. SESSOU Amandine</span>
+              <span class="text-[10px] text-slate-400 font-semibold block mt-0.5">Parent d'élève — Lomé</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Testimony 2 -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-150 relative shadow-xs flex flex-col justify-between hover-card">
+          <blockquote class="text-xs text-slate-600 italic leading-relaxed mb-6">
+            “Saisir les présences et les notes pour les transmettre instantanément évitera les fraudes de bulletins. L'impact sur le taux de réussite sera significatif !”
+          </blockquote>
+          <div class="flex items-center gap-3 border-t border-slate-100 pt-4">
+            <img class="w-9 h-9 rounded-full object-cover" src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=100&h=100" alt="M. AGBAVOR">
+            <div>
+              <span class="block font-bold text-xs text-slate-800">M. AGBAVOR Blaise</span>
+              <span class="text-[10px] text-slate-400 font-semibold block mt-0.5">Enseignant de mathématiques — Kpalimé</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Testimony 3 -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-150 relative shadow-xs flex flex-col justify-between hover-card">
+          <blockquote class="text-xs text-slate-600 italic leading-relaxed mb-6">
+            “La transparence administrative est notre plus grand défi. Des parents impliqués engendrent des élèves appliqués. Ce projet mérite tout notre soutien.”
+          </blockquote>
+          <div class="flex items-center gap-3 border-t border-slate-100 pt-4">
+            <img class="w-9 h-9 rounded-full object-cover" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100&h=100" alt="M. KOUDENOU">
+            <div>
+              <span class="block font-bold text-xs text-slate-800">M. KOUDENOU Paul</span>
+              <span class="text-[10px] text-slate-400 font-semibold block mt-0.5">Directeur d'établissement — Aného</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SECTION 7: CONTACT & TRANSPARENCE -->
+  <section id="contact" class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        
+        <!-- Coordinates info panel -->
+        <div class="lg:col-span-5 space-y-6">
+          <div>
+            <span class="text-xs font-bold text-brandBlue uppercase tracking-widest block mb-1">Cahier des charges</span>
+            <h2 class="text-3xl font-extrabold text-brandBlue tracking-tight leading-snug">
+              Directeur de projet &amp; Transparence
+            </h2>
+          </div>
+
+          <p class="text-slate-600 text-sm leading-relaxed">
+            Vous souhaitez organiser un pilote dans votre établissement, investir une enveloppe majeure ou simplement poser vos questions d'impact social ? Contactez l'équipe du projet en direct.
+          </p>
+
+          <div class="bg-slate-50 border border-slate-200 p-6 rounded-2xl space-y-4">
+            <h4 class="font-bold text-brandBlue text-sm"> AYISSOU Koffi Elom</h4>
+            
+            <div class="space-y-3.5 text-xs">
+              <div class="flex items-center gap-3 bg-white p-3 border border-slate-100 rounded-xl">
+                <i class="fa-solid fa-phone text-brandGreen"></i>
+                <span class="font-medium text-slate-700">Tél : <strong>91 55 12 95</strong></span>
+              </div>
+
+              <div class="flex items-center gap-3 bg-white p-3 border border-slate-100 rounded-xl">
+                <i class="fa-solid fa-envelope text-brandGreen"></i>
+                <span class="font-medium text-slate-700">E-mail : <strong>contact@ayissou-scolaire.tg</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-brandBlue p-4 rounded-xl border border-brandBlue text-white text-xs">
+            <span class="text-[11px] text-brandGreen font-bold uppercase block mb-1">Notre engagement</span>
+            <p>“Chaque contribution sera utilisée exclusivement pour le développement et le déploiement de l’application.”</p>
+          </div>
+        </div>
+
+        <!-- Dynamic form submissions panel -->
+        <div class="lg:col-span-7 bg-slate-50 border border-slate-200 p-6 sm:p-8 rounded-3xl space-y-4">
+          <h3 class="font-bold text-brandBlue text-lg">Poser une question en direct</h3>
+          
+          <form id="contact-form" onsubmit="handleVanillaContact(event)" class="space-y-4">
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Votre Nom complet</label>
+                <input type="text" id="contact-name" required placeholder="Ex: M. Kougan" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-xs focus:outline-none focus:border-brandGreen">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Votre Email</label>
+                <input type="email" id="contact-email" required placeholder="Ex: email@example.com" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-xs focus:outline-none focus:border-brandGreen">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Votre message</label>
+              <textarea id="contact-msg" rows="4" required placeholder="Votre question ou proposition d'association..." class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-xs focus:outline-none focus:border-brandGreen"></textarea>
+            </div>
+
+            <button type="submit" class="w-full py-3 bg-brandBlue hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-all shadow-md">
+              Envoyer mon message à AYISSOU Koffi Elom
+            </button>
+          </form>
+
+          <div id="contact-form-feedback" class="hidden bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 p-4 rounded-xl text-xs font-medium text-center">
+            Message envoyé avec succès ! Koffi Elom vous recontactera sous 24h à 48h.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA FINAL BANNER -->
+  <section class="bg-slate-900 text-white text-center py-16 px-4">
+    <div class="max-w-3xl mx-auto space-y-6">
+      <i class="fa-solid fa-graduation-cap text-brandGreen text-4xl"></i>
+      <h2 class="text-2xl sm:text-3xl font-black tracking-tight">
+        “Rejoignez-nous pour transformer l’éducation en Afrique. Votre investissement n’est pas seulement financier, il est social et durable.”
+      </h2>
+      <div class="pt-2">
+        <a href="#simulateur" class="px-6 py-3.5 bg-brandGreen hover:bg-brandGreenHover text-white font-extrabold rounded-xl transition-all shadow-lg inline-block text-sm">
+          Je participe au projet
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- COLLATIVE SUB-FOOTER -->
+  <footer class="bg-brandBlue text-slate-400 text-xs py-8 border-t border-white/5 px-4 text-center">
+    <div class="max-w-7xl mx-auto space-y-3">
+      <p>Directeur de publication : <strong>AYISSOU Koffi Elom</strong> • Tél : <strong>91 55 12 95</strong></p>
+      <p class="text-slate-500">&copy; 2026 SchoolTrack — Tous droits de simulation commerciale réservés.</p>
+    </div>
+  </footer>
+
+  <!-- VANILLA INTERACTIVE SCRIPT -->
+  <script>
+    // Campaign Live State
+    let raisedAmount = 12450000;
+    const CAMPAGNE_GOAL = 21000000;
+    let backersCount = 142;
+
+    // Active tier donation selection value
+    let activeDonationValue = 15000; 
+    let selectedTierName = 'argent';
+    let billingGateway = 'wave';
+
+    // Format utility
+    function formatFCFA(val) {
+      return new Intl.NumberFormat('fr-FR').format(val) + ' FCFA';
+    }
+
+    // Interactive Schema Selector Logic
+    function selectFlow(entity) {
+      const parentCard = document.getElementById('flow-parents');
+      const appCard = document.getElementById('flow-app');
+      const schoolCard = document.getElementById('flow-school');
+
+      const titleNode = document.getElementById('flow-output-title');
+      const textNode = document.getElementById('flow-output-text');
+
+      // Reset
+      parentCard.classList.remove('step-active');
+      appCard.classList.remove('step-active');
+      schoolCard.classList.remove('step-active');
+
+      if (entity === 'parents') {
+        parentCard.classList.add('step-active');
+        titleNode.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-brandGreen block"></span> Interface Parents`;
+        textNode.innerText = "Grâce à l'application mobile et à la passerelle SMS SchoolTrack, les parents d'élèves reçoivent des alertes immédiates sur leur téléphone en cas d'absence. Ils ont également la possibilité de justifier l'absence de leur enfant directement via l'application, de consulter ses notes et devoirs en temps réel, ou encore d'effectuer des paiements sécurisés pour les frais scolaires.";
+      } else if (entity === 'app') {
+        appCard.classList.add('step-active');
+        titleNode.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-blue-500 block"></span> Application Centrale Cloud`;
+        textNode.innerText = "Le cloud d'application traite et chiffre les fiches de présences, de devoirs et d'examens validés par l'école. En cas d'incident critique, un algorithme distribue instantanément un flux de SMS aux opérateurs d'Afrique de l'Ouest pour garantir l'arrivée du message, même si les parents ont des données cellulaires coupées.";
+      } else if (entity === 'school') {
+        schoolCard.classList.add('step-active');
+        titleNode.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-slate-800 block"></span> Interface École &amp; Enseignants`;
+        textNode.innerText = "L'établissement et les instituteurs se connectent via un portail web simplifié adapté aux faibles débits. Les appels journaliers sont cochés en classe en moins de 30 secondes, et les notes d'examens ou notes d'avis d'évaluation sont saisies en toute transparence sans manipulation papier administrative complexe.";
+      }
+    }
+
+    // Chart.js render implementation
+    window.addEventListener('load', () => {
+      const ctx = document.getElementById('budgetChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Développement', 'Marketing', 'Infrastructures', 'Support'],
+          datasets: [{
+            data: [40, 25, 20, 15],
+            backgroundColor: ['#0f2d52', '#19a463', '#3b82f6', '#f59e0b'],
+            borderWidth: 0,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          cutout: '70%'
+        }
+      });
+    });
+
+    // Donation Tiers selection triggers
+    function selectWidgetTier(tier, amount) {
+      if (document.getElementById('custom-donation-toggle').checked) {
+        return; // disabled if customized checkbox is clicked
+      }
+      
+      const cards = ['bronze', 'argent', 'or', 'platine'];
+      cards.forEach(c => {
+        document.getElementById(`tier-card-${c}`).classList.remove('step-active');
+      });
+
+      document.getElementById(`tier-card-${tier}`).classList.add('step-active');
+      selectedTierName = tier;
+      activeDonationValue = amount;
+
+      document.getElementById('payment-summary-value').innerText = formatFCFA(amount);
+    }
+
+    // Custom donation checkbox togglers
+    function toggleCustomDonationInput(chk) {
+      const container = document.getElementById('custom-donation-input-container');
+      const inputEl = document.getElementById('custom-donation-value');
+      
+      if (chk.checked) {
+        container.classList.remove('hidden');
+        // disable preset highlights
+        const cards = ['bronze', 'argent', 'or', 'platine'];
+        cards.forEach(c => {
+          document.getElementById(`tier-card-${c}`).classList.add('opacity-40');
+        });
+        updateCustomAmountValue(inputEl.value);
+      } else {
+        container.classList.add('hidden');
+        const cards = ['bronze', 'argent', 'or', 'platine'];
+        cards.forEach(c => {
+          document.getElementById(`tier-card-${c}`).classList.remove('opacity-40');
+        });
+        selectWidgetTier('argent', 15000);
+      }
+    }
+
+    function updateCustomAmountValue(val) {
+      const intVal = parseInt(val, 10);
+      if (isNaN(intVal) || intVal <= 0) {
+        activeDonationValue = 0;
+      } else {
+        activeDonationValue = intVal;
+      }
+      document.getElementById('payment-summary-value').innerText = formatFCFA(activeDonationValue);
+    }
+
+    // Gateway highlights
+    function setBillingGateway(gateway) {
+      billingGateway = gateway;
+      const gateways = ['wave', 'mtn', 'orange'];
+      gateways.forEach(g => {
+        const btn = document.getElementById(`gateway-${g}`);
+        btn.classList.add('border-slate-800', 'bg-slate-950', 'text-slate-400');
+        btn.classList.remove('border-brandGreen', 'bg-brandGreen/10', 'text-brandGreen');
+      });
+
+      const selectedBtn = document.getElementById(`gateway-${gateway}`);
+      selectedBtn.classList.remove('border-slate-800', 'bg-slate-950', 'text-slate-400');
+      selectedBtn.classList.add('border-brandGreen', 'bg-brandGreen/10', 'text-brandGreen');
+    }
+
+    // Form flow navigation step switching
+    function goToCheckoutDetails() {
+      if (activeDonationValue <= 0) {
+        alert('Veuillez sélectionner ou saisir un montant pour participer.');
+        return;
+      }
+      document.getElementById('step-1-tiers').classList.add('hidden');
+      document.getElementById('step-2-form').classList.remove('hidden');
+    }
+
+    function backToStepTiers() {
+      document.getElementById('step-2-form').classList.add('hidden');
+      document.getElementById('step-3-success').classList.add('hidden');
+      document.getElementById('step-1-tiers').classList.remove('hidden');
+    }
+
+    // Success Simulation Trigger
+    function triggerSimulatedSuccess() {
+      const nameInput = document.getElementById('backer-name-input').value.trim();
+      const emailInput = document.getElementById('backer-email-input').value.trim();
+      const phoneInput = document.getElementById('backer-phone-input').value.trim();
+
+      if (!nameInput) {
+        alert('Veuillez renseigner votre nom complet.');
+        return;
+      }
+      if (!emailInput || !emailInput.includes('@')) {
+        alert('Veuillez renseigner un e-mail valide.');
+        return;
+      }
+      if (!phoneInput) {
+        alert('Veuillez renseigner votre numéro de mobile money.');
+        return;
+      }
+
+      // Add to overall counters in real time!
+      raisedAmount += activeDonationValue;
+      backersCount += 1;
+
+      // Update counters everywhere in top layout
+      document.getElementById('collected-amount').innerText = formatFCFA(raisedAmount);
+      document.getElementById('backers-count').innerText = backersCount;
+
+      const percentageFraction = (raisedAmount / CAMPAGNE_GOAL) * 100;
+      const computedPercentage = Math.min(100, Math.round(percentageFraction * 10) / 10);
+      document.getElementById('progress-percentage-text').innerText = `${computedPercentage}% financé`;
+      document.getElementById('progress-bar-fill').style.width = `${computedPercentage}%`;
+
+      // Update receipts summaries
+      document.getElementById('receipt-summary-name').innerText = nameInput;
+      document.getElementById('receipt-summary-amount').innerText = formatFCFA(activeDonationValue);
+
+      // Append new ledger list to sidebar
+      const ledger = document.getElementById('backers-dynam-ledger');
+      const newElem = document.createElement('div');
+      newElem.className = 'p-3.5 bg-brandGreen/10 border border-brandGreen/30 rounded-xl flex items-center justify-between animate-pulse';
+      newElem.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-brandGreen/20 text-brandGreen flex items-center justify-center text-xs">
+            <i class="fa-solid fa-user-check"></i>
+          </div>
+          <div>
+            <h5 class="font-bold text-xs text-slate-800">${nameInput}</h5>
+            <span class="text-[9px] text-slate-400 font-mono">À l'instant • Soutien actif</span>
+          </div>
+        </div>
+        <span class="font-mono text-xs font-extrabold text-brandGreen">+${formatFCFA(activeDonationValue)}</span>
+      `;
+      ledger.insertBefore(newElem, ledger.firstChild);
+
+      // Transition screen
+      document.getElementById('step-2-form').classList.add('hidden');
+      document.getElementById('step-3-success').classList.remove('hidden');
+    }
+
+    // Contact Form trigger
+    function handleVanillaContact(ev) {
+      ev.preventDefault();
+      document.getElementById('contact-form').classList.add('hidden');
+      document.getElementById('contact-form-feedback').classList.remove('hidden');
+    }
+  </script>
+
+</body>
+</html>

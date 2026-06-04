@@ -1,0 +1,84 @@
+{
+  "title": "Tableau Financier - Projet d'Investissement",
+  "description": "Détail des remboursements et ROI pour différents montants d'investissement",
+  "conditions": {
+    "remboursement_total": "Variable selon palier de montant investi",
+    "profit_percent": null,
+    "duree_ans": 5,
+    "nombre_trimestres": 15,
+    "trimestres_par_an": 3,
+    "frequence_paiement": "Fin de chaque trimestre scolaire"
+  },
+  "formules": {
+    "montant_total_rembourse": "Capital × 3",
+    "paiement_trimestre": "Montant Total Remboursé ÷ 15",
+    "paiement_annuel_moyen": "Paiement Trimestriel × 3",
+    "gain_net": "Montant Total Remboursé - Capital Investi",
+    "roi_percent": "(Gain Net ÷ Capital Investi) × 100"
+  },
+  "investments": [
+    {
+      "capital_investi": 200000,
+      "montant_total_rembourse": 600000,
+      "nombre_trimestres": 15,
+      "paiement_trimestre": 40000,
+      "paiement_annuel_moyen": 120000,
+      "gain_net": 400000,
+      "roi_percent": 200
+    },
+    {
+      "capital_investi": 250000,
+      "montant_total_rembourse": 750000,
+      "nombre_trimestres": 15,
+      "paiement_trimestre": 50000,
+      "paiement_annuel_moyen": 150000,
+      "gain_net": 500000,
+      "roi_percent": 200
+    },
+    {
+      "capital_investi": 500000,
+      "montant_total_rembourse": 1500000,
+      "nombre_trimestres": 15,
+      "paiement_trimestre": 100000,
+      "paiement_annuel_moyen": 300000,
+      "gain_net": 1000000,
+      "roi_percent": 200
+    },
+    {
+      "capital_investi": 1000000,
+      "montant_total_rembourse": 3000000,
+      "nombre_trimestres": 15,
+      "paiement_trimestre": 200000,
+      "paiement_annuel_moyen": 600000,
+      "gain_net": 2000000,
+      "roi_percent": 200
+    },
+    {
+      "capital_investi": 2500000,
+      "montant_total_rembourse": 8750000,
+      "nombre_trimestres": 15,
+      "paiement_trimestre": 583333,
+      "paiement_annuel_moyen": 1750000,
+      "gain_net": 6250000,
+      "roi_percent": 250
+    },
+    {
+      "capital_investi": 5000000,
+      "montant_total_rembourse": 20000000,
+      "nombre_trimestres": 15,
+      "paiement_trimestre": 1333333,
+      "paiement_annuel_moyen": 4000000,
+      "gain_net": 15000000,
+      "roi_percent": 300
+    },
+    {
+      "capital_investi": 10000000,
+      "montant_total_rembourse": 50000000,
+      "nombre_trimestres": 15,
+      "paiement_trimestre": 3333333,
+      "paiement_annuel_moyen": 10000000,
+      "gain_net": 40000000,
+      "roi_percent": 400
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-brand-blue: #0f2d52;
+  --color-brand-green: #19a463;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Make interactive elements show the pointer cursor by default */
+button,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+label[for],
+a[href],
+summary {
+  cursor: pointer;
+}
+
+/* Ensure non-interactive elements don't inherit pointer unintentionally */
+button[disabled],
+input[disabled] {
+  cursor: not-allowed;
+}

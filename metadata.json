@@ -1,0 +1,6 @@
+{
+  "name": "Suivi Scolaire - Financement",
+  "description": "Campagne de financement participatif pour l'application de suivi scolaire en temps réel par AYISSOU Koffi Elom.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
