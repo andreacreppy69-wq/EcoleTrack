@@ -115,6 +115,11 @@ const saveDb = () => {
 };
 
 const runWrite = (sql: string, params: any[] = []) => {
+  const placeholderCount = (sql.match(/\?/g) || []).length;
+  if (params.length !== placeholderCount) {
+    throw new Error(`SQL parameter mismatch: expected ${placeholderCount} values, got ${params.length}. SQL=${sql}`);
+  }
+
   const stmt = db.prepare(sql);
   stmt.run(params);
   stmt.free();
@@ -182,7 +187,7 @@ saveDb();
 
 const existingTier = queryOne('SELECT id FROM tier_progress WHERE id = 1');
 if (!existingTier) {
-  runWrite('INSERT INTO tier_progress (id, p1, p2, p3, p4) VALUES (1, ?, ?, ?, ?)', [1, 15, 0, 0, 0]);
+  runWrite('INSERT INTO tier_progress (id, p1, p2, p3, p4) VALUES (1, ?, ?, ?, ?)', [15, 0, 0, 0]);
 }
 
 const legacyJsonPath = path.resolve(process.cwd(), 'database.json');
@@ -520,9 +525,10 @@ app.post('/api/users/create', async (req, res) => {
   const hashedPassword = bcrypt.hashSync(resolvedPassword, 10);
   const mustChange = mustChangePassword === false ? false : true;
 
-  db.prepare(`INSERT INTO users (firstName, lastName, name, email, dob, profession, gender, photoUrl, password, createdAt, mustChangePassword)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .run(
+  runWrite(
+    `INSERT INTO users (firstName, lastName, name, email, dob, profession, gender, photoUrl, password, createdAt, mustChangePassword)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
       resolvedFirstName,
       resolvedLastName,
       resolvedName,
@@ -534,7 +540,8 @@ app.post('/api/users/create', async (req, res) => {
       hashedPassword,
       createdAt,
       mustChange ? 1 : 0,
-    );
+    ],
+  );
 
   await logActivity(lowerEmail, 'Compte utilisateur créé par l’administrateur');
   return res.status(201).json({ success: true });
@@ -552,8 +559,7 @@ app.post('/api/users/change-password', async (req, res) => {
     return res.status(404).json({ error: 'Utilisateur introuvable.' });
   }
 
-  db.prepare('UPDATE users SET password = ?, mustChangePassword = 0 WHERE lower(email) = ?')
-    .run(bcrypt.hashSync(String(newPassword), 10), lowerEmail);
+  runWrite('UPDATE users SET password = ?, mustChangePassword = 0 WHERE lower(email) = ?', [bcrypt.hashSync(String(newPassword), 10), lowerEmail]);
 
   await logActivity(lowerEmail, 'Modification du mot de passe');
   return res.json({ success: true });
@@ -571,8 +577,7 @@ app.post('/api/users/reset-password', async (req, res) => {
     return res.status(404).json({ error: 'Utilisateur introuvable.' });
   }
 
-  db.prepare('UPDATE users SET password = ?, mustChangePassword = 1 WHERE lower(email) = ?')
-    .run(bcrypt.hashSync(String(newPassword), 10), lowerEmail);
+  runWrite('UPDATE users SET password = ?, mustChangePassword = 1 WHERE lower(email) = ?', [bcrypt.hashSync(String(newPassword), 10), lowerEmail]);
 
   await logActivity(lowerEmail, 'Mot de passe administrateur réinitialisé');
   return res.json({ success: true });
@@ -600,8 +605,9 @@ app.post('/api/users/update', async (req, res) => {
     return res.status(409).json({ error: 'Un compte existe déjà avec cette adresse email.' });
   }
 
-  db.prepare(`UPDATE users SET firstName = ?, lastName = ?, name = ?, email = ?, dob = ?, profession = ?, gender = ?, photoUrl = ? WHERE lower(email) = ?`)
-    .run(
+  runWrite(
+    `UPDATE users SET firstName = ?, lastName = ?, name = ?, email = ?, dob = ?, profession = ?, gender = ?, photoUrl = ? WHERE lower(email) = ?`,
+    [
       resolvedFirstName,
       resolvedLastName,
       resolvedName,
@@ -611,7 +617,8 @@ app.post('/api/users/update', async (req, res) => {
       resolvedGender,
       String(photoUrl || ''),
       lowerOldEmail,
-    );
+    ],
+  );
 
   await logActivity(lowerNewEmail, 'Profil utilisateur modifié');
   const updatedUser = getUserByEmail(lowerNewEmail);
