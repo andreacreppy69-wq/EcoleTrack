@@ -58,6 +58,8 @@ import {
   Sparkles,
   Eye,
   EyeOff,
+  Menu,
+  X,
 } from 'lucide-react';
 import classroomStudentsImage from './assets/images/classroom_students_1780310259872.png';
 
@@ -178,10 +180,12 @@ export default function App() {
     progress: true,
   });
   const [currentSection, setCurrentSection] = useState<SectionKey>('hero');
+  const [showMobileNav, setShowMobileNav] = useState<boolean>(false);
 
   const showSection = (sectionId: SectionKey) => {
     setVisibleSections((prev) => ({ ...prev, [sectionId]: true }));
     setCurrentSection(sectionId);
+    setShowMobileNav(false);
     setTimeout(() => {
       const element = document.getElementById(sectionId);
       if (element) {
@@ -1991,7 +1995,7 @@ export default function App() {
 
       {/* Modern Compact Navbar */}
       <header className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-100 z-40 transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 bg-brand-blue rounded-xl flex items-center justify-center text-white font-extrabold shadow-sm">
               <span className="text-xl text-brand-green">E</span>T
@@ -2012,7 +2016,16 @@ export default function App() {
             <button type="button" onClick={() => showSection('progress')} className={getNavButtonClasses('progress')}>État d'avancement</button>
           </nav>
 
-          <div className="flex items-center gap-3 relative">
+          <button
+            type="button"
+            onClick={() => setShowMobileNav((prev) => !prev)}
+            className="inline-flex items-center justify-center h-10 w-10 rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 lg:hidden"
+            aria-label="Ouvrir le menu mobile"
+          >
+            {showMobileNav ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+
+          <div className="flex flex-col sm:flex-row items-center gap-3 relative">
             {isRegistered && (
               <div className="relative" ref={profileMenuRef}>
                 <button
@@ -2073,6 +2086,34 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {showMobileNav && (
+        <div className="lg:hidden bg-white border-b border-slate-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 grid gap-2">
+            <button type="button" onClick={() => showSection('hero')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
+              Accueil
+            </button>
+            <button type="button" onClick={() => showSection('probleme')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
+              Le Problème
+            </button>
+            <button type="button" onClick={() => showSection('solution')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
+              Notre Solution
+            </button>
+            <button type="button" onClick={() => showSection('pourquoi')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
+              Pourquoi Investir ?
+            </button>
+            <button type="button" onClick={() => showSection('investment')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
+              Revenus sur investissement
+            </button>
+            <button type="button" onClick={() => showSection('budget')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
+              Financement
+            </button>
+            <button type="button" onClick={() => showSection('progress')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
+              État d'avancement
+            </button>
+          </div>
+        </div>
+      )}
 
       {paymentReturnMessage && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
