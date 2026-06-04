@@ -88,16 +88,25 @@ app.use((req, res, next) => {
 app.options('/api/*', cors());
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbFilename = process.env.DATABASE_FILE || 'database.sqlite';
-const dbPath = path.resolve(process.cwd(), dbFilename);
+const dbPath = process.env.DATABASE_FILE
+  ? path.resolve(process.cwd(), process.env.DATABASE_FILE)
+  : process.env.RENDER_DATA_DIR
+    ? path.resolve(process.env.RENDER_DATA_DIR, 'database.sqlite')
+    : path.resolve(process.cwd(), 'database.sqlite');
+
+fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 const sqlWasmPath = path.resolve(process.cwd(), 'node_modules/sql.js/dist/sql-wasm.wasm');
 
 if (!fs.existsSync(sqlWasmPath)) {
   console.error(`Fichier WASM introuvable: ${sqlWasmPath}`);
 }
 
-if (!process.env.DATABASE_FILE) {
-  console.warn('ATTENTION: database storage est en local. Les comptes utilisateurs risquent d\'être perdus lors d\'un redeploy. Définissez DATABASE_FILE sur un volume persistant.');
+if (!process.env.DATABASE_FILE && process.env.RENDER_DATA_DIR) {
+  console.log(`Utilisation du stockage persistant Render : ${dbPath}`);
+}
+
+if (!process.env.DATABASE_FILE && !process.env.RENDER_DATA_DIR) {
+  console.warn('ATTENTION: database storage est en local. Les comptes utilisateurs risquent d\'être perdus lors d\'un redeploy. Définissez DATABASE_FILE sur un volume persistant ou montez un volume Render.');
 }
 
 const SQL = await initSqlJs({
