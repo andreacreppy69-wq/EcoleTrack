@@ -21,10 +21,24 @@ export interface ActivityRecord {
   createdAt: string;
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? '';
+const getApiBase = () => {
+  const base = String(import.meta.env.VITE_API_BASE || '').trim();
+  if (base) {
+    return base;
+  }
+
+  // In production on Vercel, the frontend is deployed separately from the Render backend.
+  // Use the Render API URL when the Vite env variable is not configured.
+  if (import.meta.env.PROD && typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app')) {
+    return 'https://ecoletrack-5481.onrender.com';
+  }
+
+  return '';
+};
 
 const apiFetch = async <T>(path: string, options?: RequestInit): Promise<T> => {
-  const target = API_BASE.endsWith('/') ? `${API_BASE.slice(0, -1)}${path}` : `${API_BASE}${path}`;
+  const apiBase = getApiBase();
+  const target = apiBase.endsWith('/') ? `${apiBase.slice(0, -1)}${path}` : `${apiBase}${path}`;
   try {
     const response = await fetch(target, {
       credentials: 'include',

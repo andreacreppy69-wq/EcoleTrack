@@ -70,6 +70,20 @@ app.use(cors({
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
+// Request logger for debugging API calls (method, path, origin)
+app.use((req, res, next) => {
+  try {
+    const origin = req.headers.origin || '';
+    console.log(`[REQ] ${req.method} ${req.originalUrl} Origin=${origin}`);
+  } catch (e) {
+    // ignore logging errors
+  }
+  next();
+});
+
+// Ensure preflight OPTIONS requests to API routes are handled
+app.options('/api/*', cors());
+
 const dbPath = path.resolve(process.cwd(), 'database.json');
 const adapter = new JSONFile<DatabaseSchema>(dbPath);
 const db = new Low<DatabaseSchema>(adapter, { users: [], activity: [], messages: [], tierProgress: [15, 0, 0, 0] });
