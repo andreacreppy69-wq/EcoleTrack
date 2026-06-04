@@ -59,6 +59,7 @@ import {
   Eye,
   EyeOff,
 } from 'lucide-react';
+import classroomStudentsImage from './assets/images/classroom_students_1780310259872.png';
 
 const PALIER_DETAILS = [
   {
@@ -2447,7 +2448,7 @@ export default function App() {
                 {/* Photo render */}
                 <div className="relative rounded-2xl overflow-hidden shadow-xl border border-slate-100">
                   <img 
-                    src="/src/assets/images/classroom_students_1780310259872.png" 
+                    src={classroomStudentsImage}
                     alt="Photo d'élèves africains attentifs et joyeux en classe"
                     className="w-full h-[320px] md:h-[400px] object-cover hover:scale-101 transition-transform duration-300"
                     referrerPolicy="no-referrer"
