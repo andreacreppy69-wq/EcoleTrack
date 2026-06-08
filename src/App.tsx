@@ -1,4 +1,4 @@
-import { useState, FormEvent, ChangeEvent, useEffect, useRef } from 'react';
+﻿import { useState, FormEvent, ChangeEvent, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   INITIAL_RECENT_BACKERS, 
@@ -24,7 +24,7 @@ import {
   submitMessage,
   updateUserProfile,
   deleteUser,
-  initiatePayGateTransaction,
+  initiateFedaPayTransaction,
   logActivity,
 } from './api';
 
@@ -33,6 +33,8 @@ import InteractiveSchema from './components/InteractiveSchema';
 import BudgetChart from './components/BudgetChart';
 import SurveyResults from './components/SurveyResults';
 import { InvestmentTable } from './components/InvestmentTable';
+import ExtensionMarketplace from './components/ExtensionMarketplace';
+import FedaPayForm from './components/FedaPayForm';
 
 // Lucide icon assets
 import {
@@ -583,6 +585,10 @@ export default function App() {
     name: string;
     provider: string;
     config: string; // JSON or connection string
+    // optional full package archive (base64 encoded tarball) when imported from NPM or URL
+    packageBase64?: string;
+    packageFilename?: string;
+    packageSize?: number;
     active: boolean;
     createdAt: string;
   };
@@ -610,21 +616,22 @@ export default function App() {
   const [surveyEstablishmentReluctant, setSurveyEstablishmentReluctant] = useState<number>(25);
   const [surveySaveMessage, setSurveySaveMessage] = useState<string>('');
   const [surveySaveError, setSurveySaveError] = useState<string>('');
-  const [paymentAmount, setPaymentAmount] = useState<number>(5000);
-  const [paymentPhoneNumber, setPaymentPhoneNumber] = useState<string>('+228 91551295');
-  const [paymentNetwork, setPaymentNetwork] = useState<'FLOOZ' | 'TMONEY'>('TMONEY');
-  const [paymentCustomerName, setPaymentCustomerName] = useState<string>('Parent Test');
-  const [paymentCustomerEmail, setPaymentCustomerEmail] = useState<string>('parent@example.com');
-  const [paymentDescription, setPaymentDescription] = useState<string>('Frais de scolarité supplémentaires');
-  const [paymentOrderId, setPaymentOrderId] = useState<string>('ORDER-001');
-  const [paymentCallbackUrl, setPaymentCallbackUrl] = useState<string>('https://ecoletrack-5481.onrender.com/api/paygate/callback');
-  const [paymentReturnUrl, setPaymentReturnUrl] = useState<string>('https://ecolestrack.vercel.app/paiement/succes');
-  const [paymentProcessing, setPaymentProcessing] = useState<boolean>(false);
-  const [paymentResponse, setPaymentResponse] = useState<string>('');
-  const [paymentError, setPaymentError] = useState<string>('');
   const [paymentReturnMessage, setPaymentReturnMessage] = useState<string>('');
   const [paymentReturnDetails, setPaymentReturnDetails] = useState<string>('');
   const [adminInvestmentLinkMessage, setAdminInvestmentLinkMessage] = useState<string>('');
+  
+  // FedaPay payment states
+  const [fedaPayAmount, setFedaPayAmount] = useState<number>(5000);
+  const [fedaPayPhoneNumber, setFedaPayPhoneNumber] = useState<string>('+228 91551295');
+  const [fedaPayCustomerName, setFedaPayCustomerName] = useState<string>('Parent Test');
+  const [fedaPayCustomerEmail, setFedaPayCustomerEmail] = useState<string>('parent@example.com');
+  const [fedaPayDescription, setFedaPayDescription] = useState<string>('Paiement FedaPay');
+  const [fedaPayProcessing, setFedaPayProcessing] = useState<boolean>(false);
+  const [fedaPayResponse, setFedaPayResponse] = useState<string>('');
+  const [fedaPayError, setFedaPayError] = useState<string>('');
+  const [fedaPayRedirectUrl, setFedaPayRedirectUrl] = useState<string>('');
+  const [fedaPaySuccess, setFedaPaySuccess] = useState<string>('');
+
   const [passwordChangeEmail, setPasswordChangeEmail] = useState<string>('');
   const [passwordChangeNew, setPasswordChangeNew] = useState<string>('');
 
@@ -970,121 +977,145 @@ export default function App() {
     setTimeout(() => setSurveySaveMessage(''), 4000);
   };
 
-  const handleAdminPaymentSubmit = async () => {
-    setPaymentError('');
-    setPaymentResponse('');
-
-    if (!paymentAmount || paymentAmount <= 0) {
-      setPaymentError('Montant de paiement invalide.');
-      return;
-    }
-    
-    const errors: string[] = [];
-    if (!paymentPhoneNumber || paymentPhoneNumber.trim() === '') errors.push('Téléphone');
-    if (!paymentNetwork || paymentNetwork.trim() === '') errors.push('Réseau');
-    if (!paymentDescription || paymentDescription.trim() === '') errors.push('Description');
-    if (!paymentOrderId || paymentOrderId.trim() === '') errors.push('ID de commande');
-    
-    if (errors.length > 0) {
-      setPaymentError(`Les champs suivants sont obligatoires: ${errors.join(', ')}`);
-      return;
-    }
-
-    setPaymentProcessing(true);
-    try {
-      const result = await initiatePayGateTransaction({
-        amount: Math.round(paymentAmount),
-        phoneNumber: paymentPhoneNumber.trim(),
-        network: paymentNetwork,
-        description: paymentDescription.trim(),
-        identifier: paymentOrderId.trim(),
-        customerName: paymentCustomerName,
-        customerEmail: paymentCustomerEmail,
-      });
-
-      if (result && typeof result === 'object') {
-        setPaymentResponse(JSON.stringify(result, null, 2));
-      } else {
-        setPaymentResponse('Transaction initiée.');
-      }
-    } catch (error: any) {
-      setPaymentError(error?.message || 'Erreur lors de l’initiation du paiement.');
-    } finally {
-      setPaymentProcessing(false);
-    }
-  };
-
   const handleParticipateClick = async () => {
-    setPaymentError('');
-    setPaymentResponse('');
-    setPaymentReturnMessage('');
-    setPaymentReturnDetails('');
-    setPaymentProcessing(true);
+    setFedaPayError('');
+    setFedaPayResponse('');
+    setFedaPayRedirectUrl('');
+    setFedaPaySuccess('');
+    setFedaPayProcessing(true);
 
     try {
-      const callbackUrl = `${window.location.origin}/api/pay/callback`;
-      const returnUrl = `${window.location.origin}/payment-result`;
-
-      const result = await initiatePayGateTransaction({
+      const result = await initiateFedaPayTransaction({
         amount: 5000,
-        phoneNumber: '221000000000',
-        network: 'TMONEY',
+        phoneNumber: '+228 91551295',
+        currency: 'XOF',
         description: 'Participation au projet Ecole Track Afrique',
-        identifier: `PARTICIPATION-${Date.now()}`,
         customerName: 'Contribution Ecole Track',
         customerEmail: 'participation@ecoletrack.africa',
+        callbackUrl: `${window.location.origin}/api/fedapay/webhook`,
+        returnUrl: 'https://ecolestrack.vercel.app/paiement/succes',
+        failureUrl: 'https://ecolestrack.vercel.app/paiement/echec',
       });
 
-      const redirectUrl = (result as any).redirect_url || result.redirectUrl || result.redirectUrl;
-      if (redirectUrl) {
-        window.location.assign(redirectUrl);
+      if (result.success || result.transaction) {
+        const redirectUrl = result.link || result.redirectUrl || result.redirect_url;
+        if (redirectUrl) {
+          setFedaPaySuccess(`Transaction FedaPay initiée! ID: ${result.transaction?.id || 'N/A'}`);
+          setFedaPayRedirectUrl(redirectUrl);
+          setTimeout(() => window.location.assign(redirectUrl), 2000);
+          return;
+        }
+      }
+
+      if (result.error) {
+        setFedaPayError(result.error);
         return;
       }
 
-      setPaymentResponse(JSON.stringify(result, null, 2));
+      setFedaPayResponse(JSON.stringify(result, null, 2));
     } catch (error: any) {
-      setPaymentError(error?.message || 'Erreur lors de l’initiation du paiement.');
+      setFedaPayError(error?.message || 'Erreur lors de l’initiation du paiement FedaPay.');
     } finally {
-      setPaymentProcessing(false);
+      setFedaPayProcessing(false);
     }
   };
 
   const handleDonateClick = async () => {
-    setPaymentError('');
-    setPaymentResponse('');
-    setPaymentReturnMessage('');
-    setPaymentReturnDetails('');
-    setPaymentProcessing(true);
+    setFedaPayError('');
+    setFedaPayResponse('');
+    setFedaPayRedirectUrl('');
+    setFedaPaySuccess('');
+    setFedaPayProcessing(true);
 
     try {
-      const result = await initiatePayGateTransaction({
+      const result = await initiateFedaPayTransaction({
         amount: 1000,
         phoneNumber: '+228 91551295',
-        network: 'TMONEY',
+        currency: 'XOF',
         description: 'Don volontaire pour le projet Ecole Track Afrique',
-        identifier: `DON-${Date.now()}`,
         customerName: 'Don pour Ecole Track',
         customerEmail: 'donateur@ecoletrack.africa',
+        callbackUrl: `${window.location.origin}/api/fedapay/webhook`,
+        returnUrl: 'https://ecolestrack.vercel.app/paiement/succes',
+        failureUrl: 'https://ecolestrack.vercel.app/paiement/echec',
       });
 
-      // Check for redirect URL from PayGate
-      const redirectUrl = (result as any).redirect_url || (result as any).redirectUrl;
-      if (redirectUrl) {
-        window.location.assign(redirectUrl);
+      if (result.success || result.transaction) {
+        const redirectUrl = result.link || result.redirectUrl || result.redirect_url;
+        if (redirectUrl) {
+          setFedaPaySuccess(`Transaction FedaPay initiée! ID: ${result.transaction?.id || 'N/A'}`);
+          setFedaPayRedirectUrl(redirectUrl);
+          setTimeout(() => window.location.assign(redirectUrl), 2000);
+          return;
+        }
+      }
+
+      if (result.error) {
+        setFedaPayError(result.error);
         return;
       }
 
-      // If error_code present, show error message
-      if ((result as any).error_code || (result as any).error_message) {
-        setPaymentError(`PayGate: ${(result as any).error_message || 'Erreur PayGate'}`);
-        return;
-      }
-
-      setPaymentResponse(JSON.stringify(result, null, 2));
+      setFedaPayResponse(JSON.stringify(result, null, 2));
     } catch (error: any) {
-      setPaymentError(error?.message || 'Erreur lors de l’initiation du don.');
+      setFedaPayError(error?.message || 'Erreur lors de l’initiation du don FedaPay.');
     } finally {
-      setPaymentProcessing(false);
+      setFedaPayProcessing(false);
+    }
+  };
+
+  const handleFedaPayInitiation = async (payloadData: {
+    amount: number;
+    phoneNumber: string;
+    currency?: string;
+    description: string;
+    customerName?: string;
+    customerEmail?: string;
+  }) => {
+    setFedaPayError('');
+    setFedaPayResponse('');
+    setFedaPaySuccess('');
+    setFedaPayRedirectUrl('');
+    setFedaPayProcessing(true);
+
+    try {
+      const result = await initiateFedaPayTransaction({
+        amount: payloadData.amount,
+        phoneNumber: payloadData.phoneNumber,
+        currency: payloadData.currency || 'XOF',
+        description: payloadData.description,
+        customerName: payloadData.customerName,
+        customerEmail: payloadData.customerEmail,
+        callbackUrl: 'https://ecoletrack-5481.onrender.com/api/fedapay/webhook',
+        returnUrl: 'https://ecolestrack.vercel.app/paiement/succes',
+        failureUrl: 'https://ecolestrack.vercel.app/paiement/echec',
+      });
+
+      // Check for success
+      if (result.success || result.transaction) {
+        setFedaPaySuccess(`Transaction initiée avec succès! ID: ${result.transaction?.id}`);
+        
+        const redirectUrl = result.link || result.redirectUrl || result.redirect_url;
+        if (redirectUrl) {
+          setFedaPayRedirectUrl(redirectUrl);
+          // Redirect après 2 secondes
+          setTimeout(() => {
+            window.location.assign(redirectUrl);
+          }, 2000);
+          return;
+        }
+      }
+
+      // Si erreur
+      if (result.error) {
+        setFedaPayError(result.error);
+        return;
+      }
+
+      setFedaPayResponse(JSON.stringify(result, null, 2));
+    } catch (error: any) {
+      setFedaPayError(error?.message || 'Erreur lors de l\'initiation du paiement FedaPay.');
+    } finally {
+      setFedaPayProcessing(false);
     }
   };
 
@@ -1219,7 +1250,7 @@ export default function App() {
     if (typeof window === 'undefined') return;
 
     const path = window.location.pathname;
-    if (path !== '/payment-result' && path !== '/paiement/succes') return;
+    if (path !== '/paiement/succes' && path !== '/payment-result') return;
 
     const params = new URLSearchParams(window.location.search);
     const entries = Array.from(params.entries());
@@ -2237,107 +2268,25 @@ export default function App() {
               {showPaymentSection && (
                 <div ref={paymentSectionRef} className="rounded-3xl border border-slate-700 bg-slate-950 p-6 mb-6">
                   <h2 className="text-lg font-semibold text-white mb-4">Initier une transaction de paiement</h2>
-                  <p className="text-sm text-slate-400 mb-5">Lancez un paiement via PayGateGlobal depuis l’espace administrateur.</p>
+                  <p className="text-sm text-slate-400 mb-5">Choisissez une passerelle de paiement et lancez une transaction.</p>
 
-                  <div className="grid gap-4 sm:grid-cols-2">
                   <div className="rounded-2xl border border-slate-700 bg-slate-950 p-4">
-                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2">Montant</label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={paymentAmount}
-                      onChange={(e) => setPaymentAmount(Number(e.target.value))}
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-sm text-white outline-none focus:border-brand-green"
+                    <p className="text-sm text-slate-400 mb-4">La passerelle PayGate a été remplacée par FedaPay pour tous les paiements.</p>
+                    <FedaPayForm
+                      isLoading={fedaPayProcessing}
+                      successMessage={fedaPaySuccess}
+                      errorMessage={fedaPayError}
+                      onPaymentInitiated={handleFedaPayInitiation}
+                      onError={setFedaPayError}
                     />
                   </div>
-                  <div className="rounded-2xl border border-slate-700 bg-slate-950 p-4">
-                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2">Téléphone du client</label>
-                    <input
-                      type="tel"
-                      value={paymentPhoneNumber}
-                      onChange={(e) => setPaymentPhoneNumber(e.target.value)}
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-sm text-white outline-none focus:border-brand-green"
-                    />
-                  </div>
-                  <div className="rounded-2xl border border-slate-700 bg-slate-950 p-4">
-                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2">Réseau</label>
-                    <select
-                      value={paymentNetwork}
-                      onChange={(e) => setPaymentNetwork(e.target.value as 'FLOOZ' | 'TMONEY')}
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-sm text-white outline-none focus:border-brand-green"
-                    >
-                      <option value="TMONEY">TMONEY</option>
-                      <option value="FLOOZ">FLOOZ</option>
-                    </select>
-                  </div>
-                  <div className="rounded-2xl border border-slate-700 bg-slate-950 p-4 sm:col-span-2">
-                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2">Nom du client</label>
-                    <input
-                      type="text"
-                      value={paymentCustomerName}
-                      onChange={(e) => setPaymentCustomerName(e.target.value)}
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-sm text-white outline-none focus:border-brand-green"
-                    />
-                  </div>
-                  <div className="rounded-2xl border border-slate-700 bg-slate-950 p-4 sm:col-span-2">
-                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2">Email du client</label>
-                    <input
-                      type="email"
-                      value={paymentCustomerEmail}
-                      onChange={(e) => setPaymentCustomerEmail(e.target.value)}
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-sm text-white outline-none focus:border-brand-green"
-                    />
-                  </div>
-                  <div className="rounded-2xl border border-slate-700 bg-slate-950 p-4 sm:col-span-2">
-                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2">Description</label>
-                    <input
-                      type="text"
-                      value={paymentDescription}
-                      onChange={(e) => setPaymentDescription(e.target.value)}
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-sm text-white outline-none focus:border-brand-green"
-                    />
-                  </div>
-                  <div className="rounded-2xl border border-slate-700 bg-slate-950 p-4 sm:col-span-2">
-                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2">ID de commande</label>
-                    <input
-                      type="text"
-                      value={paymentOrderId}
-                      onChange={(e) => setPaymentOrderId(e.target.value)}
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-sm text-white outline-none focus:border-brand-green"
-                    />
-                  </div>
-                  <div className="rounded-2xl border border-slate-700 bg-slate-950 p-4 sm:col-span-2">
-                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2">URL de callback</label>
-                    <input
-                      type="url"
-                      value={paymentCallbackUrl}
-                      onChange={(e) => setPaymentCallbackUrl(e.target.value)}
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-sm text-white outline-none focus:border-brand-green"
-                    />
-                  </div>
-                  <div className="rounded-2xl border border-slate-700 bg-slate-950 p-4 sm:col-span-2">
-                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2">URL de retour</label>
-                    <input
-                      type="url"
-                      value={paymentReturnUrl}
-                      onChange={(e) => setPaymentReturnUrl(e.target.value)}
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-sm text-white outline-none focus:border-brand-green"
-                    />
-                  </div>
-                </div>
 
-                <div className="mt-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                  <button
-                    type="button"
-                    onClick={handleAdminPaymentSubmit}
-                    disabled={paymentProcessing}
-                    className="rounded-2xl bg-brand-blue px-4 py-3 text-sm font-bold text-white hover:bg-brand-blue/90 transition-all disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {paymentProcessing ? 'En cours...' : 'Initier le paiement'}
-                  </button>
-                  {paymentResponse && <span className="text-sm text-emerald-300 break-words">{paymentResponse}</span>}
-                  {paymentError && <span className="text-sm text-red-300 break-words">{paymentError}</span>}
-                </div>
+                  {fedaPayRedirectUrl && (
+                    <div className="mt-4 p-4 rounded-lg bg-green-500/10 border border-green-500/30">
+                      <p className="text-sm text-green-200">Redirection vers FedaPay en cours...</p>
+                      <p className="text-xs text-green-400 mt-2 break-all">{fedaPayRedirectUrl}</p>
+                    </div>
+                  )}
               </div>
             )}
 
@@ -2788,106 +2737,104 @@ export default function App() {
                 </div>
               )}
 
-              {importModalOpen && (
-                <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
-                  <div className="absolute inset-0 bg-black/50" onClick={() => setImportModalOpen(false)} />
-                  <div className="relative max-w-2xl w-full rounded-2xl bg-slate-900 border border-slate-700 p-6 text-white z-70">
-                    <h3 className="text-lg font-semibold">Importer une extension depuis Internet</h3>
-                    <p className="text-sm text-slate-400 mt-2">Tapez un nom de paquet NPM ou une URL directe vers un fichier JSON d'extension.</p>
-
-                    <div className="mt-4 grid gap-3">
-                      <div className="flex gap-2">
-                        <input value={importQuery} onChange={(e) => setImportQuery(e.target.value)} placeholder="Rechercher NPM (ex: stripe) ou coller une URL" className="flex-1 rounded-2xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white outline-none" />
-                        <button type="button" onClick={async () => {
-                          setImportError('');
-                          const q = (importQuery || '').trim();
-                          if (!q) { setImportError('Entrez une requête ou URL.'); return; }
-                          // If looks like URL, try direct fetch
-                          try {
-                            const isUrl = /^https?:\/\//i.test(q);
-                            if (isUrl) {
-                              // fetch URL and try import as JSON
-                              const res = await fetch(q);
-                              if (!res.ok) throw new Error(`Échec du téléchargement: ${res.status}`);
-                              const txt = await res.text();
-                              try {
-                                const json = JSON.parse(txt);
-                                // emulate file import handler
-                                await handleImportExtensionsFile(new File([txt], 'import.json', { type: 'application/json' }));
-                                setImportModalOpen(false);
-                                return;
-                              } catch (err) {
-                                throw new Error('Le contenu récupéré n\'est pas un JSON valide.');
-                              }
-                            } else {
-                              // treat as NPM search
-                              setSearching(true);
-                              setSearchResults([]);
-                              const resp = await fetch(`https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(q)}&size=12`);
-                              if (!resp.ok) throw new Error('Recherche NPM échouée');
-                              const data = await resp.json();
-                              const objs = Array.isArray(data.objects) ? data.objects.map((o: any) => ({ name: o.package.name, version: o.package.version, description: o.package.description, links: o.package.links })) : [];
-                              setSearchResults(objs);
-                            }
-                          } catch (err: any) {
-                            setImportError(err?.message || 'Erreur lors de l\'import.');
-                          } finally {
-                            setSearching(false);
+              <ExtensionMarketplace
+                isOpen={importModalOpen}
+                onClose={() => setImportModalOpen(false)}
+                searchQuery={importQuery}
+                onSearchQueryChange={setImportQuery}
+                searchResults={searchResults}
+                isSearching={searching}
+                searchError={importError}
+                onSearch={async () => {
+                  setImportError('');
+                  const q = (importQuery || '').trim();
+                  if (!q) { setImportError('Entrez une requête ou URL.'); return; }
+                  try {
+                    const isUrl = /^https?:\/\//i.test(q);
+                    if (isUrl) {
+                      const res = await fetch(q);
+                      if (!res.ok) throw new Error(`Échec du téléchargement: ${res.status}`);
+                      const txt = await res.text();
+                      try {
+                        const json = JSON.parse(txt);
+                        await handleImportExtensionsFile(new File([txt], 'import.json', { type: 'application/json' }));
+                        setImportModalOpen(false);
+                        return;
+                      } catch (err) {
+                        throw new Error('Le contenu récupéré n\'est pas un JSON valide.');
+                      }
+                    } else {
+                      setSearching(true);
+                      setSearchResults([]);
+                      const resp = await fetch(`https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(q)}&size=20`);
+                      if (!resp.ok) throw new Error('Recherche NPM échouée');
+                      const data = await resp.json();
+                      const objs = Array.isArray(data.objects) ? data.objects.map((o: any) => ({ 
+                        name: o.package.name, 
+                        version: o.package.version, 
+                        description: o.package.description, 
+                        links: o.package.links,
+                        downloads: o.package.downloads,
+                        rating: o.package.rating
+                      })) : [];
+                      setSearchResults(objs);
+                    }
+                  } catch (err: any) {
+                    setImportError(err?.message || 'Erreur lors de la recherche.');
+                  } finally {
+                    setSearching(false);
+                  }
+                }}
+                onSelectExtension={async (extension) => {
+                  try {
+                    setImportError('');
+                    const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(extension.name)}/latest`);
+                    if (!res.ok) throw new Error('Impossible de récupérer le paquet');
+                    const pkg = await res.json();
+                    let packageBase64: string | undefined = undefined;
+                    let packageFilename: string | undefined = undefined;
+                    let packageSize: number | undefined = undefined;
+                    try {
+                      const tarballUrl = pkg?.dist?.tarball;
+                      if (tarballUrl) {
+                        const tb = await fetch(tarballUrl);
+                        if (tb.ok) {
+                          const ab = await tb.arrayBuffer();
+                          const bytes = new Uint8Array(ab);
+                          let binary = '';
+                          const chunkSize = 0x8000;
+                          for (let i = 0; i < bytes.length; i += chunkSize) {
+                            const chunk = bytes.subarray(i, i + chunkSize);
+                            binary += String.fromCharCode.apply(null, Array.from(chunk) as any);
                           }
-                        }} className="rounded-2xl bg-brand-green px-4 py-2 text-sm font-bold text-slate-900">Rechercher / Télécharger</button>
-                      </div>
+                          packageBase64 = btoa(binary);
+                          packageFilename = `${pkg.name || extension.name}-${pkg.version || 'latest'}.tgz`;
+                          packageSize = bytes.length;
+                        }
+                      }
+                    } catch (e) {
+                      console.warn('Téléchargement du tarball échoué', e);
+                    }
 
-                      {importError && <div className="text-sm text-red-300">{importError}</div>}
-
-                      {searching && <div className="text-sm text-slate-300">Recherche en cours…</div>}
-
-                      {searchResults.length > 0 && (
-                        <div className="mt-2">
-                          <h4 className="text-sm text-slate-200 font-semibold mb-2">Résultats NPM</h4>
-                          <div className="space-y-2 max-h-56 overflow-auto">
-                            {searchResults.map((r) => (
-                              <div key={r.name} className="flex items-center justify-between bg-slate-800 p-3 rounded-xl">
-                                <div>
-                                  <div className="text-sm font-semibold">{r.name} <span className="text-xs text-slate-400">{r.version}</span></div>
-                                  <div className="text-xs text-slate-400">{r.description}</div>
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                  <button type="button" onClick={async () => {
-                                    try {
-                                      setImportError('');
-                                      const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(r.name)}/latest`);
-                                      if (!res.ok) throw new Error('Impossible de récupérer le paquet');
-                                      const pkg = await res.json();
-                                      const newExt: PaymentExtension = {
-                                        id: `${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
-                                        name: pkg.name || r.name,
-                                        provider: 'npm',
-                                        config: JSON.stringify({ version: pkg.version, repository: pkg.repository || pkg.homepage || pkg.links }, null, 2),
-                                        active: true,
-                                        createdAt: new Date().toLocaleString('fr-FR'),
-                                      };
-                                      savePaymentExtensions([newExt, ...paymentExtensions]);
-                                      try { await logActivity(localStorage.getItem('siteCurrentUserEmail') || 'admin', `Extension importée depuis NPM: ${newExt.name}`); } catch {}
-                                      setImportModalOpen(false);
-                                    } catch (err: any) {
-                                      setImportError(err?.message || 'Import NPM échoué');
-                                    }
-                                  }} className="rounded-xl bg-brand-green px-3 py-2 text-xs font-semibold text-slate-900">Importer</button>
-                                  <a href={r.links?.npm || `https://www.npmjs.com/package/${r.name}`} target="_blank" rel="noreferrer" className="text-xs text-slate-400 underline">Voir</a>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mt-6 flex justify-end">
-                      <button type="button" onClick={() => setImportModalOpen(false)} className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-200">Fermer</button>
-                    </div>
-                  </div>
-                </div>
-              )}
+                    const newExt: PaymentExtension = {
+                      id: `${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+                      name: pkg.name || extension.name,
+                      provider: 'npm',
+                      config: JSON.stringify({ packageJson: pkg, repository: pkg.repository || pkg.homepage || pkg.links }, null, 2),
+                      packageBase64,
+                      packageFilename,
+                      packageSize,
+                      active: true,
+                      createdAt: new Date().toLocaleString('fr-FR'),
+                    };
+                    savePaymentExtensions([newExt, ...paymentExtensions]);
+                    try { await logActivity(localStorage.getItem('siteCurrentUserEmail') || 'admin', `Extension importée depuis NPM: ${newExt.name}`); } catch {}
+                    setImportModalOpen(false);
+                  } catch (err: any) {
+                    setImportError(err?.message || 'Import NPM échoué');
+                  }
+                }}
+              />
 
               <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 mb-6">
                 <h2 className="text-lg font-semibold text-white mb-4">Messages sécurisés reçus</h2>
@@ -4164,4 +4111,5 @@ export default function App() {
     </div>
   );
 }
+
 

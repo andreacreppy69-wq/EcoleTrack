@@ -178,32 +178,40 @@ export const deleteUser = async (email: string): Promise<void> => {
   });
 };
 
-export interface PayGateTransactionPayload {
+// FedaPay Payment Gateway Integration
+export interface FedaPayTransactionPayload {
   amount: number;
   phoneNumber: string;
-  network: 'FLOOZ' | 'TMONEY';
+  currency?: string; // Default: XOF
   description: string;
-  identifier: string;
   customerName?: string;
   customerEmail?: string;
   callbackUrl?: string;
   returnUrl?: string;
+  failureUrl?: string;
 }
 
-export interface PayGateTransactionResponse {
-  tx_reference?: string;
-  status?: number;
-  transactionId?: string;
+export interface FedaPayTransactionResponse {
+  success?: boolean;
+  transaction?: {
+    id: string;
+    reference: string;
+    amount: number;
+    currency: string;
+    status: string;
+  };
+  link?: string;
   redirectUrl?: string;
   redirect_url?: string;
   message?: string;
+  error?: string;
   [key: string]: unknown;
 }
 
-export const initiatePayGateTransaction = async (
-  payload: PayGateTransactionPayload,
-): Promise<PayGateTransactionResponse> => {
-  return apiFetch<PayGateTransactionResponse>('/api/pay', {
+export const initiateFedaPayTransaction = async (
+  payload: FedaPayTransactionPayload,
+): Promise<FedaPayTransactionResponse> => {
+  return apiFetch<FedaPayTransactionResponse>('/api/fedapay', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),

@@ -7,6 +7,7 @@ import initSqlJs from 'sql.js';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { fileURLToPath } from 'url';
+import { FedaPay, Transaction } from 'fedapay';
 
 dotenv.config();
 
@@ -312,7 +313,8 @@ const requireAdmin = (req: any, res: any, next: any) => {
     if ((user.role || 'user') !== 'admin') return res.status(403).json({ error: 'Accès refusé: privilèges administrateur requis.' });
     req.auth = s;
     next();
-  } catch (e) {
+  } catch (e: any) {
+    console.error('[AUTH] Erreur dans requireAdmin:', e?.message || e);
     return res.status(500).json({ error: 'Erreur d\'authentification.' });
   }
 };
@@ -544,117 +546,149 @@ app.post('/api/tier-progress', async (req, res) => {
   }
 });
 
-app.post('/api/pay', async (req, res) => {
-  const { amount, phoneNumber, network, description, identifier, customerName, customerEmail } = req.body;
-  if (!phoneNumber || !amount || !description || !identifier || !network) {
-    return res.status(400).json({ error: 'phoneNumber, amount, description, identifier et network sont requis.' });
-  }
+// PayGate has been removed. FedaPay is now the only payment gateway supported.
 
-  const normalizedNetwork = String(network).trim().toUpperCase();
-  const allowedNetworks = ['FLOOZ', 'TMONEY'];
-  if (!allowedNetworks.includes(normalizedNetwork)) {
-    return res.status(400).json({ error: `Network invalide. Choisissez ${allowedNetworks.join(' ou ')}.` });
-  }
-
-  const apiKey = process.env.PAYGATE_GLOBAL_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Clé API PayGateGlobal non configurée.' });
-  }
-
+// FedaPay Payment Gateway Integration
+app.post('/api/fedapay', async (req, res) => {
   try {
-    const paygateUrl = 'https://paygateglobal.com/api/v1/pay';
-    const payload = {
-      auth_token: apiKey,
-      phone_number: String(phoneNumber).trim(),
-      amount: Math.round(Number(amount)),
-      description: String(description).trim(),
-      identifier: String(identifier).trim(),
-      network: normalizedNetwork,
-    };
+    const { amount, phoneNumber, currency, description, customerName, customerEmail, callbackUrl, returnUrl, failureUrl } = req.body;
 
-    // Log payload for audit (non-sensitive fields only)
-    console.log('PayGate request:', { url: paygateUrl, body: payload });
+    if (!phoneNumber || !amount || !description) {
+      return res.status(400).json({ error: 'phoneNumber, amount et description sont requis.' });
+    }
 
-    const paymentResponse = await fetch(paygateUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
+    const fedapayApiKey = process.env.FEDAPAY_API_KEY;
+    const fedapayWebhookUrl = process.env.FEDAPAY_WEBHOOK_URL || 'https://ecoletrack-5481.onrender.com/api/fedapay/webhook';
+    const fedapayFailureUrl = failureUrl || process.env.FEDAPAY_FAILURE_URL || 'https://ecolestrack.vercel.app/paiement/echec';
+    if (!fedapayApiKey) {
+      console.warn('[FEDAPAY] API key non configurée. Mode démo activé.');
+      // En mode démo, retourner une réponse simulée
+      const demoLink = `https://sandbox.fedapay.com/checkout?amount=${amount}&phone=${phoneNumber}`;
+      return res.json({
+        success: true,
+        link: demoLink,
+        redirectUrl: demoLink,
+        message: 'Transaction FedaPay initiée en mode démo',
+        transaction: {
+          id: `demo-${Date.now()}`,
+          reference: `FP-${Date.now()}`,
+          amount: Math.round(Number(amount)),
+          currency: currency || 'XOF',
+          status: 'pending',
+        },
+      });
+    }
 
-    // Try to parse JSON response, be permissive if not JSON
-    let result: any = null;
     try {
-      result = await paymentResponse.json();
-    } catch (parseErr) {
-      // preserve raw text if not JSON
-      const text = await paymentResponse.text().catch(() => null);
-      result = { raw: text };
-    }
+      FedaPay.setApiKey(fedapayApiKey);
+      FedaPay.setEnvironment(fedapayApiKey.startsWith('sk_sandbox_') ? 'sandbox' : 'production');
 
-    if (!paymentResponse.ok) {
-      const errMsg = (result && (result.error_message || result.message || result.error)) || 'Erreur PayGateGlobal';
-      const errCode = result && (result.error_code || result.code || null);
-      console.warn('PayGate error response:', { status: paymentResponse.status, error_code: errCode, error_message: errMsg, raw: result });
-      return res.status(paymentResponse.status).json({ error: errMsg, error_code: errCode, raw: result });
-    }
+      const paymentPayload = {
+        amount: Math.round(Number(amount)),
+        currency: currency || 'XOF',
+        description: String(description).trim(),
+        customer: {
+          phone_number: String(phoneNumber).trim(),
+          first_name: String(customerName || 'Client').split(' ')[0],
+          last_name: String(customerName || 'Client').split(' ').slice(1).join(' ') || '',
+        },
+        metadata: {
+          email: customerEmail || '',
+          callback_url: callbackUrl || fedapayWebhookUrl,
+          webhook_url: fedapayWebhookUrl,
+          return_url: returnUrl || 'https://ecolestrack.vercel.app/paiement/succes',
+          failure_url: fedapayFailureUrl,
+          cancel_url: fedapayFailureUrl,
+        },
+      };
 
-    await logActivity(String(customerEmail || phoneNumber), `Transaction PayGateGlobal initiée (${identifier})`);
-    return res.json(result);
+      console.log('[FEDAPAY] Transaction request:', { amount: paymentPayload.amount, currency: paymentPayload.currency, environment: FedaPay.getEnvironment() });
+
+      const transaction = await Transaction.create(paymentPayload);
+      const checkoutLink = transaction.cta?.url || transaction.link || `https://app.fedapay.com/transactions/${transaction.id}`;
+
+      await logActivity(String(customerEmail || phoneNumber), `Transaction FedaPay initiée (${transaction.id})`);
+
+      return res.json({
+        success: true,
+        transaction: {
+          id: transaction.id,
+          reference: transaction.reference,
+          amount: transaction.amount,
+          currency: transaction.currency,
+          status: transaction.status,
+        },
+        link: checkoutLink,
+        redirectUrl: checkoutLink,
+      });
+    } catch (error: any) {
+      console.error('[FEDAPAY] Erreur de transaction:', error?.message || error, error?.response?.data || '');
+      return res.status(500).json({ 
+        success: false, 
+        error: error?.message || 'Impossible de contacter FedaPay' 
+      });
+    }
   } catch (error: any) {
-    console.error('Erreur de transaction PayGateGlobal :', error);
-    return res.status(500).json({ error: 'Impossible de contacter le service de paiement.' });
+    console.error('[FEDAPAY] Erreur serveur:', error);
+    return res.status(500).json({ success: false, error: 'Erreur serveur' });
   }
 });
 
-app.post('/api/paygate/callback', async (req, res) => {
-  const callbackPayload = Object.keys(req.body || {}).length ? req.body : req.query;
+// FedaPay Callback Handler
+app.post('/api/fedapay/callback', async (req, res) => {
+  try {
+    const callbackPayload = Object.keys(req.body || {}).length ? req.body : req.query;
 
-  if (!callbackPayload || Object.keys(callbackPayload).length === 0) {
-    return res.status(400).json({ error: 'Aucun payload de callback reçu.' });
+    if (!callbackPayload || Object.keys(callbackPayload).length === 0) {
+      return res.status(400).json({ success: false, error: 'Aucun payload reçu' });
+    }
+
+    const transactionId = String(callbackPayload.transaction_id || callbackPayload.id || 'unknown');
+    const status = String(callbackPayload.status || 'unknown');
+    const email = String(callbackPayload.customer_email || callbackPayload.email || 'callback@fedapay');
+    const amount = callbackPayload.amount || 0;
+
+    console.log('[FEDAPAY] Callback reçu:', { transactionId, status, amount });
+
+    const createdAt = new Date().toLocaleString('fr-FR');
+    runWrite('INSERT INTO activity (email, action, createdAt) VALUES (?, ?, ?)', [
+      email,
+      `Callback FedaPay: Transaction ${transactionId}, Statut=${status}, Montant=${amount}`,
+      createdAt,
+    ]);
+    deleteOldActivity();
+
+    return res.json({ success: true, received: true });
+  } catch (error: any) {
+    console.error('[FEDAPAY] Erreur callback:', error);
+    return res.status(500).json({ success: false, error: 'Erreur callback' });
   }
-
-  const customerEmail = String(callbackPayload.customerEmail || callbackPayload.email || 'callback@paygate');
-  const orderId = String(callbackPayload.orderId || callbackPayload.order_id || callbackPayload.reference || callbackPayload.tx_reference || callbackPayload.identifier || 'unknown');
-  const status = String(callbackPayload.status || callbackPayload.payment_status || callbackPayload.transaction_status || 'inconnu');
-
-  const createdAt = new Date().toLocaleString('fr-FR');
-  runWrite('INSERT INTO activity (email, action, createdAt) VALUES (?, ?, ?)', [
-    customerEmail,
-    `Callback PayGateGlobal reçu : commande=${orderId}, statut=${status}`,
-    createdAt,
-  ]);
-  deleteOldActivity();
-
-  console.log('PayGateGlobal callback reçu :', callbackPayload);
-
-  return res.json({ success: true, received: callbackPayload });
 });
 
-// Legacy callback endpoint for backward compatibility
-app.post('/api/pay/callback', async (req, res) => {
-  const callbackPayload = Object.keys(req.body || {}).length ? req.body : req.query;
+// Webhook handler for FedaPay (for server-to-server notifications)
+app.post('/api/fedapay/webhook', async (req, res) => {
+  try {
+    const event = req.body;
+    console.log('[FEDAPAY] Webhook reçu:', event?.type);
 
-  if (!callbackPayload || Object.keys(callbackPayload).length === 0) {
-    return res.status(400).json({ error: 'Aucun payload de callback reçu.' });
+    if (event?.type === 'transaction.success' || event?.type === 'transaction.completed') {
+      const transaction = event.data;
+      const email = transaction?.customer?.email || 'webhook@fedapay';
+
+      const createdAt = new Date().toLocaleString('fr-FR');
+      runWrite('INSERT INTO activity (email, action, createdAt) VALUES (?, ?, ?)', [
+        email,
+        `Paiement FedaPay confirmé: ${transaction?.reference}, Montant=${transaction?.amount}${transaction?.currency}`,
+        createdAt,
+      ]);
+      deleteOldActivity();
+    }
+
+    return res.json({ success: true, received: true });
+  } catch (error: any) {
+    console.error('[FEDAPAY] Erreur webhook:', error);
+    return res.status(500).json({ success: false, error: 'Erreur webhook' });
   }
-
-  const customerEmail = String(callbackPayload.customerEmail || callbackPayload.email || 'callback@paygate');
-  const orderId = String(callbackPayload.orderId || callbackPayload.order_id || callbackPayload.reference || callbackPayload.tx_reference || 'unknown');
-  const status = String(callbackPayload.status || callbackPayload.payment_status || callbackPayload.transaction_status || 'inconnu');
-
-  const createdAt = new Date().toLocaleString('fr-FR');
-  runWrite('INSERT INTO activity (email, action, createdAt) VALUES (?, ?, ?)', [
-    customerEmail,
-    `Callback PayGateGlobal reçu : commande=${orderId}, statut=${status}`,
-    createdAt,
-  ]);
-  deleteOldActivity();
-
-  console.log('PayGate callback reçu :', callbackPayload);
-
-  return res.json({ success: true, received: callbackPayload });
 });
 
 app.post('/api/activity', async (req, res) => {
@@ -685,24 +719,34 @@ app.delete('/api/users/:email', requireAdmin, async (req, res) => {
 });
 
 app.post('/api/users/login', async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email et mot de passe requis.' });
-  }
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email et mot de passe requis.' });
+    }
 
-  const user = getUserByEmail(String(email));
-  if (!user) {
-    return res.status(404).json({ error: 'Aucun compte trouvé avec cet email.' });
-  }
+    const user = getUserByEmail(String(email));
+    if (!user) {
+      return res.status(404).json({ error: 'Aucun compte trouvé avec cet email.' });
+    }
 
-  const isPasswordValid = bcrypt.compareSync(String(password), user.password);
-  if (!isPasswordValid) {
-    return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
-  }
+    if (!user.password) {
+      console.error(`[LOGIN] Erreur: Mot de passe manquant pour l'utilisateur ${user.email}`);
+      return res.status(500).json({ error: 'Erreur d\'authentification. Contacter l\'administrateur.' });
+    }
 
-  await logActivity(user.email, 'Connexion');
-  const token = createSession(user.email, user.role || 'user');
-  return res.json({ user: sanitizeUser(user), mustChangePassword: user.mustChangePassword, token });
+    const isPasswordValid = bcrypt.compareSync(String(password), user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
+    }
+
+    await logActivity(user.email, 'Connexion');
+    const token = createSession(user.email, user.role || 'user');
+    return res.json({ user: sanitizeUser(user), mustChangePassword: user.mustChangePassword, token });
+  } catch (error: any) {
+    console.error('[LOGIN] Erreur lors de la connexion:', error);
+    return res.status(500).json({ error: error?.message || 'Erreur d\'authentification.' });
+  }
 });
 
 // Validate token endpoint - returns 200 if token is valid, 401 if invalid/expired
