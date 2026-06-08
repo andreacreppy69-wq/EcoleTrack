@@ -160,6 +160,9 @@ export default function App() {
   const [adminInvestmentLinkMessage, setAdminInvestmentLinkMessage] = useState<string>('');
   const [passwordChangeEmail, setPasswordChangeEmail] = useState<string>('');
   const [passwordChangeNew, setPasswordChangeNew] = useState<string>('');
+
+  const WHATSAPP_ADMIN_NUMBER = '22891551295';
+  const whatsappAdminUrl = `https://wa.me/${WHATSAPP_ADMIN_NUMBER}?text=${encodeURIComponent('Bonjour, je souhaite contacter l’administrateur du projet.')}`;
   const [passwordChangeConfirm, setPasswordChangeConfirm] = useState<string>('');
   const [passwordChangeError, setPasswordChangeError] = useState<string>('');
   const [showPasswordChangeFields, setShowPasswordChangeFields] = useState<boolean>(false);
@@ -2116,7 +2119,7 @@ export default function App() {
               </div>
             )}
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <button 
                 type="button"
                 onClick={handleParticipateClick}
@@ -2132,6 +2135,15 @@ export default function App() {
               >
                 Faire un don
               </button>
+              <a
+                href={whatsappAdminUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 px-3 py-2 bg-[#25D366] hover:bg-[#1ebe57] text-white rounded-xl text-xs font-semibold transition-all shadow-xs hover:shadow-md"
+              >
+                <PhoneCall className="w-3.5 h-3.5" />
+                <span>WhatsApp</span>
+              </a>
             </div>
           </div>
         </div>
@@ -2719,7 +2731,7 @@ export default function App() {
                   </p>
                 </div>
                 <div className="text-[11px] font-semibold text-brand-blue bg-brand-blue/10 px-2.5 py-1 rounded w-fit uppercase">
-                  Primaires &amp; Lycées
+                  Collèges &amp; Lycées
                 </div>
               </div>
 
@@ -3075,6 +3087,17 @@ export default function App() {
 
         </div>
       </footer>
+
+      <a
+        href={whatsappAdminUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="fixed right-6 bottom-6 z-50 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-3 shadow-2xl shadow-slate-950/20 text-white text-sm font-semibold transition-transform duration-200 hover:-translate-y-0.5 hover:bg-[#1ebe57]"
+        aria-label="Contacter l'administrateur sur WhatsApp"
+      >
+        <PhoneCall className="w-4 h-4" />
+        <span>Chat Admin</span>
+      </a>
 
     </div>
   );
