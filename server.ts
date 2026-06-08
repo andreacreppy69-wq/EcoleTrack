@@ -823,10 +823,11 @@ app.post('/api/users/create', requireAdmin, async (req, res) => {
   const resolvedLastName = rawLastName || (nameWords.length > 1 ? nameWords.slice(-1).join('').trim() : '');
   const resolvedName = String(name || `${resolvedFirstName} ${resolvedLastName}`).trim();
   const resolvedGender = String(gender || '').trim();
+  const resolvedProfession = String(profession || '').trim();
   const rawPassword = String(password || '').trim();
   const resolvedPassword = rawPassword || '123456';
 
-  if (!resolvedFirstName || !email || !dob || !profession || !resolvedGender) {
+  if (!resolvedFirstName || !email || !dob || !resolvedGender) {
     return res.status(400).json({ error: 'Tous les champs obligatoires sont requis.' });
   }
 
@@ -856,7 +857,7 @@ app.post('/api/users/create', requireAdmin, async (req, res) => {
       resolvedName,
       lowerEmail,
       String(dob).trim(),
-      String(profession).trim(),
+      resolvedProfession,
       String(req.body.phoneNumber || '').trim(),
       resolvedGender,
       finalRole,

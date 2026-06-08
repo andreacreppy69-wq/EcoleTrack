@@ -535,6 +535,12 @@ export default function App() {
   const [registerSuccess, setRegisterSuccess] = useState<string>('');
   const [showRegisterPassword, setShowRegisterPassword] = useState<boolean>(false);
   const [registerEmailError, setRegisterEmailError] = useState<string>('');
+  const [registerFirstNameError, setRegisterFirstNameError] = useState<string>('');
+  const [registerLastNameError, setRegisterLastNameError] = useState<string>('');
+  const [registerPasswordError, setRegisterPasswordError] = useState<string>('');
+  const [registerDobError, setRegisterDobError] = useState<string>('');
+  const [registerGenderError, setRegisterGenderError] = useState<string>('');
+  const [registerPhoneError, setRegisterPhoneError] = useState<string>('');
 
   const [adminEmail, setAdminEmail] = useState<string>('');
   const [adminPassword, setAdminPassword] = useState<string>('');
@@ -553,6 +559,7 @@ export default function App() {
   const [showAdminJournal, setShowAdminJournal] = useState<boolean>(false);
   const [showEventLog, setShowEventLog] = useState<boolean>(false);
   const [showUserAccounts, setShowUserAccounts] = useState<boolean>(false);
+  const [showPaymentSection, setShowPaymentSection] = useState<boolean>(false);
   const [adminMessages, setAdminMessages] = useState<{ name: string; email: string; message: string; createdAt: string }[]>([]);
   const [tierProgress, setTierProgress] = useState<number[]>([15, 0, 0, 0]);
   const [tierInputs, setTierInputs] = useState<number[]>([15, 0, 0, 0]);
@@ -696,6 +703,7 @@ export default function App() {
   const userAccountsSectionRef = useRef<HTMLDivElement | null>(null);
   const activityJournalRef = useRef<HTMLDivElement | null>(null);
   const eventLogRef = useRef<HTMLDivElement | null>(null);
+  const paymentSectionRef = useRef<HTMLDivElement | null>(null);
   const [profileDraft, setProfileDraft] = useState<UserProfile>(initialProfile);
   const [profileSaveError, setProfileSaveError] = useState<string>('');
   const [profileValidationErrors, setProfileValidationErrors] = useState<string[]>([]);
@@ -1283,41 +1291,64 @@ export default function App() {
   const handleRegisterSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!registerFirstName.trim() || !registerLastName.trim() || !registerEmail.trim() || !registerDob.trim() || !registerGender.trim() || !registerPassword.trim()) {
-      const errors: string[] = [];
-      if (!registerFirstName.trim()) errors.push('Prénom(s)');
-      if (!registerLastName.trim()) errors.push('Nom');
-      if (!registerEmail.trim()) errors.push('Email');
-      if (!registerPassword.trim()) errors.push('Mot de passe temporaire');
-      if (!registerDob.trim()) errors.push('Date de naissance');
-      if (!registerGender.trim()) errors.push('Sexe');
-      setRegisterError(`Les champs suivants sont obligatoires: ${errors.join(', ')}`);
-      return;
+    setRegisterError('');
+    setRegisterFirstNameError('');
+    setRegisterLastNameError('');
+    setRegisterEmailError('');
+    setRegisterPasswordError('');
+    setRegisterDobError('');
+    setRegisterGenderError('');
+    setRegisterPhoneError('');
+
+    let hasError = false;
+    if (!registerFirstName.trim()) {
+      setRegisterFirstNameError('Le prénom est requis.');
+      hasError = true;
     }
-    if (!registerEmail.includes('@')) {
-      setRegisterError('Veuillez saisir une adresse email valide.');
-      return;
+    if (!registerLastName.trim()) {
+      setRegisterLastNameError('Le nom est requis.');
+      hasError = true;
     }
-    if (registerPassword.trim().length < 6) {
-      setRegisterError('Le mot de passe doit contenir au moins 6 caractères.');
-      return;
+    if (!registerEmail.trim()) {
+      setRegisterEmailError('L’adresse email est requise.');
+      hasError = true;
+    } else if (!registerEmail.includes('@')) {
+      setRegisterEmailError('Veuillez saisir une adresse email valide.');
+      hasError = true;
+    }
+    if (!registerPassword.trim()) {
+      setRegisterPasswordError('Le mot de passe est requis.');
+      hasError = true;
+    } else if (registerPassword.trim().length < 6) {
+      setRegisterPasswordError('Le mot de passe doit contenir au moins 6 caractères.');
+      hasError = true;
+    }
+    if (!registerDob.trim()) {
+      setRegisterDobError('La date de naissance est requise.');
+      hasError = true;
+    }
+    if (!registerGender.trim()) {
+      setRegisterGenderError('Le sexe est requis.');
+      hasError = true;
     }
 
     const trimmedPhone = registerPhoneNumber.trim();
     if (trimmedPhone) {
       const digitsOnly = trimmedPhone.replace(/\D/g, '');
       if (!/^[0-9]+$/.test(digitsOnly)) {
-        setRegisterError('Le numéro de téléphone doit contenir uniquement des chiffres.');
-        return;
+        setRegisterPhoneError('Le numéro de téléphone doit contenir uniquement des chiffres.');
+        hasError = true;
+      } else if (registerCountryCode === '+228' && digitsOnly.length !== 8) {
+        setRegisterPhoneError('Pour le Togo, le numéro doit contenir exactement 8 chiffres.');
+        hasError = true;
+      } else if (registerCountryCode !== '+228' && (digitsOnly.length < 4 || digitsOnly.length > 15)) {
+        setRegisterPhoneError('Veuillez saisir un numéro de téléphone valide.');
+        hasError = true;
       }
-      if (registerCountryCode === '+228' && digitsOnly.length !== 8) {
-        setRegisterError('Pour le Togo, le numéro doit contenir exactement 8 chiffres.');
-        return;
-      }
-      if (registerCountryCode !== '+228' && (digitsOnly.length < 4 || digitsOnly.length > 15)) {
-        setRegisterError('Veuillez saisir un numéro de téléphone valide.');
-        return;
-      }
+    }
+
+    if (hasError) {
+      return;
     }
 
     try {
@@ -1742,6 +1773,7 @@ export default function App() {
                               setShowCreateAccount(false);
                               setShowAdminJournal(false);
                               setShowUserAccounts(false);
+                              setShowPaymentSection(false);
                               setShowAdminMenu(false);
                               setTimeout(() => {
                                 eventLogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1758,6 +1790,7 @@ export default function App() {
                               setShowAdminJournal(false);
                               setShowEventLog(false);
                               setShowUserAccounts(false);
+                              setShowPaymentSection(false);
                               setShowAdminMenu(false);
                             }}
                             className="w-full text-left px-3 py-2 rounded-md text-xs hover:bg-slate-800"
@@ -1771,6 +1804,7 @@ export default function App() {
                               setShowCreateAccount(false);
                               setShowEventLog(false);
                               setShowUserAccounts(false);
+                              setShowPaymentSection(false);
                               setShowAdminMenu(false);
                               setTimeout(() => {
                                 activityJournalRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1787,6 +1821,7 @@ export default function App() {
                               setShowAdminJournal(false);
                               setShowEventLog(false);
                               setShowUserAccounts(true);
+                              setShowPaymentSection(false);
                               setShowAdminMenu(false);
                               setTimeout(() => {
                                 userAccountsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1795,6 +1830,23 @@ export default function App() {
                             className="w-full text-left px-3 py-2 rounded-md text-xs hover:bg-slate-800"
                           >
                             Voir les comptes utilisateurs
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowCreateAccount(false);
+                              setShowAdminJournal(false);
+                              setShowEventLog(false);
+                              setShowUserAccounts(false);
+                              setShowPaymentSection(true);
+                              setShowAdminMenu(false);
+                              setTimeout(() => {
+                                paymentSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                              }, 50);
+                            }}
+                            className="w-full text-left px-3 py-2 rounded-md text-xs hover:bg-slate-800"
+                          >
+                            Initier une transaction de paiement
                           </button>
                         </div>
                       </div>
@@ -1975,11 +2027,12 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 mb-6">
-                <h2 className="text-lg font-semibold text-white mb-4">Initier une transaction de paiement</h2>
-                <p className="text-sm text-slate-400 mb-5">Lancez un paiement via PayGateGlobal depuis l’espace administrateur.</p>
+              {showPaymentSection && (
+                <div ref={paymentSectionRef} className="rounded-3xl border border-slate-700 bg-slate-950 p-6 mb-6">
+                  <h2 className="text-lg font-semibold text-white mb-4">Initier une transaction de paiement</h2>
+                  <p className="text-sm text-slate-400 mb-5">Lancez un paiement via PayGateGlobal depuis l’espace administrateur.</p>
 
-                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-4 sm:grid-cols-2">
                   <div className="rounded-2xl border border-slate-700 bg-slate-950 p-4">
                     <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2">Montant</label>
                     <input
@@ -2079,6 +2132,7 @@ export default function App() {
                   {paymentError && <span className="text-sm text-red-300 break-words">{paymentError}</span>}
                 </div>
               </div>
+            )}
 
               {showEventLog && (
                 <div ref={eventLogRef} className="rounded-3xl border border-slate-700 bg-slate-950 p-6 mb-6">
@@ -2151,6 +2205,9 @@ export default function App() {
                         placeholder="Nom"
                         type="text"
                       />
+                      {registerLastNameError && (
+                        <div className="mt-2 text-xs text-red-300">{registerLastNameError}</div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-slate-300 mb-2">
@@ -2163,6 +2220,9 @@ export default function App() {
                         placeholder="Prénom(s)"
                         type="text"
                       />
+                      {registerFirstNameError && (
+                        <div className="mt-2 text-xs text-red-300">{registerFirstNameError}</div>
+                      )}
                     </div>
                   </div>
 
@@ -2198,6 +2258,9 @@ export default function App() {
                         placeholder="Au moins 6 caractères"
                         type={showRegisterPassword ? 'text' : 'password'}
                       />
+                      {registerPasswordError && (
+                        <div className="mt-2 text-xs text-red-300">{registerPasswordError}</div>
+                      )}
                       <button
                         type="button"
                         onClick={() => setShowRegisterPassword((s) => !s)}
@@ -2220,6 +2283,9 @@ export default function App() {
                         className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-green"
                         type="date"
                       />
+                      {registerDobError && (
+                        <div className="mt-2 text-xs text-red-300">{registerDobError}</div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-slate-300 mb-2">Profession</label>
@@ -2236,9 +2302,9 @@ export default function App() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label className="block text-xs font-semibold text-slate-300">Indicatif</label>
+                        <label className="block text-xs font-semibold text-slate-300">Pays</label>
                         <span className="text-sm font-medium text-white">
-                          {getDialCodeFlag(registerCountryCode)} {registerCountryCode}
+                          {getDialCodeFlag(registerCountryCode)}
                         </span>
                       </div>
                       <select
@@ -2248,7 +2314,7 @@ export default function App() {
                       >
                         {COUNTRY_DIAL_CODES.map((item) => (
                           <option key={item.code} value={item.code} title={item.country}>
-                            {getDialCodeFlag(item.code)} {item.code}
+                            {getDialCodeFlag(item.code)}
                           </option>
                         ))}
                       </select>
@@ -2262,6 +2328,9 @@ export default function App() {
                         placeholder="Ex: 90123456"
                         type="tel"
                       />
+                      {registerPhoneError && (
+                        <div className="mt-2 text-xs text-red-300">{registerPhoneError}</div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-slate-300 mb-2">
@@ -2277,6 +2346,9 @@ export default function App() {
                         <option value="Femme">Femme</option>
                         <option value="Autre">Autre</option>
                       </select>
+                      {registerGenderError && (
+                        <div className="mt-2 text-xs text-red-300">{registerGenderError}</div>
+                      )}
                     </div>
                   </div>
 
