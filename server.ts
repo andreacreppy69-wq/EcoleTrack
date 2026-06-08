@@ -511,7 +511,7 @@ app.post('/api/pay', async (req, res) => {
   }
 
   try {
-    const paymentResponse = await fetch('https://paygateglobal.com/api/v1/payMethode', {
+    const paymentResponse = await fetch('https://paygateglobal.com/api/v1/pay', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
