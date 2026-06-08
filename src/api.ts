@@ -121,9 +121,9 @@ export const createUser = async (account: Omit<UserAccount, 'createdAt' | 'mustC
     ...account,
     name: `${account.firstName} ${account.lastName}`.trim(),
   };
-  // If an admin token is present, call the admin create route. Otherwise use the public register route.
-  const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('siteAuthToken');
-  const path = hasToken ? '/api/users/create' : '/api/users/register';
+  // Only use the admin endpoint when the current session is authenticated as an admin.
+  const isAdminSession = typeof window !== 'undefined' && localStorage.getItem('siteAdminAuthenticated') === 'true' && !!localStorage.getItem('siteAuthToken');
+  const path = isAdminSession ? '/api/users/create' : '/api/users/register';
   return apiFetch(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

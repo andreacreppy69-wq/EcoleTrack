@@ -842,6 +842,9 @@ export default function App() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('siteAccountCreated');
       localStorage.removeItem('siteCurrentUserEmail');
+      localStorage.removeItem('siteAuthToken');
+      localStorage.removeItem('siteAdminAuthenticated');
+      localStorage.removeItem('siteUserProfile');
     }
   };
 
