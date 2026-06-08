@@ -822,6 +822,28 @@ export default function App() {
         setTimeout(() => setRegisterSuccess(''), 20000);
       }
 
+      // Keep the new user session alive after registration so a page refresh does not lose the logged-in state.
+      try {
+        const { user, token } = await loginUser(registerEmail.trim(), registerPassword.trim());
+        if (token && typeof window !== 'undefined') {
+          localStorage.setItem('siteAuthToken', token);
+        }
+        const isAdmin = String(user.role || '').toLowerCase() === 'admin';
+        setProfile(user);
+        setProfileDraft(user);
+        setCurrentUserEmail(user.email);
+        saveCurrentUserEmail(user.email);
+        setIsRegistered(true);
+        setIsAdminAuthenticated(isAdmin);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('siteAdminAuthenticated', isAdmin ? 'true' : 'false');
+          localStorage.setItem('siteAccountCreated', 'true');
+          localStorage.setItem('siteUserProfile', JSON.stringify(user));
+        }
+      } catch {
+        // If auto-login fails, the registration is still successful.
+      }
+
       logUserActivity(registerEmail.trim(), 'Compte utilisateur créé par l’administrateur');
       if (isAdminAuthenticated) {
         const updatedUsers = await getUsers();
