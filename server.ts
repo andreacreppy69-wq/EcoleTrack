@@ -556,25 +556,12 @@ app.post('/api/fedapay', async (req, res) => {
       return res.status(400).json({ error: 'phoneNumber, amount et description sont requis.' });
     }
 
-    const fedapayApiKey = process.env.FEDAPAY_API_KEY || process.env.VITE_FEDAPAY_API_KEY || process.env.VITE_FEDAPAY_PUBLIC_KEY;
+    const fedapayApiKey = process.env.FEDAPAY_SECRET_KEY || process.env.FEDAPAY_API_KEY || process.env.VITE_FEDAPAY_API_KEY;
     const fedapayWebhookUrl = process.env.FEDAPAY_WEBHOOK_URL || 'https://ecoletrack-5481.onrender.com/api/fedapay/webhook';
     const fedapayFailureUrl = failureUrl || process.env.FEDAPAY_FAILURE_URL || 'https://ecolestrack.vercel.app/paiement/echec';
     if (!fedapayApiKey) {
-      console.warn('[FEDAPAY] API key non configurée. Mode démo activé.');
-      const demoLink = `https://sandbox.fedapay.com/checkout?amount=${amount}&phone=${phoneNumber}`;
-      return res.json({
-        success: true,
-        link: demoLink,
-        redirectUrl: demoLink,
-        message: 'Transaction FedaPay initiée en mode démo',
-        transaction: {
-          id: `demo-${Date.now()}`,
-          reference: `FP-${Date.now()}`,
-          amount: Math.round(Number(amount)),
-          currency: currency || 'XOF',
-          status: 'pending',
-        },
-      });
+      console.error('[FEDAPAY] Clé secrète non configurée (FEDAPAY_SECRET_KEY ou FEDAPAY_API_KEY requise).');
+      return res.status(500).json({ error: 'Clé secrète FedaPay non configurée.' });
     }
 
     try {
