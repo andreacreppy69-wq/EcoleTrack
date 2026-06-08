@@ -581,12 +581,9 @@ export default function App() {
     setPaymentProcessing(true);
 
     try {
-      const callbackUrl = `${window.location.origin}/api/pay/callback`;
-      const returnUrl = `${window.location.origin}/payment-result`;
-
       const result = await initiatePayGateTransaction({
         amount: 1000,
-        phoneNumber: '221000000000',
+        phoneNumber: '+228 91551295',
         network: 'TMONEY',
         description: 'Don volontaire pour le projet Ecole Track Afrique',
         identifier: `DON-${Date.now()}`,
@@ -594,9 +591,16 @@ export default function App() {
         customerEmail: 'donateur@ecoletrack.africa',
       });
 
-      const redirectUrl = (result as any).redirect_url || result.redirectUrl;
+      // Check for redirect URL from PayGate
+      const redirectUrl = (result as any).redirect_url || (result as any).redirectUrl;
       if (redirectUrl) {
         window.location.assign(redirectUrl);
+        return;
+      }
+
+      // If error_code present, show error message
+      if ((result as any).error_code || (result as any).error_message) {
+        setPaymentError(`PayGate: ${(result as any).error_message || 'Erreur PayGate'}`);
         return;
       }
 
