@@ -502,8 +502,15 @@ export default function App() {
       setPaymentError('Montant de paiement invalide.');
       return;
     }
-    if (!paymentPhoneNumber || !paymentNetwork || !paymentDescription || !paymentOrderId) {
-      setPaymentError('Tous les champs de paiement obligatoires doivent être renseignés.');
+    
+    const errors: string[] = [];
+    if (!paymentPhoneNumber || paymentPhoneNumber.trim() === '') errors.push('Téléphone');
+    if (!paymentNetwork || paymentNetwork.trim() === '') errors.push('Réseau');
+    if (!paymentDescription || paymentDescription.trim() === '') errors.push('Description');
+    if (!paymentOrderId || paymentOrderId.trim() === '') errors.push('ID de commande');
+    
+    if (errors.length > 0) {
+      setPaymentError(`Les champs suivants sont obligatoires: ${errors.join(', ')}`);
       return;
     }
 
@@ -513,8 +520,8 @@ export default function App() {
         amount: Math.round(paymentAmount),
         phoneNumber: paymentPhoneNumber.trim(),
         network: paymentNetwork,
-        description: paymentDescription,
-        identifier: paymentOrderId,
+        description: paymentDescription.trim(),
+        identifier: paymentOrderId.trim(),
         customerName: paymentCustomerName,
         customerEmail: paymentCustomerEmail,
       });
