@@ -2247,8 +2247,8 @@ export default function App() {
                         className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-green"
                       >
                         {COUNTRY_DIAL_CODES.map((item) => (
-                          <option key={item.code} value={item.code}>
-                            {getDialCodeFlag(item.code)} {item.code} {item.country}
+                          <option key={item.code} value={item.code} title={item.country}>
+                            {getDialCodeFlag(item.code)} {item.code}
                           </option>
                         ))}
                       </select>
