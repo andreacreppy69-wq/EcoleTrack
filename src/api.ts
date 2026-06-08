@@ -116,12 +116,15 @@ export const loginUser = async (email: string, password: string): Promise<{ user
   });
 };
 
-export const createUser = async (account: Omit<UserAccount, 'createdAt' | 'mustChangePassword'>): Promise<void> => {
+export const createUser = async (account: Omit<UserAccount, 'createdAt' | 'mustChangePassword'>): Promise<any> => {
   const accountWithName = {
     ...account,
     name: `${account.firstName} ${account.lastName}`.trim(),
   };
-  await apiFetch('/api/users/create', {
+  // If an admin token is present, call the admin create route. Otherwise use the public register route.
+  const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('siteAuthToken');
+  const path = hasToken ? '/api/users/create' : '/api/users/register';
+  return apiFetch(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(accountWithName),

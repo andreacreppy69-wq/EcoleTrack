@@ -110,6 +110,7 @@ export default function App() {
   const [registerRole, setRegisterRole] = useState<string>('user');
   const [registerPhotoUrl, setRegisterPhotoUrl] = useState<string>('');
   const [registerError, setRegisterError] = useState<string>('');
+  const [registerSuccess, setRegisterSuccess] = useState<string>('');
   const [showRegisterPassword, setShowRegisterPassword] = useState<boolean>(false);
   const [registerEmailError, setRegisterEmailError] = useState<string>('');
 
@@ -792,7 +793,7 @@ export default function App() {
     }
 
     try {
-      await createUser({
+      const result = await createUser({
         firstName: registerFirstName.trim(),
         lastName: registerLastName.trim(),
         email: registerEmail.trim(),
@@ -803,6 +804,11 @@ export default function App() {
         photoUrl: registerPhotoUrl,
         password: registerPassword.trim(),
       });
+
+      if (result && result.verificationLink) {
+        setRegisterSuccess(`Compte créé. Vérifiez l'email à l'adresse suivante: ${result.verificationLink}`);
+        setTimeout(() => setRegisterSuccess(''), 20000);
+      }
 
       logUserActivity(registerEmail.trim(), 'Compte utilisateur créé par l’administrateur');
       if (isAdminAuthenticated) {
@@ -1533,6 +1539,11 @@ export default function App() {
                     {registerError && (
                       <div className="mt-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-300 px-4 py-3 text-sm">
                         {registerError}
+                      </div>
+                    )}
+                    {registerSuccess && (
+                      <div className="mt-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-200 px-4 py-3 text-sm">
+                        {registerSuccess}
                       </div>
                     )}
                 <p className="text-slate-400 text-sm mb-4">

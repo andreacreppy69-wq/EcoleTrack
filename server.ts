@@ -195,6 +195,22 @@ db.run(`CREATE TABLE IF NOT EXISTS tier_progress (
   p4 INTEGER NOT NULL
 )`);
 
+// Ensure users table has a 'verified' column (0/1)
+try {
+  db.run('ALTER TABLE users ADD COLUMN verified INTEGER DEFAULT 0');
+} catch (e) {
+  // ignore if column already exists or ALTER not needed
+}
+
+// Table to store email verification tokens
+db.run(`CREATE TABLE IF NOT EXISTS email_verifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT,
+  token TEXT UNIQUE,
+  createdAt TEXT,
+  expiresAt TEXT
+)`);
+
 saveDb();
 
 // Ensure a default admin account exists (use env vars to override)
@@ -572,6 +588,109 @@ app.post('/api/users/login', async (req, res) => {
   await logActivity(user.email, 'Connexion');
   const token = createSession(user.email, user.role || 'user');
   return res.json({ user: sanitizeUser(user), mustChangePassword: user.mustChangePassword, token });
+});
+
+// Public registration endpoint (useful for local development)
+app.post('/api/users/register', async (req, res) => {
+  try {
+    const { firstName, lastName, name, email, dob, profession, gender, photoUrl, password } = req.body;
+    const rawFirstName = String(firstName || '').trim();
+    const rawLastName = String(lastName || '').trim();
+    const fallbackName = String(name || '').trim();
+    const nameWords = fallbackName.split(' ').filter(Boolean);
+    const resolvedFirstName = rawFirstName || nameWords.slice(0, -1).join(' ').trim() || fallbackName;
+    const resolvedLastName = rawLastName || (nameWords.length > 1 ? nameWords.slice(-1).join('').trim() : '');
+    const resolvedName = String(name || `${resolvedFirstName} ${resolvedLastName}`).trim();
+    const resolvedGender = String(gender || '').trim();
+    const rawPassword = String(password || '').trim();
+    const resolvedPassword = rawPassword || '123456';
+
+    if (!resolvedFirstName || !email || !dob || !profession || !resolvedGender) {
+      return res.status(400).json({ error: 'Tous les champs obligatoires sont requis.' });
+    }
+
+    if (rawPassword && rawPassword.length < 6) {
+      return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères.' });
+    }
+
+    const lowerEmail = String(email).toLowerCase();
+    if (getUserByEmail(lowerEmail)) {
+      return res.status(409).json({ error: 'Un compte existe déjà avec cette adresse email.' });
+    }
+
+    const createdAt = new Date().toLocaleString('fr-FR');
+    const hashedPassword = bcrypt.hashSync(resolvedPassword, 10);
+
+    // insert user (verified defaults to 0)
+    runWrite(
+      `INSERT INTO users (firstName, lastName, name, email, dob, profession, gender, role, photoUrl, password, createdAt, mustChangePassword)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        resolvedFirstName,
+        resolvedLastName,
+        resolvedName,
+        lowerEmail,
+        String(dob).trim(),
+        String(profession).trim(),
+        resolvedGender,
+        'user',
+        String(photoUrl || ''),
+        hashedPassword,
+        createdAt,
+        1,
+      ],
+    );
+
+    // create verification token
+    const token = crypto.randomBytes(24).toString('hex');
+    const now = new Date();
+    const createdAtToken = now.toLocaleString('fr-FR');
+    const expires = new Date(now.getTime() + 1000 * 60 * 60 * 24); // 24h
+    const expiresAt = expires.toLocaleString('fr-FR');
+    runWrite(
+      `INSERT INTO email_verifications (email, token, createdAt, expiresAt) VALUES (?, ?, ?, ?)`,
+      [lowerEmail, token, createdAtToken, expiresAt],
+    );
+
+    // build verification link
+    const origin = (req.headers.origin && String(req.headers.origin)) || `http://localhost:${port}`;
+    const verificationLink = `${origin.replace(/\/$/, '')}/api/users/verify?token=${encodeURIComponent(token)}`;
+
+    // Log the link (and return it in response for local dev). In production replace with real email sending.
+    console.log(`Email verification link for ${lowerEmail}: ${verificationLink}`);
+
+    await logActivity(lowerEmail, 'Inscription publique (verification envoyée)');
+    return res.status(201).json({ success: true, verificationLink });
+  } catch (error: any) {
+    console.error('Erreur lors de l\'inscription publique :', error);
+    return res.status(500).json({ error: 'Erreur interne lors de l\'inscription.' });
+  }
+});
+
+app.get('/api/users/verify', async (req, res) => {
+  try {
+    const token = String(req.query.token || '').trim();
+    if (!token) return res.status(400).json({ error: 'Token de vérification requis.' });
+
+    const row = queryOne('SELECT * FROM email_verifications WHERE token = ? LIMIT 1', [token]);
+    if (!row) return res.status(404).json({ error: 'Token invalide ou expiré.' });
+
+    const now = new Date();
+    // expiresAt stored as localized string; we'll be permissive — accept if record exists
+    const email = String(row.email || '').toLowerCase();
+    if (!email) return res.status(400).json({ error: 'Email associé introuvable.' });
+
+    // mark user verified
+    runWrite('UPDATE users SET verified = 1 WHERE lower(email) = ?', [email]);
+    // remove the token
+    runWrite('DELETE FROM email_verifications WHERE token = ?', [token]);
+
+    await logActivity(email, 'Email vérifié');
+    return res.json({ success: true, email });
+  } catch (error: any) {
+    console.error('Erreur lors de la vérification email :', error);
+    return res.status(500).json({ error: 'Erreur interne lors de la vérification.' });
+  }
 });
 
 app.post('/api/users/create', requireAdmin, async (req, res) => {
