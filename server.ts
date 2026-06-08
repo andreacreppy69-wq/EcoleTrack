@@ -511,24 +511,42 @@ app.post('/api/pay', async (req, res) => {
   }
 
   try {
-    const paymentResponse = await fetch('https://paygateglobal.com/api/v1/pay', {
+    const paygateUrl = 'https://paygateglobal.com/api/v1/pay';
+    const payload = {
+      auth_token: apiKey,
+      phone_number: String(phoneNumber).trim(),
+      amount: Math.round(Number(amount)),
+      description: String(description).trim(),
+      identifier: String(identifier).trim(),
+      network: normalizedNetwork,
+    };
+
+    // Log payload for audit (non-sensitive fields only)
+    console.log('PayGate request:', { url: paygateUrl, body: payload });
+
+    const paymentResponse = await fetch(paygateUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        auth_token: apiKey,
-        phone_number: String(phoneNumber).trim(),
-        amount: Math.round(Number(amount)),
-        description: String(description).trim(),
-        identifier: String(identifier).trim(),
-        network: normalizedNetwork,
-      }),
+      body: JSON.stringify(payload),
     });
 
-    const result = await paymentResponse.json();
+    // Try to parse JSON response, be permissive if not JSON
+    let result: any = null;
+    try {
+      result = await paymentResponse.json();
+    } catch (parseErr) {
+      // preserve raw text if not JSON
+      const text = await paymentResponse.text().catch(() => null);
+      result = { raw: text };
+    }
+
     if (!paymentResponse.ok) {
-      return res.status(paymentResponse.status).json({ error: result.error || result.message || 'Erreur PayGateGlobal' });
+      const errMsg = (result && (result.error_message || result.message || result.error)) || 'Erreur PayGateGlobal';
+      const errCode = result && (result.error_code || result.code || null);
+      console.warn('PayGate error response:', { status: paymentResponse.status, error_code: errCode, error_message: errMsg, raw: result });
+      return res.status(paymentResponse.status).json({ error: errMsg, error_code: errCode, raw: result });
     }
 
     await logActivity(String(customerEmail || phoneNumber), `Transaction PayGateGlobal initiée (${identifier})`);
