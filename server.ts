@@ -233,9 +233,10 @@ saveDb();
 // Clean up expired sessions on startup
 const now = Date.now();
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24; // 24h
+const expiredThreshold = now - SESSION_TTL_MS;
 const expiredTokens = queryAll(
-  'SELECT token FROM sessions WHERE ? - createdAt > ?',
-  [now, SESSION_TTL_MS]
+  'SELECT token FROM sessions WHERE createdAt < ?',
+  [expiredThreshold]
 );
 expiredTokens.forEach((row: any) => {
   runWrite('DELETE FROM sessions WHERE token = ?', [row.token]);

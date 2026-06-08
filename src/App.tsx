@@ -722,12 +722,22 @@ export default function App() {
   // Restore admin session from token on page load (mount)
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    
     const token = localStorage.getItem('siteAuthToken');
     const isAdmin = localStorage.getItem('siteAdminAuthenticated') === 'true';
     const storedEmail = localStorage.getItem('siteCurrentUserEmail');
     
+    // If no token but admin flag is set, clear the inconsistent state
+    if (!token && isAdmin) {
+      localStorage.removeItem('siteAdminAuthenticated');
+      localStorage.removeItem('siteCurrentUserEmail');
+      localStorage.removeItem('siteAccountCreated');
+      localStorage.removeItem('siteUserProfile');
+      return;
+    }
+    
+    // Restore admin session if all conditions are met
     if (token && isAdmin && !isAdminAuthenticated && storedEmail) {
-      // Restore admin session - set authenticated and trigger profile load
       setIsAdminAuthenticated(true);
       setCurrentUserEmail(storedEmail);
     }
