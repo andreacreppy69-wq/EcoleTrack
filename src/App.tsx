@@ -593,6 +593,11 @@ export default function App() {
   const [extConfig, setExtConfig] = useState<string>('');
   const [extError, setExtError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [importModalOpen, setImportModalOpen] = useState<boolean>(false);
+  const [importQuery, setImportQuery] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState<boolean>(false);
+  const [importError, setImportError] = useState<string>('');
   const [adminMessages, setAdminMessages] = useState<{ name: string; email: string; message: string; createdAt: string }[]>([]);
   const [tierProgress, setTierProgress] = useState<number[]>([15, 0, 0, 0]);
   const [tierInputs, setTierInputs] = useState<number[]>([15, 0, 0, 0]);
@@ -2751,7 +2756,7 @@ export default function App() {
                   <div className="flex items-center gap-3 mb-4">
                     <button type="button" onClick={handleAddExtension} className="rounded-2xl bg-brand-green px-4 py-2 text-sm font-bold text-slate-950 hover:bg-brand-green/90">Ajouter</button>
                     <button type="button" onClick={handleExportExtensions} className="rounded-2xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800">Exporter</button>
-                    <button type="button" onClick={() => fileInputRef.current?.click()} className="rounded-2xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800">Importer</button>
+                    <button type="button" onClick={() => setImportModalOpen(true)} className="rounded-2xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800">Importer</button>
                     <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={(e) => handleImportExtensionsFile(e.target.files?.[0] || null)} className="sr-only" />
                     {extError && <span className="text-sm text-red-300">{extError}</span>}
                   </div>
@@ -2779,6 +2784,107 @@ export default function App() {
                         </div>
                       ))
                     )}
+                  </div>
+                </div>
+              )}
+
+              {importModalOpen && (
+                <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
+                  <div className="absolute inset-0 bg-black/50" onClick={() => setImportModalOpen(false)} />
+                  <div className="relative max-w-2xl w-full rounded-2xl bg-slate-900 border border-slate-700 p-6 text-white z-70">
+                    <h3 className="text-lg font-semibold">Importer une extension depuis Internet</h3>
+                    <p className="text-sm text-slate-400 mt-2">Tapez un nom de paquet NPM ou une URL directe vers un fichier JSON d'extension.</p>
+
+                    <div className="mt-4 grid gap-3">
+                      <div className="flex gap-2">
+                        <input value={importQuery} onChange={(e) => setImportQuery(e.target.value)} placeholder="Rechercher NPM (ex: stripe) ou coller une URL" className="flex-1 rounded-2xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white outline-none" />
+                        <button type="button" onClick={async () => {
+                          setImportError('');
+                          const q = (importQuery || '').trim();
+                          if (!q) { setImportError('Entrez une requête ou URL.'); return; }
+                          // If looks like URL, try direct fetch
+                          try {
+                            const isUrl = /^https?:\/\//i.test(q);
+                            if (isUrl) {
+                              // fetch URL and try import as JSON
+                              const res = await fetch(q);
+                              if (!res.ok) throw new Error(`Échec du téléchargement: ${res.status}`);
+                              const txt = await res.text();
+                              try {
+                                const json = JSON.parse(txt);
+                                // emulate file import handler
+                                await handleImportExtensionsFile(new File([txt], 'import.json', { type: 'application/json' }));
+                                setImportModalOpen(false);
+                                return;
+                              } catch (err) {
+                                throw new Error('Le contenu récupéré n\'est pas un JSON valide.');
+                              }
+                            } else {
+                              // treat as NPM search
+                              setSearching(true);
+                              setSearchResults([]);
+                              const resp = await fetch(`https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(q)}&size=12`);
+                              if (!resp.ok) throw new Error('Recherche NPM échouée');
+                              const data = await resp.json();
+                              const objs = Array.isArray(data.objects) ? data.objects.map((o: any) => ({ name: o.package.name, version: o.package.version, description: o.package.description, links: o.package.links })) : [];
+                              setSearchResults(objs);
+                            }
+                          } catch (err: any) {
+                            setImportError(err?.message || 'Erreur lors de l\'import.');
+                          } finally {
+                            setSearching(false);
+                          }
+                        }} className="rounded-2xl bg-brand-green px-4 py-2 text-sm font-bold text-slate-900">Rechercher / Télécharger</button>
+                      </div>
+
+                      {importError && <div className="text-sm text-red-300">{importError}</div>}
+
+                      {searching && <div className="text-sm text-slate-300">Recherche en cours…</div>}
+
+                      {searchResults.length > 0 && (
+                        <div className="mt-2">
+                          <h4 className="text-sm text-slate-200 font-semibold mb-2">Résultats NPM</h4>
+                          <div className="space-y-2 max-h-56 overflow-auto">
+                            {searchResults.map((r) => (
+                              <div key={r.name} className="flex items-center justify-between bg-slate-800 p-3 rounded-xl">
+                                <div>
+                                  <div className="text-sm font-semibold">{r.name} <span className="text-xs text-slate-400">{r.version}</span></div>
+                                  <div className="text-xs text-slate-400">{r.description}</div>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                  <button type="button" onClick={async () => {
+                                    try {
+                                      setImportError('');
+                                      const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(r.name)}/latest`);
+                                      if (!res.ok) throw new Error('Impossible de récupérer le paquet');
+                                      const pkg = await res.json();
+                                      const newExt: PaymentExtension = {
+                                        id: `${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+                                        name: pkg.name || r.name,
+                                        provider: 'npm',
+                                        config: JSON.stringify({ version: pkg.version, repository: pkg.repository || pkg.homepage || pkg.links }, null, 2),
+                                        active: true,
+                                        createdAt: new Date().toLocaleString('fr-FR'),
+                                      };
+                                      savePaymentExtensions([newExt, ...paymentExtensions]);
+                                      try { await logActivity(localStorage.getItem('siteCurrentUserEmail') || 'admin', `Extension importée depuis NPM: ${newExt.name}`); } catch {}
+                                      setImportModalOpen(false);
+                                    } catch (err: any) {
+                                      setImportError(err?.message || 'Import NPM échoué');
+                                    }
+                                  }} className="rounded-xl bg-brand-green px-3 py-2 text-xs font-semibold text-slate-900">Importer</button>
+                                  <a href={r.links?.npm || `https://www.npmjs.com/package/${r.name}`} target="_blank" rel="noreferrer" className="text-xs text-slate-400 underline">Voir</a>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-6 flex justify-end">
+                      <button type="button" onClick={() => setImportModalOpen(false)} className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-200">Fermer</button>
+                    </div>
                   </div>
                 </div>
               )}
