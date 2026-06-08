@@ -2235,7 +2235,12 @@ export default function App() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-2">Indicatif</label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-xs font-semibold text-slate-300">Indicatif</label>
+                        <span className="text-sm font-medium text-white">
+                          {getDialCodeFlag(registerCountryCode)} {registerCountryCode}
+                        </span>
+                      </div>
                       <select
                         value={registerCountryCode}
                         onChange={(e) => setRegisterCountryCode(e.target.value)}
