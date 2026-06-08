@@ -494,9 +494,15 @@ app.post('/api/tier-progress', async (req, res) => {
 });
 
 app.post('/api/pay', async (req, res) => {
-  const { amount, currency, customerName, customerEmail, description, orderId, callbackUrl, returnUrl } = req.body;
-  if (!amount || !currency || !customerName || !customerEmail || !description || !orderId) {
-    return res.status(400).json({ error: 'Tous les champs de paiement requis doivent être fournis.' });
+  const { amount, phoneNumber, network, description, identifier, customerName, customerEmail } = req.body;
+  if (!phoneNumber || !amount || !description || !identifier || !network) {
+    return res.status(400).json({ error: 'phoneNumber, amount, description, identifier et network sont requis.' });
+  }
+
+  const normalizedNetwork = String(network).trim().toUpperCase();
+  const allowedNetworks = ['FLOOZ', 'TMONEY'];
+  if (!allowedNetworks.includes(normalizedNetwork)) {
+    return res.status(400).json({ error: `Network invalide. Choisissez ${allowedNetworks.join(' ou ')}.` });
   }
 
   const apiKey = process.env.PAYGATE_GLOBAL_API_KEY;
@@ -505,21 +511,18 @@ app.post('/api/pay', async (req, res) => {
   }
 
   try {
-    const paymentResponse = await fetch('https://paygateglobal.com/api/v1/pay', {
+    const paymentResponse = await fetch('https://paygateglobal.com/api/v1/payMethode', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        amount,
-        currency,
-        customerName,
-        customerEmail,
-        description,
-        orderId,
-        callbackUrl,
-        returnUrl,
+        auth_token: apiKey,
+        phone_number: String(phoneNumber).trim(),
+        amount: Math.round(Number(amount)),
+        description: String(description).trim(),
+        identifier: String(identifier).trim(),
+        network: normalizedNetwork,
       }),
     });
 
@@ -528,7 +531,7 @@ app.post('/api/pay', async (req, res) => {
       return res.status(paymentResponse.status).json({ error: result.error || result.message || 'Erreur PayGateGlobal' });
     }
 
-    await logActivity(String(customerEmail), `Transaction PayGateGlobal initiée (${orderId})`);
+    await logActivity(String(customerEmail || phoneNumber), `Transaction PayGateGlobal initiée (${identifier})`);
     return res.json(result);
   } catch (error: any) {
     console.error('Erreur de transaction PayGateGlobal :', error);
@@ -536,6 +539,31 @@ app.post('/api/pay', async (req, res) => {
   }
 });
 
+app.post('/api/paygate/callback', async (req, res) => {
+  const callbackPayload = Object.keys(req.body || {}).length ? req.body : req.query;
+
+  if (!callbackPayload || Object.keys(callbackPayload).length === 0) {
+    return res.status(400).json({ error: 'Aucun payload de callback reçu.' });
+  }
+
+  const customerEmail = String(callbackPayload.customerEmail || callbackPayload.email || 'callback@paygate');
+  const orderId = String(callbackPayload.orderId || callbackPayload.order_id || callbackPayload.reference || callbackPayload.tx_reference || callbackPayload.identifier || 'unknown');
+  const status = String(callbackPayload.status || callbackPayload.payment_status || callbackPayload.transaction_status || 'inconnu');
+
+  const createdAt = new Date().toLocaleString('fr-FR');
+  runWrite('INSERT INTO activity (email, action, createdAt) VALUES (?, ?, ?)', [
+    customerEmail,
+    `Callback PayGateGlobal reçu : commande=${orderId}, statut=${status}`,
+    createdAt,
+  ]);
+  deleteOldActivity();
+
+  console.log('PayGateGlobal callback reçu :', callbackPayload);
+
+  return res.json({ success: true, received: callbackPayload });
+});
+
+// Legacy callback endpoint for backward compatibility
 app.post('/api/pay/callback', async (req, res) => {
   const callbackPayload = Object.keys(req.body || {}).length ? req.body : req.query;
 

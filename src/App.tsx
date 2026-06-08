@@ -144,13 +144,14 @@ export default function App() {
   const [surveySaveMessage, setSurveySaveMessage] = useState<string>('');
   const [surveySaveError, setSurveySaveError] = useState<string>('');
   const [paymentAmount, setPaymentAmount] = useState<number>(5000);
-  const [paymentCurrency, setPaymentCurrency] = useState<string>('XOF');
+  const [paymentPhoneNumber, setPaymentPhoneNumber] = useState<string>('+228 91551295');
+  const [paymentNetwork, setPaymentNetwork] = useState<'FLOOZ' | 'TMONEY'>('TMONEY');
   const [paymentCustomerName, setPaymentCustomerName] = useState<string>('Parent Test');
   const [paymentCustomerEmail, setPaymentCustomerEmail] = useState<string>('parent@example.com');
   const [paymentDescription, setPaymentDescription] = useState<string>('Frais de scolarité supplémentaires');
   const [paymentOrderId, setPaymentOrderId] = useState<string>('ORDER-001');
-  const [paymentCallbackUrl, setPaymentCallbackUrl] = useState<string>('');
-  const [paymentReturnUrl, setPaymentReturnUrl] = useState<string>('');
+  const [paymentCallbackUrl, setPaymentCallbackUrl] = useState<string>('https://ecoletrack-5481.onrender.com/api/paygate/callback');
+  const [paymentReturnUrl, setPaymentReturnUrl] = useState<string>('https://ecolestrack.vercel.app/paiement/succes');
   const [paymentProcessing, setPaymentProcessing] = useState<boolean>(false);
   const [paymentResponse, setPaymentResponse] = useState<string>('');
   const [paymentError, setPaymentError] = useState<string>('');
@@ -501,7 +502,7 @@ export default function App() {
       setPaymentError('Montant de paiement invalide.');
       return;
     }
-    if (!paymentCustomerName || !paymentCustomerEmail || !paymentDescription || !paymentOrderId) {
+    if (!paymentPhoneNumber || !paymentNetwork || !paymentDescription || !paymentOrderId) {
       setPaymentError('Tous les champs de paiement obligatoires doivent être renseignés.');
       return;
     }
@@ -510,13 +511,12 @@ export default function App() {
     try {
       const result = await initiatePayGateTransaction({
         amount: Math.round(paymentAmount),
-        currency: paymentCurrency,
+        phoneNumber: paymentPhoneNumber.trim(),
+        network: paymentNetwork,
+        description: paymentDescription,
+        identifier: paymentOrderId,
         customerName: paymentCustomerName,
         customerEmail: paymentCustomerEmail,
-        description: paymentDescription,
-        orderId: paymentOrderId,
-        callbackUrl: paymentCallbackUrl || undefined,
-        returnUrl: paymentReturnUrl || undefined,
       });
 
       if (result && typeof result === 'object') {
@@ -544,13 +544,12 @@ export default function App() {
 
       const result = await initiatePayGateTransaction({
         amount: 5000,
-        currency: 'XOF',
+        phoneNumber: '221000000000',
+        network: 'TMONEY',
+        description: 'Participation au projet Ecole Track Afrique',
+        identifier: `PARTICIPATION-${Date.now()}`,
         customerName: 'Contribution Ecole Track',
         customerEmail: 'participation@ecoletrack.africa',
-        description: 'Participation au projet Ecole Track Afrique',
-        orderId: `PARTICIPATION-${Date.now()}`,
-        callbackUrl,
-        returnUrl,
       });
 
       const redirectUrl = (result as any).redirect_url || result.redirectUrl || result.redirectUrl;
@@ -580,13 +579,12 @@ export default function App() {
 
       const result = await initiatePayGateTransaction({
         amount: 1000,
-        currency: 'XOF',
+        phoneNumber: '221000000000',
+        network: 'TMONEY',
+        description: 'Don volontaire pour le projet Ecole Track Afrique',
+        identifier: `DON-${Date.now()}`,
         customerName: 'Don pour Ecole Track',
         customerEmail: 'donateur@ecoletrack.africa',
-        description: 'Don volontaire pour le projet Ecole Track Afrique',
-        orderId: `DON-${Date.now()}`,
-        callbackUrl,
-        returnUrl,
       });
 
       const redirectUrl = (result as any).redirect_url || result.redirectUrl;
@@ -620,7 +618,7 @@ export default function App() {
     if (typeof window === 'undefined') return;
 
     const path = window.location.pathname;
-    if (path !== '/payment-result') return;
+    if (path !== '/payment-result' && path !== '/paiement/succes') return;
 
     const params = new URLSearchParams(window.location.search);
     const entries = Array.from(params.entries());
@@ -1416,13 +1414,24 @@ export default function App() {
                     />
                   </div>
                   <div className="rounded-2xl border border-slate-700 bg-slate-950 p-4">
-                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2">Devise</label>
+                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2">Téléphone du client</label>
                     <input
-                      type="text"
-                      value={paymentCurrency}
-                      onChange={(e) => setPaymentCurrency(e.target.value.toUpperCase())}
+                      type="tel"
+                      value={paymentPhoneNumber}
+                      onChange={(e) => setPaymentPhoneNumber(e.target.value)}
                       className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-sm text-white outline-none focus:border-brand-green"
                     />
+                  </div>
+                  <div className="rounded-2xl border border-slate-700 bg-slate-950 p-4">
+                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2">Réseau</label>
+                    <select
+                      value={paymentNetwork}
+                      onChange={(e) => setPaymentNetwork(e.target.value as 'FLOOZ' | 'TMONEY')}
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-sm text-white outline-none focus:border-brand-green"
+                    >
+                      <option value="TMONEY">TMONEY</option>
+                      <option value="FLOOZ">FLOOZ</option>
+                    </select>
                   </div>
                   <div className="rounded-2xl border border-slate-700 bg-slate-950 p-4 sm:col-span-2">
                     <label className="block text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2">Nom du client</label>

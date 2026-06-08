@@ -162,47 +162,34 @@ export const updateUserProfile = async (oldEmail: string, profile: UserProfile):
 
 export interface PayGateTransactionPayload {
   amount: number;
-  currency: string;
-  customerName: string;
-  customerEmail: string;
+  phoneNumber: string;
+  network: 'FLOOZ' | 'TMONEY';
   description: string;
-  orderId: string;
+  identifier: string;
+  customerName?: string;
+  customerEmail?: string;
   callbackUrl?: string;
   returnUrl?: string;
 }
 
 export interface PayGateTransactionResponse {
-  status: string;
-  transactionId: string;
+  tx_reference?: string;
+  status?: number;
+  transactionId?: string;
   redirectUrl?: string;
+  redirect_url?: string;
   message?: string;
   [key: string]: unknown;
 }
 
-const PAYGATE_API_KEY = import.meta.env.VITE_PAYGATE_GLOBAL_API_KEY as string;
-
 export const initiatePayGateTransaction = async (
   payload: PayGateTransactionPayload,
 ): Promise<PayGateTransactionResponse> => {
-  if (!PAYGATE_API_KEY) {
-    throw new Error('La clé API PayGateGlobal n’est pas configurée. Ajoutez VITE_PAYGATE_GLOBAL_API_KEY dans .env.');
-  }
-
-  const response = await fetch('https://paygateglobal.com/api/v1/pay', {
+  return apiFetch<PayGateTransactionResponse>('/api/pay', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${PAYGATE_API_KEY}`,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`PayGateGlobal HTTP ${response.status}: ${errorBody}`);
-  }
-
-  return response.json();
 };
 
 export const logActivity = async (email: string, action: string): Promise<void> => {
