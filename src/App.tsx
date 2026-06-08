@@ -2758,6 +2758,25 @@ export default function App() {
           </button>
 
           <div className="flex flex-col sm:flex-row items-center gap-3 relative">
+            <div className="flex items-center gap-2 flex-nowrap whitespace-nowrap">
+              <button 
+                type="button"
+                onClick={handleParticipateClick}
+                className="px-5 py-2.5 bg-brand-green hover:bg-brand-green/90 text-white hover:text-slate-900 rounded-xl text-xs font-bold transition-all shadow-xs hover:shadow-md flex items-center gap-1.5"
+              >
+                <span>J'investis</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={handleDonateClick}
+                className="px-3 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold transition-all shadow-xs hover:shadow-md"
+              >
+                Faire un don
+              </button>
+              {/* WhatsApp header button removed; kept floating admin chat as WhatsApp */}
+            </div>
+
             {isRegistered && (
               <div className="relative" ref={profileMenuRef}>
                 <button
@@ -2797,25 +2816,6 @@ export default function App() {
                 )}
               </div>
             )}
-
-            <div className="flex items-center gap-2 flex-nowrap whitespace-nowrap">
-              <button 
-                type="button"
-                onClick={handleParticipateClick}
-                className="px-5 py-2.5 bg-brand-green hover:bg-brand-green/90 text-white hover:text-slate-900 rounded-xl text-xs font-bold transition-all shadow-xs hover:shadow-md flex items-center gap-1.5"
-              >
-                <span>J'investis</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={handleDonateClick}
-                className="px-3 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold transition-all shadow-xs hover:shadow-md"
-              >
-                Faire un don
-              </button>
-              {/* WhatsApp header button removed; kept floating admin chat as WhatsApp */}
-            </div>
           </div>
         </div>
       </header>
