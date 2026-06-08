@@ -500,7 +500,22 @@ const DIAL_CODE_FLAGS: Record<string, string> = {
   '+998': '🇺🇿',
 };
 
-const getDialCodeFlag = (code: string) => DIAL_CODE_FLAGS[code] || '🌍';
+const getDialCodeFlag = (code: string) => {
+  if (!code) return '🌍';
+  const raw = String(code).trim();
+  const normalized = raw.startsWith('+') ? raw : `+${raw}`;
+  // direct match
+  if (DIAL_CODE_FLAGS[raw]) return DIAL_CODE_FLAGS[raw];
+  if (DIAL_CODE_FLAGS[normalized]) return DIAL_CODE_FLAGS[normalized];
+
+  // try longest-prefix match (handles cases like +1, +12 vs +123)
+  const keys = Object.keys(DIAL_CODE_FLAGS).sort((a, b) => b.length - a.length);
+  for (const k of keys) {
+    if (normalized.startsWith(k)) return DIAL_CODE_FLAGS[k];
+  }
+
+  return '🌍';
+};
 
 export default function App() {
   // Campaign State
@@ -2783,7 +2798,7 @@ export default function App() {
               </div>
             )}
 
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-nowrap whitespace-nowrap">
               <button 
                 type="button"
                 onClick={handleParticipateClick}
@@ -2795,19 +2810,11 @@ export default function App() {
               <button
                 type="button"
                 onClick={handleDonateClick}
-                className="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold transition-all shadow-xs hover:shadow-md"
+                className="px-3 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold transition-all shadow-xs hover:shadow-md"
               >
                 Faire un don
               </button>
-              <a
-                href={whatsappAdminUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 px-3 py-2 bg-[#25D366] hover:bg-[#1ebe57] text-white rounded-xl text-xs font-semibold transition-all shadow-xs hover:shadow-md"
-              >
-                <PhoneCall className="w-3.5 h-3.5" />
-                <span>WhatsApp</span>
-              </a>
+              {/* WhatsApp header button removed; kept floating admin chat as WhatsApp */}
             </div>
           </div>
         </div>
@@ -3768,10 +3775,19 @@ export default function App() {
         target="_blank"
         rel="noreferrer"
         className="fixed right-6 bottom-6 z-50 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-3 shadow-2xl shadow-slate-950/20 text-white text-sm font-semibold transition-transform duration-200 hover:-translate-y-0.5 hover:bg-[#1ebe57]"
-        aria-label="Contacter l'administrateur sur WhatsApp"
+        aria-label="Ouvrir WhatsApp"
       >
-        <PhoneCall className="w-4 h-4" />
-        <span>Chat Admin</span>
+        <svg
+          className="w-4 h-4"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <title>WhatsApp</title>
+          <path d="M20.52 3.48A11.94 11.94 0 0012 0C5.373 0 .001 5.373.001 12c0 2.115.548 4.18 1.59 6.02L0 24l6.2-1.62A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12 0-3.2-1.245-6.2-3.48-8.52zM12 22c-1.96 0-3.84-.5-5.48-1.44l-.39-.22-3.68.96.98-3.59-.25-.37A9.97 9.97 0 012 12C2 6.48 6.48 2 12 2c2.7 0 5.21 1.05 7.09 2.94A9.97 9.97 0 0122 12c0 5.52-4.48 10-10 10zm5.32-7.95c-.29-.15-1.71-.84-1.98-.94-.27-.1-.47-.15-.67.15s-.77.94-.95 1.13c-.17.19-.34.21-.63.07-.29-.15-1.22-.45-2.32-1.43-.86-.77-1.44-1.72-1.61-2.01-.17-.29-.02-.45.13-.6.13-.13.29-.34.44-.51.15-.17.2-.29.3-.48.1-.2 0-.36-.05-.51-.05-.15-.67-1.6-.92-2.2-.24-.58-.49-.5-.67-.51-.17-.01-.37-.01-.57-.01-.2 0-.52.07-.79.36-.27.29-1.04 1.02-1.04 2.48 0 1.45 1.06 2.85 1.21 3.05.15.2 2.09 3.35 5.06 4.69 2.98 1.35 3.17 1.01 3.75.95.58-.06 1.88-.77 2.14-1.52.27-.75.27-1.4.19-1.52-.08-.12-.29-.2-.58-.35z" />
+        </svg>
+        <span>WhatsApp</span>
       </a>
 
     </div>
