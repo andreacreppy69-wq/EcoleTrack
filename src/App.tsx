@@ -576,6 +576,23 @@ export default function App() {
   const [showEventLog, setShowEventLog] = useState<boolean>(false);
   const [showUserAccounts, setShowUserAccounts] = useState<boolean>(false);
   const [showPaymentSection, setShowPaymentSection] = useState<boolean>(false);
+  const [showPaymentExtensions, setShowPaymentExtensions] = useState<boolean>(false);
+
+  type PaymentExtension = {
+    id: string;
+    name: string;
+    provider: string;
+    config: string; // JSON or connection string
+    active: boolean;
+    createdAt: string;
+  };
+
+  const [paymentExtensions, setPaymentExtensions] = useState<PaymentExtension[]>([]);
+  const [extName, setExtName] = useState<string>('');
+  const [extProvider, setExtProvider] = useState<string>('');
+  const [extConfig, setExtConfig] = useState<string>('');
+  const [extError, setExtError] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [adminMessages, setAdminMessages] = useState<{ name: string; email: string; message: string; createdAt: string }[]>([]);
   const [tierProgress, setTierProgress] = useState<number[]>([15, 0, 0, 0]);
   const [tierInputs, setTierInputs] = useState<number[]>([15, 0, 0, 0]);
@@ -723,6 +740,7 @@ export default function App() {
   const activityJournalRef = useRef<HTMLDivElement | null>(null);
   const eventLogRef = useRef<HTMLDivElement | null>(null);
   const paymentSectionRef = useRef<HTMLDivElement | null>(null);
+  const paymentExtensionsRef = useRef<HTMLDivElement | null>(null);
   const [profileDraft, setProfileDraft] = useState<UserProfile>(initialProfile);
   const [profileSaveError, setProfileSaveError] = useState<string>('');
   const [profileValidationErrors, setProfileValidationErrors] = useState<string[]>([]);
@@ -1077,6 +1095,120 @@ export default function App() {
     loadTierProgress();
     loadSurveyPercentages();
   }, []);
+
+  // Payment extensions persisted in localStorage (simple admin config)
+  const PAYMENT_EXT_KEY = 'sitePaymentExtensions';
+  const loadPaymentExtensions = () => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(PAYMENT_EXT_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as PaymentExtension[];
+      if (Array.isArray(parsed)) setPaymentExtensions(parsed);
+    } catch {
+      localStorage.removeItem(PAYMENT_EXT_KEY);
+    }
+  };
+
+  const savePaymentExtensions = (items: PaymentExtension[]) => {
+    setPaymentExtensions(items);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(PAYMENT_EXT_KEY, JSON.stringify(items));
+      } catch {
+        // ignore
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (isAdminAuthenticated) loadPaymentExtensions();
+  }, [isAdminAuthenticated]);
+
+  const handleAddExtension = async () => {
+    setExtError('');
+    if (!extName.trim() || !extProvider.trim()) {
+      setExtError('Nom et fournisseur requis.');
+      return;
+    }
+    const newExt: PaymentExtension = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+      name: extName.trim(),
+      provider: extProvider.trim(),
+      config: extConfig.trim(),
+      active: true,
+      createdAt: new Date().toLocaleString('fr-FR'),
+    };
+    const next = [newExt, ...paymentExtensions];
+    savePaymentExtensions(next);
+    try {
+      await logActivity(localStorage.getItem('siteCurrentUserEmail') || 'admin', `Extension paiement ajoutée: ${newExt.name}`);
+    } catch {}
+    setExtName('');
+    setExtProvider('');
+    setExtConfig('');
+  };
+
+  const handleDeleteExtension = async (id: string) => {
+    const next = paymentExtensions.filter((p) => p.id !== id);
+    savePaymentExtensions(next);
+    try {
+      await logActivity(localStorage.getItem('siteCurrentUserEmail') || 'admin', `Extension paiement supprimée: ${id}`);
+    } catch {}
+  };
+
+  const toggleExtensionActive = async (id: string) => {
+    const next = paymentExtensions.map((p) => p.id === id ? { ...p, active: !p.active } : p);
+    savePaymentExtensions(next);
+    try {
+      const item = next.find((x) => x.id === id);
+      if (item) await logActivity(localStorage.getItem('siteCurrentUserEmail') || 'admin', `Extension paiement ${item.active ? 'activée' : 'désactivée'}: ${item.name}`);
+    } catch {}
+  };
+
+  const handleExportExtensions = () => {
+    try {
+      const data = JSON.stringify(paymentExtensions, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `payment-extensions-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setExtError('Impossible d\'exporter les extensions.');
+    }
+  };
+
+  const handleImportExtensionsFile = async (file: File | null) => {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      if (!Array.isArray(parsed)) throw new Error('Fichier JSON invalide : tableau attendu.');
+      const normalized = parsed.map((p: any, idx: number) => ({
+        id: String(p.id || `${Date.now()}-${idx}`),
+        name: String(p.name || '').trim(),
+        provider: String(p.provider || '').trim(),
+        config: String(p.config || ''),
+        active: typeof p.active === 'boolean' ? p.active : true,
+        createdAt: String(p.createdAt || new Date().toLocaleString('fr-FR')),
+      })).filter((p: any) => p.name && p.provider);
+      if (normalized.length === 0) throw new Error('Aucune extension valide dans le fichier.');
+      const merged = [...normalized, ...paymentExtensions];
+      savePaymentExtensions(merged);
+      try {
+        await logActivity(localStorage.getItem('siteCurrentUserEmail') || 'admin', `Extensions paiement importées: ${normalized.length}`);
+      } catch {}
+    } catch (err: any) {
+      setExtError(err?.message || 'Import impossible.');
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1889,7 +2021,26 @@ export default function App() {
                               setShowAdminJournal(false);
                               setShowEventLog(false);
                               setShowUserAccounts(false);
+                              setShowPaymentSection(false);
+                              setShowPaymentExtensions(true);
+                              setShowAdminMenu(false);
+                              setTimeout(() => {
+                                paymentExtensionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                              }, 50);
+                            }}
+                            className="w-full text-left px-3 py-2 rounded-md text-xs hover:bg-slate-800"
+                          >
+                            Gérer les extensions de paiement
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowCreateAccount(false);
+                              setShowAdminJournal(false);
+                              setShowEventLog(false);
+                              setShowUserAccounts(false);
                               setShowPaymentSection(true);
+                              setShowPaymentExtensions(false);
                               setShowAdminMenu(false);
                               setTimeout(() => {
                                 paymentSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2574,6 +2725,60 @@ export default function App() {
                         {deletingUser ? 'Suppression...' : 'Confirmer la suppression'}
                       </button>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {showPaymentExtensions && (
+                <div ref={paymentExtensionsRef} className="rounded-3xl border border-slate-700 bg-slate-950 p-6 mb-6">
+                  <h2 className="text-lg font-semibold text-white mb-4">Extensions de paiement</h2>
+                  <p className="text-sm text-slate-400 mb-4">Ajoutez et configurez les passerelles de paiement en ligne disponibles pour l'administration.</p>
+
+                  <div className="grid gap-4 sm:grid-cols-3 mb-4">
+                    <div className="sm:col-span-1">
+                      <label className="block text-xs font-semibold text-slate-300 mb-2">Nom</label>
+                      <input value={extName} onChange={(e) => setExtName(e.target.value)} className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white outline-none focus:border-brand-green" />
+                    </div>
+                    <div className="sm:col-span-1">
+                      <label className="block text-xs font-semibold text-slate-300 mb-2">Fournisseur</label>
+                      <input value={extProvider} onChange={(e) => setExtProvider(e.target.value)} className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white outline-none focus:border-brand-green" />
+                    </div>
+                    <div className="sm:col-span-1">
+                      <label className="block text-xs font-semibold text-slate-300 mb-2">Configuration (JSON ou chaîne)</label>
+                      <input value={extConfig} onChange={(e) => setExtConfig(e.target.value)} className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white outline-none focus:border-brand-green" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <button type="button" onClick={handleAddExtension} className="rounded-2xl bg-brand-green px-4 py-2 text-sm font-bold text-slate-950 hover:bg-brand-green/90">Ajouter</button>
+                    <button type="button" onClick={handleExportExtensions} className="rounded-2xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800">Exporter</button>
+                    <button type="button" onClick={() => fileInputRef.current?.click()} className="rounded-2xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800">Importer</button>
+                    <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={(e) => handleImportExtensionsFile(e.target.files?.[0] || null)} className="sr-only" />
+                    {extError && <span className="text-sm text-red-300">{extError}</span>}
+                  </div>
+
+                  <div className="space-y-3">
+                    {paymentExtensions.length === 0 ? (
+                      <p className="text-sm text-slate-400">Aucune extension configurée.</p>
+                    ) : (
+                      paymentExtensions.map((ext) => (
+                        <div key={ext.id} className="rounded-2xl bg-slate-900 p-4 flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center gap-3">
+                              <strong className="text-sm text-white">{ext.name}</strong>
+                              <span className="text-xs text-slate-400">{ext.provider}</span>
+                              <span className="text-xs text-slate-500">· {ext.createdAt}</span>
+                            </div>
+                            <pre className="mt-2 text-xs text-slate-300 break-words max-h-28 overflow-auto">{ext.config || '—'}</pre>
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                            <button type="button" onClick={() => toggleExtensionActive(ext.id)} className={`rounded-xl px-3 py-2 text-xs font-semibold ${ext.active ? 'bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'}`}>
+                              {ext.active ? 'Active' : 'Désactivée'}
+                            </button>
+                            <button type="button" onClick={() => handleDeleteExtension(ext.id)} className="rounded-xl bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-200 hover:bg-red-500/20">Supprimer</button>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               )}
