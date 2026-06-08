@@ -239,13 +239,40 @@ const ensureDefaultAdmin = () => {
 };
 // call ensureDefaultAdmin() after helper functions are defined
 
-// In-memory session store: token -> { email, role, createdAt }
-const sessions = new Map<string, { email: string; role: string; createdAt: number }>();
+// Session store with persistence for Render (in-memory fallback if file ops fail)
+const sessionsPath = path.resolve(process.cwd(), '.sessions.json');
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24; // 24h
+
+const loadSessions = (): Map<string, { email: string; role: string; createdAt: number }> => {
+  try {
+    if (fs.existsSync(sessionsPath)) {
+      const data = JSON.parse(fs.readFileSync(sessionsPath, 'utf8'));
+      return new Map(Object.entries(data));
+    }
+  } catch (e) {
+    // Fallback to empty map on read error
+  }
+  return new Map();
+};
+
+const sessions = loadSessions();
+
+const saveSessions = () => {
+  try {
+    const obj: Record<string, { email: string; role: string; createdAt: number }> = {};
+    sessions.forEach((v, k) => {
+      obj[k] = v;
+    });
+    fs.writeFileSync(sessionsPath, JSON.stringify(obj, null, 2));
+  } catch (e) {
+    console.warn('Failed to persist sessions:', e);
+  }
+};
 
 const createSession = (email: string, role: string) => {
   const token = crypto.randomBytes(24).toString('hex');
   sessions.set(token, { email: email.toLowerCase(), role, createdAt: Date.now() });
+  saveSessions();
   return token;
 };
 
@@ -255,6 +282,7 @@ const getSession = (token: string | undefined) => {
   if (!s) return undefined;
   if (Date.now() - s.createdAt > SESSION_TTL_MS) {
     sessions.delete(token);
+    saveSessions();
     return undefined;
   }
   return s;

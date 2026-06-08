@@ -719,6 +719,20 @@ export default function App() {
     }
   }, [currentUserEmail, isAdminAuthenticated]);
 
+  // Restore admin session from token on page load (mount)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const token = localStorage.getItem('siteAuthToken');
+    const isAdmin = localStorage.getItem('siteAdminAuthenticated') === 'true';
+    const storedEmail = localStorage.getItem('siteCurrentUserEmail');
+    
+    if (token && isAdmin && !isAdminAuthenticated && storedEmail) {
+      // Restore admin session - set authenticated and trigger profile load
+      setIsAdminAuthenticated(true);
+      setCurrentUserEmail(storedEmail);
+    }
+  }, []);
+
   const ADMIN_EMAIL = 'admin@admin.com';
   const ADMIN_PASSWORD = 'Admin@123';
 
@@ -986,7 +1000,7 @@ export default function App() {
     }
   };
 
-  const handleAdminLoginSubmit = (e: FormEvent) => {
+  const handleAdminLoginSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setAdminError('');
 
@@ -995,14 +1009,30 @@ export default function App() {
       return;
     }
 
-    if (adminEmail !== ADMIN_EMAIL || adminPassword !== ADMIN_PASSWORD) {
-      setAdminError('Email ou mot de passe administrateur incorrect.');
-      return;
-    }
+    try {
+      const { user, token } = await loginUser(adminEmail.trim(), adminPassword.trim());
+      
+      // Verify that the user is an admin
+      const isAdmin = String(user.role || '').toLowerCase() === 'admin';
+      if (!isAdmin) {
+        setAdminError('Cet utilisateur n\'a pas les privilèges administrateur.');
+        return;
+      }
 
-    setIsAdminAuthenticated(true);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('siteAdminAuthenticated', 'true');
+      if (token && typeof window !== 'undefined') {
+        localStorage.setItem('siteAuthToken', token);
+      }
+      
+      setIsAdminAuthenticated(true);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('siteAdminAuthenticated', 'true');
+      }
+      
+      setAdminEmail('');
+      setAdminPassword('');
+      logUserActivity(user.email, 'Connexion administrateur');
+    } catch (error: any) {
+      setAdminError(error?.message || 'Erreur lors de la connexion administrateur.');
     }
   };
 
@@ -1017,6 +1047,7 @@ export default function App() {
     setAdminMessages([]);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('siteAdminAuthenticated');
+      localStorage.removeItem('siteAuthToken');
     }
   };
 

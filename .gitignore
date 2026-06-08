@@ -8,3 +8,5 @@ coverage/
 !.env.example
 database.sqlite
 database.json
+.sessions.json
+
