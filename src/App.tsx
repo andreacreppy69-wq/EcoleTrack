@@ -2302,9 +2302,9 @@ export default function App() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label className="block text-xs font-semibold text-slate-300">Pays</label>
+                        <label className="block text-xs font-semibold text-slate-300">Indicatif</label>
                         <span className="text-sm font-medium text-white">
-                          {getDialCodeFlag(registerCountryCode)}
+                          {getDialCodeFlag(registerCountryCode)} {registerCountryCode}
                         </span>
                       </div>
                       <select
@@ -2314,7 +2314,7 @@ export default function App() {
                       >
                         {COUNTRY_DIAL_CODES.map((item) => (
                           <option key={item.code} value={item.code} title={item.country}>
-                            {getDialCodeFlag(item.code)}
+                            {getDialCodeFlag(item.code)} {item.code}
                           </option>
                         ))}
                       </select>
