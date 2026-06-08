@@ -172,6 +172,12 @@ export const updateUserProfile = async (oldEmail: string, profile: UserProfile):
   return data.user;
 };
 
+export const deleteUser = async (email: string): Promise<void> => {
+  await apiFetch(`/api/users/${encodeURIComponent(email)}`, {
+    method: 'DELETE',
+  });
+};
+
 export interface PayGateTransactionPayload {
   amount: number;
   phoneNumber: string;

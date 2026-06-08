@@ -296,11 +296,17 @@ const getSession = (token: string | undefined) => {
 const requireAdmin = (req: any, res: any, next: any) => {
   try {
     const auth = String(req.headers.authorization || '');
+    console.log('[AUTH] requireAdmin header:', auth ? '[present]' : '[missing]');
     const m = auth.match(/^Bearer\s+(.+)$/i);
-    if (!m) return res.status(401).json({ error: 'Token d\'authentification manquant.' });
+    if (!m) {
+      console.warn('[AUTH] Bearer token not found in Authorization header');
+      return res.status(401).json({ error: 'Token d\'authentification manquant.' });
+    }
     const token = m[1];
+    console.log('[AUTH] requireAdmin token:', token ? `${token.slice(0,6)}...` : '[empty]');
     const s = getSession(token);
     if (!s) return res.status(401).json({ error: 'Session invalide ou expirée.' });
+    console.log('[AUTH] session found for', s.email, 'role=', s.role);
     const user = getUserByEmail(s.email);
     if (!user) return res.status(401).json({ error: 'Utilisateur introuvable pour la session.' });
     if ((user.role || 'user') !== 'admin') return res.status(403).json({ error: 'Accès refusé: privilèges administrateur requis.' });
@@ -658,6 +664,24 @@ app.post('/api/activity', async (req, res) => {
   }
   await logActivity(String(email), String(action));
   return res.json({ success: true });
+});
+
+// Admin: delete a user by email
+app.delete('/api/users/:email', requireAdmin, async (req, res) => {
+  try {
+    const email = String(req.params.email || '').toLowerCase();
+    console.log('[DELETE] request for user:', email);
+    if (!email) return res.status(400).json({ error: 'Email requis.' });
+    const existing = getUserByEmail(email);
+    console.log('[DELETE] existing user lookup:', !!existing);
+    if (!existing) return res.status(404).json({ error: 'Utilisateur introuvable.' });
+    runWrite('DELETE FROM users WHERE lower(email) = ?', [email]);
+    await logActivity(email, 'Compte utilisateur supprimé par l\'administrateur');
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error('Erreur suppression utilisateur:', error);
+    return res.status(500).json({ error: 'Impossible de supprimer l\'utilisateur.' });
+  }
 });
 
 app.post('/api/users/login', async (req, res) => {

@@ -23,6 +23,7 @@ import {
   resetPassword,
   submitMessage,
   updateUserProfile,
+  deleteUser,
   initiatePayGateTransaction,
   logActivity,
 } from './api';
@@ -612,6 +613,9 @@ export default function App() {
   const [showPasswordChangeFields, setShowPasswordChangeFields] = useState<boolean>(false);
   const [passwordChangeEmailError, setPasswordChangeEmailError] = useState<string>('');
   const [users, setUsers] = useState<UserAccount[]>([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState<boolean>(false);
+  const [deleteModalTarget, setDeleteModalTarget] = useState<UserAccount | null>(null);
+  const [deletingUser, setDeletingUser] = useState<boolean>(false);
   const [userActivity, setUserActivity] = useState<ActivityRecord[]>([]);
   const [currentUserEmail, setCurrentUserEmail] = useState<string>(() => {
     if (typeof window === 'undefined') return '';
@@ -1642,6 +1646,38 @@ export default function App() {
     }
   };
 
+  const closeDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setDeleteModalTarget(null);
+    setDeletingUser(false);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!deleteModalTarget) return;
+    setDeletingUser(true);
+    try {
+      if (isAdminAuthenticated) {
+        await deleteUser(deleteModalTarget.email);
+        const updated = await getUsers();
+        saveUsers(updated);
+        if (currentUserEmail.toLowerCase() === deleteModalTarget.email.toLowerCase()) {
+          handleLogout();
+        }
+      } else {
+        const keptUsers = users.filter((item) => item.email !== deleteModalTarget.email);
+        saveUsers(keptUsers);
+        if (currentUserEmail.toLowerCase() === deleteModalTarget.email.toLowerCase()) {
+          handleLogout();
+        }
+      }
+      closeDeleteModal();
+    } catch (err) {
+      console.error('Suppression échouée', err);
+      alert('Impossible de supprimer le compte côté serveur.');
+      setDeletingUser(false);
+    }
+  };
+
   const handlePasswordChangeSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setPasswordChangeError('');
@@ -2498,11 +2534,8 @@ export default function App() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const keptUsers = users.filter((item) => item.email !== user.email);
-                                  saveUsers(keptUsers);
-                                  if (currentUserEmail.toLowerCase() === user.email.toLowerCase()) {
-                                    handleLogout();
-                                  }
+                                  setDeleteModalTarget(user);
+                                  setDeleteModalOpen(true);
                                 }}
                                 className="rounded-xl bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-200 hover:bg-red-500/20 transition-all"
                               >
@@ -2516,6 +2549,33 @@ export default function App() {
                   </table>
                 </div>
               </div>
+              )}
+
+              {deleteModalOpen && deleteModalTarget && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                  <div className="absolute inset-0 bg-black/50" onClick={closeDeleteModal} />
+                  <div className="relative max-w-md w-full rounded-2xl bg-slate-900 border border-slate-700 p-6 text-white z-60">
+                    <h3 className="text-lg font-semibold">Confirmer la suppression</h3>
+                    <p className="text-sm text-slate-300 mt-3">Êtes-vous sûr de vouloir supprimer le compte de <strong>{getDisplayName(deleteModalTarget)}</strong> ({deleteModalTarget.email}) ? Cette action est irréversible.</p>
+                    <div className="mt-6 flex justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={closeDeleteModal}
+                        className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800/90 transition-all"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="button"
+                        onClick={confirmDeleteUser}
+                        disabled={deletingUser}
+                        className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 transition-all disabled:opacity-60"
+                      >
+                        {deletingUser ? 'Suppression...' : 'Confirmer la suppression'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
 
               <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 mb-6">
