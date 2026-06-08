@@ -18,7 +18,7 @@ import {
   getTierProgress,
   saveTierProgress,
   loginUser,
-  createUser,
+  registerUser,
   changePassword,
   resetPassword,
   submitMessage,
@@ -883,7 +883,7 @@ export default function App() {
     }
 
     try {
-      const result = await createUser({
+      const result = await registerUser({
         firstName: registerFirstName.trim(),
         lastName: registerLastName.trim(),
         email: registerEmail.trim(),

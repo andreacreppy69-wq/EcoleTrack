@@ -117,12 +117,23 @@ export const loginUser = async (email: string, password: string): Promise<{ user
   });
 };
 
+export const registerUser = async (account: Omit<UserAccount, 'createdAt' | 'mustChangePassword'>): Promise<any> => {
+  const accountWithName = {
+    ...account,
+    name: `${account.firstName} ${account.lastName}`.trim(),
+  };
+  return apiFetch('/api/users/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(accountWithName),
+  });
+};
+
 export const createUser = async (account: Omit<UserAccount, 'createdAt' | 'mustChangePassword'>): Promise<any> => {
   const accountWithName = {
     ...account,
     name: `${account.firstName} ${account.lastName}`.trim(),
   };
-  // Only use the admin endpoint when the current session is authenticated as an admin.
   const isAdminSession = typeof window !== 'undefined' && localStorage.getItem('siteAdminAuthenticated') === 'true' && !!localStorage.getItem('siteAuthToken');
   const path = isAdminSession ? '/api/users/create' : '/api/users/register';
   return apiFetch(path, {
