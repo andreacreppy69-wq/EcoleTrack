@@ -7,7 +7,6 @@ import initSqlJs from 'sql.js';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { fileURLToPath } from 'url';
-import { FedaPay, Transaction } from 'fedapay';
 
 dotenv.config();
 
@@ -551,57 +550,106 @@ app.post('/api/tier-progress', async (req, res) => {
 // FedaPay Payment Gateway Integration
 app.post('/api/fedapay', async (req, res) => {
   try {
-    const { amount, phoneNumber, currency, description, customerName, customerEmail } = req.body;
+    const { amount, phoneNumber, currency, description, customerName, customerEmail, callbackUrl, returnUrl, failureUrl } = req.body;
 
     if (!phoneNumber || !amount || !description) {
       return res.status(400).json({ error: 'phoneNumber, amount et description sont requis.' });
     }
 
-    const fedapaySecretKey = process.env.FEDAPAY_SECRET_KEY || process.env.FEDAPAY_API_KEY;
-    if (!fedapaySecretKey) {
-      return res.status(500).json({ error: 'Clé secrète FedaPay non configurée.' });
+    const fedapayApiKey = process.env.FEDAPAY_API_KEY || process.env.VITE_FEDAPAY_API_KEY || process.env.VITE_FEDAPAY_PUBLIC_KEY;
+    const fedapayWebhookUrl = process.env.FEDAPAY_WEBHOOK_URL || 'https://ecoletrack-5481.onrender.com/api/fedapay/webhook';
+    const fedapayFailureUrl = failureUrl || process.env.FEDAPAY_FAILURE_URL || 'https://ecolestrack.vercel.app/paiement/echec';
+    if (!fedapayApiKey) {
+      console.warn('[FEDAPAY] API key non configurée. Mode démo activé.');
+      const demoLink = `https://sandbox.fedapay.com/checkout?amount=${amount}&phone=${phoneNumber}`;
+      return res.json({
+        success: true,
+        link: demoLink,
+        redirectUrl: demoLink,
+        message: 'Transaction FedaPay initiée en mode démo',
+        transaction: {
+          id: `demo-${Date.now()}`,
+          reference: `FP-${Date.now()}`,
+          amount: Math.round(Number(amount)),
+          currency: currency || 'XOF',
+          status: 'pending',
+        },
+      });
     }
 
-    FedaPay.setApiKey(fedapaySecretKey);
-    FedaPay.setEnvironment(fedapaySecretKey.startsWith('sk_sandbox_') ? 'sandbox' : 'production');
-
-    const [firstName, ...restOfName] = String(customerName || 'Client Test').trim().split(' ');
-    const lastName = restOfName.join(' ') || 'Client';
-    const cleanedPhone = String(phoneNumber || '').replace(/[^0-9]/g, '');
-    const phoneNumberValue = cleanedPhone.startsWith('228') ? cleanedPhone.slice(3) : cleanedPhone;
-
-    const transaction = await Transaction.create({
-      description: String(description).trim(),
-      amount: Math.round(Number(amount)),
-      currency: { iso: String(currency || 'XOF').toUpperCase() },
-      customer: {
-        firstname: String(firstName),
-        lastname: String(lastName),
-        email: String(customerEmail || ''),
-        phone_number: {
-          number: phoneNumberValue,
-          country: 'TG',
+    try {
+      const fedapayUrl = 'https://api.fedapay.com/v1/transactions';
+      const payload = {
+        amount: Math.round(Number(amount)),
+        currency: currency || 'XOF',
+        description: String(description).trim(),
+        customer: {
+          phone_number: String(phoneNumber).trim(),
+          first_name: String(customerName || 'Client').split(' ')[0],
+          last_name: String(customerName || 'Client').split(' ').slice(1).join(' ') || '',
         },
-      },
-    });
+        metadata: {
+          email: customerEmail || '',
+          callback_url: callbackUrl || fedapayWebhookUrl,
+          webhook_url: fedapayWebhookUrl,
+          return_url: returnUrl || 'https://ecolestrack.vercel.app/paiement/succes',
+          failure_url: fedapayFailureUrl,
+          cancel_url: fedapayFailureUrl,
+        },
+      };
 
-    await transaction.generateToken();
+      console.log('[FEDAPAY] Transaction request:', { url: fedapayUrl, amount: payload.amount, currency: payload.currency });
 
-    return res.json({
-      url: transaction.token?.url,
-      transaction: {
-        id: transaction.id,
-        reference: transaction.reference,
-        amount: transaction.amount,
-        currency: transaction.currency,
-        status: transaction.status,
-      },
-    });
+      const paymentResponse = await fetch(fedapayUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${fedapayApiKey}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      let result: any = null;
+      try {
+        result = await paymentResponse.json();
+      } catch (parseErr) {
+        const text = await paymentResponse.text().catch(() => null);
+        result = { raw: text };
+      }
+
+      if (!paymentResponse.ok) {
+        const errMsg = (result && (result.message || result.error || result.errors?.[0]?.message)) || 'Erreur FedaPay';
+        console.warn('[FEDAPAY] Error response:', { status: paymentResponse.status, error: errMsg, raw: result });
+        return res.status(paymentResponse.status).json({ success: false, error: errMsg, raw: result });
+      }
+
+      const transaction = result.data || result;
+      const checkoutLink = transaction.cta?.url || transaction.link || `https://app.fedapay.com/transactions/${transaction.id}`;
+
+      await logActivity(String(customerEmail || phoneNumber), `Transaction FedaPay initiée (${transaction.id})`);
+
+      return res.json({
+        success: true,
+        transaction: {
+          id: transaction.id,
+          reference: transaction.reference,
+          amount: transaction.amount,
+          currency: transaction.currency,
+          status: transaction.status,
+        },
+        link: checkoutLink,
+        redirectUrl: checkoutLink,
+      });
+    } catch (error: any) {
+      console.error('[FEDAPAY] Erreur de transaction:', error?.message || error, error?.response?.data || '');
+      return res.status(500).json({ 
+        success: false, 
+        error: error?.message || 'Impossible de contacter FedaPay' 
+      });
+    }
   } catch (error: any) {
-    console.error('[FEDAPAY] Erreur de transaction:', error?.message || error, error?.response?.data || '');
-    return res.status(500).json({
-      error: error?.message || 'Impossible de créer la transaction FedaPay',
-    });
+    console.error('[FEDAPAY] Erreur serveur:', error);
+    return res.status(500).json({ success: false, error: 'Erreur serveur' });
   }
 });
 
