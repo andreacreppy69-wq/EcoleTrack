@@ -719,6 +719,59 @@ export default function App() {
     }
   }, [currentUserEmail, isAdminAuthenticated]);
 
+  // Clean up invalid/expired tokens on app startup
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    // Only run this once per app load
+    const hasCleanedUp = sessionStorage.getItem('tokenCleanedUp');
+    if (hasCleanedUp === 'true') return;
+    
+    const token = localStorage.getItem('siteAuthToken');
+    if (!token) {
+      sessionStorage.setItem('tokenCleanedUp', 'true');
+      return;
+    }
+    
+    // Mark that we're about to run this
+    sessionStorage.setItem('tokenCleanedUp', 'true');
+    
+    // Validate token against server
+    (async () => {
+      try {
+        const apiBase = String(import.meta.env.VITE_API_BASE || '').trim() ||
+          (import.meta.env.PROD && typeof window !== 'undefined' && 
+           (String(window.location.hostname).toLowerCase().endsWith('.vercel.app') ||
+            String(window.location.hostname) === 'ecolestrack.vercel.app' ||
+            String(window.location.hostname) === 'ecoletrack.vercel.app')
+           ? 'https://ecoletrack-5481.onrender.com' : '');
+        
+        const target = apiBase ? `${apiBase}/api/validate-token` : '/api/validate-token';
+        const res = await fetch(target, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${token}` },
+          signal: AbortSignal.timeout(3000), // 3 second timeout
+        });
+        
+        if (!res.ok) {
+          // Token is invalid on server (likely expired/deleted), clear all auth
+          localStorage.removeItem('siteAuthToken');
+          localStorage.removeItem('siteAdminAuthenticated');
+          localStorage.removeItem('siteCurrentUserEmail');
+          localStorage.removeItem('siteAccountCreated');
+          localStorage.removeItem('siteUserProfile');
+          // Force state update
+          setIsAdminAuthenticated(false);
+          setCurrentUserEmail('');
+        }
+      } catch (error) {
+        // On network error or timeout, don't clear auth
+        // (might be temporary connection issue)
+        console.warn('Token validation failed (network error, keeping token)', error);
+      }
+    })();
+  }, []);
+
   // Restore admin session from token on page load (mount)
   useEffect(() => {
     if (typeof window === 'undefined') return;

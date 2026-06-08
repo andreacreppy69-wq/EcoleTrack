@@ -681,6 +681,23 @@ app.post('/api/users/login', async (req, res) => {
   return res.json({ user: sanitizeUser(user), mustChangePassword: user.mustChangePassword, token });
 });
 
+// Validate token endpoint - returns 200 if token is valid, 401 if invalid/expired
+app.get('/api/validate-token', (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !String(authHeader).startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Session invalide ou expirée' });
+  }
+
+  const token = String(authHeader).substring(7).trim();
+  const session = getSession(token);
+  
+  if (!session) {
+    return res.status(401).json({ error: 'Session invalide ou expirée' });
+  }
+
+  return res.json({ valid: true, email: session.email, role: session.role });
+});
+
 // Public registration endpoint (useful for local development)
 app.post('/api/users/register', async (req, res) => {
   try {
