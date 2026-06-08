@@ -220,7 +220,26 @@ db.run(`CREATE TABLE IF NOT EXISTS email_verifications (
   expiresAt TEXT
 )`);
 
+// Sessions table for persistent authentication across server restarts (Render support)
+db.run(`CREATE TABLE IF NOT EXISTS sessions (
+  token TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  role TEXT NOT NULL,
+  createdAt INTEGER NOT NULL
+)`);
+
 saveDb();
+
+// Clean up expired sessions on startup
+const now = Date.now();
+const SESSION_TTL_MS = 1000 * 60 * 60 * 24; // 24h
+const expiredTokens = queryAll(
+  'SELECT token FROM sessions WHERE ? - createdAt > ?',
+  [now, SESSION_TTL_MS]
+);
+expiredTokens.forEach((row: any) => {
+  runWrite('DELETE FROM sessions WHERE token = ?', [row.token]);
+});
 
 // Ensure a default admin account exists (use env vars to override)
 const DEFAULT_ADMIN_EMAIL = String(process.env.DEFAULT_ADMIN_EMAIL || 'admin@admin.com').toLowerCase();
@@ -239,53 +258,38 @@ const ensureDefaultAdmin = () => {
 };
 // call ensureDefaultAdmin() after helper functions are defined
 
-// Session store with persistence for Render (in-memory fallback if file ops fail)
-const sessionsPath = path.resolve(process.cwd(), '.sessions.json');
-const SESSION_TTL_MS = 1000 * 60 * 60 * 24; // 24h
+// Session management - persisted in SQLite for Render multi-dyno support
 
-const loadSessions = (): Map<string, { email: string; role: string; createdAt: number }> => {
-  try {
-    if (fs.existsSync(sessionsPath)) {
-      const data = JSON.parse(fs.readFileSync(sessionsPath, 'utf8'));
-      return new Map(Object.entries(data));
-    }
-  } catch (e) {
-    // Fallback to empty map on read error
-  }
-  return new Map();
-};
-
-const sessions = loadSessions();
-
-const saveSessions = () => {
-  try {
-    const obj: Record<string, { email: string; role: string; createdAt: number }> = {};
-    sessions.forEach((v, k) => {
-      obj[k] = v;
-    });
-    fs.writeFileSync(sessionsPath, JSON.stringify(obj, null, 2));
-  } catch (e) {
-    console.warn('Failed to persist sessions:', e);
-  }
-};
+// Session management - persisted in SQLite for Render multi-dyno support
 
 const createSession = (email: string, role: string) => {
   const token = crypto.randomBytes(24).toString('hex');
-  sessions.set(token, { email: email.toLowerCase(), role, createdAt: Date.now() });
-  saveSessions();
+  const createdAt = Date.now();
+  runWrite(
+    'INSERT INTO sessions (token, email, role, createdAt) VALUES (?, ?, ?, ?)',
+    [token, email.toLowerCase(), role, createdAt]
+  );
   return token;
 };
 
 const getSession = (token: string | undefined) => {
   if (!token) return undefined;
-  const s = sessions.get(token);
-  if (!s) return undefined;
-  if (Date.now() - s.createdAt > SESSION_TTL_MS) {
-    sessions.delete(token);
-    saveSessions();
+  const row = queryOne('SELECT * FROM sessions WHERE token = ? LIMIT 1', [token]);
+  if (!row) return undefined;
+  
+  const now = Date.now();
+  const createdAt = Number(row.createdAt);
+  if (now - createdAt > SESSION_TTL_MS) {
+    // Session expired, delete it
+    runWrite('DELETE FROM sessions WHERE token = ?', [token]);
     return undefined;
   }
-  return s;
+  
+  return {
+    email: row.email,
+    role: row.role,
+    createdAt: createdAt,
+  };
 };
 
 const requireAdmin = (req: any, res: any, next: any) => {
