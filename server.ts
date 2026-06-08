@@ -17,6 +17,7 @@ interface UserRecord {
   email: string;
   dob: string;
   profession: string;
+  phoneNumber?: string;
   gender: string;
   photoUrl: string;
   role?: string;
@@ -164,6 +165,7 @@ db.run(`CREATE TABLE IF NOT EXISTS users (
   email TEXT UNIQUE,
   dob TEXT,
   profession TEXT,
+  phoneNumber TEXT,
   gender TEXT,
   role TEXT DEFAULT 'user',
   photoUrl TEXT,
@@ -202,6 +204,13 @@ try {
   // ignore if column already exists or ALTER not needed
 }
 
+// Ensure users table has a 'phoneNumber' column
+try {
+  db.run('ALTER TABLE users ADD COLUMN phoneNumber TEXT DEFAULT \'\'');
+} catch (e) {
+  // ignore if column already exists or ALTER not needed
+}
+
 // Table to store email verification tokens
 db.run(`CREATE TABLE IF NOT EXISTS email_verifications (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -221,9 +230,9 @@ const ensureDefaultAdmin = () => {
   if (!existing) {
     const hashed = bcrypt.hashSync(DEFAULT_ADMIN_PASSWORD, 10);
     runWrite(
-      `INSERT INTO users (firstName, lastName, name, email, dob, profession, gender, role, photoUrl, password, createdAt, mustChangePassword)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ['Admin', 'Root', 'Admin Root', DEFAULT_ADMIN_EMAIL, '', 'Administrator', '', 'admin', '', hashed, new Date().toLocaleString('fr-FR'), 0],
+      `INSERT INTO users (firstName, lastName, name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['Admin', 'Root', 'Admin Root', DEFAULT_ADMIN_EMAIL, '', 'Administrator', '', '', 'admin', '', hashed, new Date().toLocaleString('fr-FR'), 0],
     );
     console.log(`Default admin created: ${DEFAULT_ADMIN_EMAIL}`);
   }
@@ -286,8 +295,8 @@ if (!dbFileExists && fs.existsSync(legacyJsonPath)) {
     users.forEach((user: UserRecord) => {
       runWrite(
         `INSERT OR IGNORE INTO users (
-          firstName, lastName, name, email, dob, profession, gender, role, photoUrl, password, createdAt, mustChangePassword
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          firstName, lastName, name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           user.firstName || '',
           user.lastName || '',
@@ -295,6 +304,7 @@ if (!dbFileExists && fs.existsSync(legacyJsonPath)) {
           user.email,
           user.dob,
           user.profession,
+          user.phoneNumber || '',
           user.gender,
           user.role || 'user',
           user.photoUrl,
@@ -358,6 +368,7 @@ const sanitizeUser = (user: UserRecord) => ({
   email: user.email,
   dob: user.dob,
   profession: user.profession,
+  phoneNumber: user.phoneNumber || '',
   gender: user.gender || '',
   role: user.role || 'user',
   photoUrl: user.photoUrl || '',
@@ -372,6 +383,7 @@ const rowsToUser = (row: any): UserRecord => ({
   email: row.email,
   dob: row.dob,
   profession: row.profession,
+  phoneNumber: row.phoneNumber || '',
   gender: row.gender || '',
   role: row.role || 'user',
   photoUrl: row.photoUrl || '',
@@ -669,8 +681,8 @@ app.post('/api/users/register', async (req, res) => {
 
     // insert user (verified defaults to 0)
     runWrite(
-      `INSERT INTO users (firstName, lastName, name, email, dob, profession, gender, role, photoUrl, password, createdAt, mustChangePassword)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO users (firstName, lastName, name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         resolvedFirstName,
         resolvedLastName,
@@ -678,6 +690,7 @@ app.post('/api/users/register', async (req, res) => {
         lowerEmail,
         String(dob).trim(),
         String(profession).trim(),
+        String(req.body.phoneNumber || '').trim(),
         resolvedGender,
         'user',
         String(photoUrl || ''),
@@ -774,8 +787,8 @@ app.post('/api/users/create', requireAdmin, async (req, res) => {
   const finalRole = allowedRoles.includes(normalizedRole) ? normalizedRole : 'user';
 
   runWrite(
-    `INSERT INTO users (firstName, lastName, name, email, dob, profession, gender, role, photoUrl, password, createdAt, mustChangePassword)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO users (firstName, lastName, name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       resolvedFirstName,
       resolvedLastName,
@@ -783,6 +796,7 @@ app.post('/api/users/create', requireAdmin, async (req, res) => {
       lowerEmail,
       String(dob).trim(),
       String(profession).trim(),
+      String(req.body.phoneNumber || '').trim(),
       resolvedGender,
       finalRole,
       String(photoUrl || ''),
@@ -842,14 +856,14 @@ app.post('/api/users/reset-password', async (req, res) => {
 });
 
 app.post('/api/users/update', async (req, res) => {
-  const { oldEmail, firstName, lastName, name, email, dob, profession, gender, photoUrl } = req.body;
+  const { oldEmail, firstName, lastName, name, email, dob, profession, phoneNumber, gender, photoUrl } = req.body;
   const resolvedFirstName = String(firstName || '').trim();
   const resolvedLastName = String(lastName || '').trim();
   const resolvedName = String(name || `${resolvedFirstName} ${resolvedLastName}`).trim();
   const resolvedGender = String(gender || '').trim();
 
-  if (!oldEmail || !email || !dob || !profession || !resolvedFirstName || !resolvedLastName) {
-    return res.status(400).json({ error: 'Tous les champs obligatoires sont requis (Email, DOB, Profession, Nom, Prénom).' });
+  if (!oldEmail || !email || !dob || !resolvedFirstName || !resolvedLastName) {
+    return res.status(400).json({ error: 'Tous les champs obligatoires sont requis (Email, DOB, Nom, Prénom).' });
   }
 
   const lowerOldEmail = String(oldEmail).toLowerCase();
@@ -864,7 +878,7 @@ app.post('/api/users/update', async (req, res) => {
   }
 
   runWrite(
-    `UPDATE users SET firstName = ?, lastName = ?, name = ?, email = ?, dob = ?, profession = ?, gender = ?, photoUrl = ? WHERE lower(email) = ?`,
+    `UPDATE users SET firstName = ?, lastName = ?, name = ?, email = ?, dob = ?, profession = ?, phoneNumber = ?, gender = ?, photoUrl = ? WHERE lower(email) = ?`,
     [
       resolvedFirstName,
       resolvedLastName,
@@ -872,6 +886,7 @@ app.post('/api/users/update', async (req, res) => {
       lowerNewEmail,
       String(dob).trim(),
       String(profession).trim(),
+      String(phoneNumber || '').trim(),
       resolvedGender,
       String(photoUrl || ''),
       lowerOldEmail,

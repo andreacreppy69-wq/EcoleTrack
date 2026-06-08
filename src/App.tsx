@@ -106,6 +106,7 @@ export default function App() {
   const [registerPassword, setRegisterPassword] = useState<string>('');
   const [registerDob, setRegisterDob] = useState<string>('');
   const [registerProfession, setRegisterProfession] = useState<string>('');
+  const [registerPhoneNumber, setRegisterPhoneNumber] = useState<string>('');
   const [registerGender, setRegisterGender] = useState<string>('');
   const [registerRole, setRegisterRole] = useState<string>('user');
   const [registerPhotoUrl, setRegisterPhotoUrl] = useState<string>('');
@@ -247,6 +248,7 @@ export default function App() {
       email: String(parsed.email || '').trim(),
       dob: String(parsed.dob || '').trim(),
       profession: String(parsed.profession || '').trim(),
+      phoneNumber: String(parsed.phoneNumber || '').trim(),
       gender: String(parsed.gender || '').trim(),
       photoUrl: String(parsed.photoUrl || '').trim(),
     };
@@ -255,7 +257,7 @@ export default function App() {
   const storedProfile = typeof window !== 'undefined' ? localStorage.getItem('siteUserProfile') : null;
   const initialProfile: UserProfile = storedProfile
     ? buildProfileFromStorage(storedProfile)
-    : { firstName: '', lastName: '', email: '', dob: '', profession: '', gender: '', photoUrl: '' };
+    : { firstName: '', lastName: '', email: '', dob: '', profession: '', phoneNumber: '', gender: '', photoUrl: '' };
 
   const [profile, setProfile] = useState<UserProfile>(initialProfile);
   const [isRegistered, setIsRegistered] = useState<boolean>(() => {
@@ -783,14 +785,13 @@ export default function App() {
   const handleRegisterSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!registerFirstName.trim() || !registerLastName.trim() || !registerEmail.trim() || !registerDob.trim() || !registerProfession.trim() || !registerGender.trim() || !registerPassword.trim()) {
+    if (!registerFirstName.trim() || !registerLastName.trim() || !registerEmail.trim() || !registerDob.trim() || !registerGender.trim() || !registerPassword.trim()) {
       const errors: string[] = [];
       if (!registerFirstName.trim()) errors.push('Prénom(s)');
       if (!registerLastName.trim()) errors.push('Nom');
       if (!registerEmail.trim()) errors.push('Email');
       if (!registerPassword.trim()) errors.push('Mot de passe temporaire');
       if (!registerDob.trim()) errors.push('Date de naissance');
-      if (!registerProfession.trim()) errors.push('Profession');
       if (!registerGender.trim()) errors.push('Sexe');
       setRegisterError(`Les champs suivants sont obligatoires: ${errors.join(', ')}`);
       return;
@@ -811,6 +812,7 @@ export default function App() {
         email: registerEmail.trim(),
         dob: registerDob,
         profession: registerProfession.trim(),
+        phoneNumber: registerPhoneNumber.trim(),
         gender: registerGender.trim(),
         role: registerRole,
         photoUrl: registerPhotoUrl,
@@ -856,6 +858,7 @@ export default function App() {
       setRegisterPassword('');
       setRegisterDob('');
       setRegisterProfession('');
+      setRegisterPhoneNumber('');
       setRegisterGender('');
       setRegisterPhotoUrl('');
       setRegisterError('');
@@ -1681,9 +1684,7 @@ export default function App() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-2">
-                        Profession <span className="text-red-500 font-bold">*</span>
-                      </label>
+                      <label className="block text-xs font-semibold text-slate-300 mb-2">Profession</label>
                       <input
                         value={registerProfession}
                         onChange={(e) => setRegisterProfession(e.target.value)}
@@ -1694,20 +1695,32 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-2">
-                      Sexe <span className="text-red-500 font-bold">*</span>
-                    </label>
-                    <select
-                      value={registerGender}
-                      onChange={(e) => setRegisterGender(e.target.value)}
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-green"
-                    >
-                      <option value="">-- Sélectionner --</option>
-                      <option value="Homme">Homme</option>
-                      <option value="Femme">Femme</option>
-                      <option value="Autre">Autre</option>
-                    </select>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-2">Numéro de téléphone</label>
+                      <input
+                        value={registerPhoneNumber}
+                        onChange={(e) => setRegisterPhoneNumber(e.target.value)}
+                        className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-green"
+                        placeholder="Ex: +228 90123456"
+                        type="tel"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-2">
+                        Sexe <span className="text-red-500 font-bold">*</span>
+                      </label>
+                      <select
+                        value={registerGender}
+                        onChange={(e) => setRegisterGender(e.target.value)}
+                        className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-green"
+                      >
+                        <option value="">-- Sélectionner --</option>
+                        <option value="Homme">Homme</option>
+                        <option value="Femme">Femme</option>
+                        <option value="Autre">Autre</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div>
@@ -2314,28 +2327,39 @@ export default function App() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-2">
-                      Sexe <span className="text-red-500 font-bold">*</span>
-                    </label>
-                    <select
-                      value={profileDraft.gender}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setProfileDraft((prev) => ({ ...prev, gender: val }));
-                        if (val.trim()) setProfileValidationErrors((prev) => prev.filter((p) => p !== 'Sexe'));
-                      }}
-                      onBlur={() => setProfileTouched((prev) => (prev.includes('Sexe') ? prev : [...prev, 'Sexe']))}
-                      className={`w-full rounded-2xl border ${profileValidationErrors.includes('Sexe') || (profileTouched.includes('Sexe') && !profileDraft.gender.trim()) ? 'border-red-500' : 'border-slate-300'} bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-brand-green`}
-                    >
-                      <option value="">-- Sélectionner --</option>
-                      <option value="Homme">Homme</option>
-                      <option value="Femme">Femme</option>
-                      <option value="Autre">Autre</option>
-                    </select>
-                    {profileValidationErrors.includes('Sexe') && (
-                      <p className="text-xs text-red-500 mt-1">Ce champ est requis</p>
-                    )}
+                    <label className="block text-xs font-semibold text-slate-500 mb-2">Numéro de téléphone</label>
+                    <input
+                      value={profileDraft.phoneNumber}
+                      onChange={(e) => setProfileDraft((prev) => ({ ...prev, phoneNumber: e.target.value }))}
+                      className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-brand-green"
+                      placeholder="Ex: +228 90123456"
+                      type="tel"
+                    />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-2">
+                    Sexe <span className="text-red-500 font-bold">*</span>
+                  </label>
+                  <select
+                    value={profileDraft.gender}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setProfileDraft((prev) => ({ ...prev, gender: val }));
+                      if (val.trim()) setProfileValidationErrors((prev) => prev.filter((p) => p !== 'Sexe'));
+                    }}
+                    onBlur={() => setProfileTouched((prev) => (prev.includes('Sexe') ? prev : [...prev, 'Sexe']))}
+                    className={`w-full rounded-2xl border ${profileValidationErrors.includes('Sexe') || (profileTouched.includes('Sexe') && !profileDraft.gender.trim()) ? 'border-red-500' : 'border-slate-300'} bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-brand-green`}
+                  >
+                    <option value="">-- Sélectionner --</option>
+                    <option value="Homme">Homme</option>
+                    <option value="Femme">Femme</option>
+                    <option value="Autre">Autre</option>
+                  </select>
+                  {profileValidationErrors.includes('Sexe') && (
+                    <p className="text-xs text-red-500 mt-1">Ce champ est requis</p>
+                  )}
                 </div>
 
                 <div>

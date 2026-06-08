@@ -4,6 +4,7 @@ export interface UserProfile {
   email: string;
   dob: string;
   profession: string;
+  phoneNumber: string;
   gender: string;
   photoUrl: string;
   role?: string;
