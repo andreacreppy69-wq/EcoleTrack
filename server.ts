@@ -772,6 +772,16 @@ app.post('/api/users/register', async (req, res) => {
     return res.status(201).json({ success: true, verificationLink });
   } catch (error: any) {
     console.error('Erreur lors de l\'inscription publique :', error);
+    
+    // Detect specific errors
+    if (String(error.message || '').includes('UNIQUE constraint failed')) {
+      return res.status(409).json({ error: 'Cet email est déjà utilisé.' });
+    }
+    if (String(error.message || '').includes('SQL parameter mismatch')) {
+      console.error('SQL Error:', error.message);
+      return res.status(500).json({ error: 'Erreur serveur: paramètres SQL invalides' });
+    }
+    
     return res.status(500).json({ error: 'Erreur interne lors de l\'inscription.' });
   }
 });
