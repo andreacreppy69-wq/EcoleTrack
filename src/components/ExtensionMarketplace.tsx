@@ -375,16 +375,6 @@ export default function ExtensionMarketplace({
                         <ExternalLink className="w-4 h-4" />
                       </a>
                     ) : null}
-                      <a
-                        href={(extension as ExtensionDetail).homepage}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="rounded-lg border border-slate-700 px-3 py-2 text-slate-400 hover:text-slate-200 hover:border-slate-600 transition"
-                        title="Visiter le site"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    )}
                   </div>
                 </div>
               );
