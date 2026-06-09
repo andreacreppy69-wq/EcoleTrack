@@ -430,6 +430,49 @@ const requireAdmin = (req: any, res: any, next: any) => {
   }
 };
 
+const getClientIp = (req: any) => {
+  return String(req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket?.remoteAddress || 'unknown');
+};
+
+const rateLimitStore: Record<string, { count: number; windowStart: number }> = {};
+
+const rateLimit = (routeName: string, maxRequests: number, windowMs: number) => {
+  return (req: any, res: any, next: any) => {
+    const key = `${routeName}:${getClientIp(req)}`;
+    const now = Date.now();
+    const entry = rateLimitStore[key];
+
+    if (!entry || now - entry.windowStart > windowMs) {
+      rateLimitStore[key] = { count: 1, windowStart: now };
+      return next();
+    }
+
+    if (entry.count >= maxRequests) {
+      return res.status(429).json({ error: 'Trop de requêtes. Veuillez réessayer plus tard.' });
+    }
+
+    entry.count += 1;
+    return next();
+  };
+};
+
+const requireAuth = (req: any, res: any, next: any) => {
+  const auth = String(req.headers.authorization || '');
+  const m = auth.match(/^Bearer\s+(.+)$/i);
+  if (!m) {
+    return res.status(401).json({ error: 'Token d\'authentification manquant.' });
+  }
+
+  const token = m[1];
+  const session = getSession(token);
+  if (!session) {
+    return res.status(401).json({ error: 'Session invalide ou expirée.' });
+  }
+
+  req.auth = session;
+  next();
+};
+
 const existingTier = queryOne('SELECT id FROM tier_progress WHERE id = 1');
 if (!existingTier) {
   runWrite('INSERT INTO tier_progress (id, p1, p2, p3, p4) VALUES (1, ?, ?, ?, ?)', [15, 0, 0, 0]);
@@ -588,7 +631,7 @@ const logActivity = async (email: string, action: string) => {
   deleteOldActivity();
 };
 
-app.get('/api/users', (req, res) => {
+app.get('/api/users', requireAdmin, (req, res) => {
   const roleFilter = String(req.query.role || '').trim().toLowerCase();
   let users = getUsersFromDb().map(sanitizeUser);
   if (roleFilter) {
@@ -597,7 +640,7 @@ app.get('/api/users', (req, res) => {
   res.json({ users });
 });
 
-app.get('/api/users/:email', (req, res) => {
+app.get('/api/users/:email', requireAdmin, (req, res) => {
   const email = String(req.params.email).toLowerCase();
   const user = getUserByEmail(email);
   if (!user) {
@@ -606,12 +649,12 @@ app.get('/api/users/:email', (req, res) => {
   return res.json({ user: sanitizeUser(user) });
 });
 
-app.get('/api/activity', (req, res) => {
+app.get('/api/activity', requireAdmin, (req, res) => {
   const activity = getActivityLogs();
   res.json({ activity });
 });
 
-app.get('/api/messages', (req, res) => {
+app.get('/api/messages', requireAdmin, (req, res) => {
   const messages = getMessagesFromDb();
   res.json({ messages });
 });
@@ -640,7 +683,7 @@ app.get('/api/tier-progress', (req, res) => {
   res.json({ tierProgress });
 });
 
-app.post('/api/tier-progress', async (req, res) => {
+app.post('/api/tier-progress', requireAdmin, async (req, res) => {
   try {
     const { tierProgress } = req.body;
     if (!Array.isArray(tierProgress) || tierProgress.length !== 4 || !tierProgress.every((value: any) => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100)) {
@@ -660,7 +703,7 @@ app.post('/api/tier-progress', async (req, res) => {
 // PayGate has been removed. FedaPay is now the only payment gateway supported.
 
 // FedaPay Payment Gateway Integration
-app.post('/api/fedapay', async (req, res) => {
+app.post('/api/fedapay', rateLimit('fedapay', 15, 60 * 1000), async (req, res) => {
   try {
     const {
       amount,
@@ -891,7 +934,7 @@ app.post('/api/fedapay', async (req, res) => {
 });
 
 // FedaPay Transaction History
-app.get('/api/fedapay/transactions', async (req, res) => {
+app.get('/api/fedapay/transactions', requireAdmin, async (req, res) => {
   try {
     db.run(`CREATE TABLE IF NOT EXISTS transactions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -953,10 +996,18 @@ app.post('/api/fedapay/webhook', async (req, res) => {
   try {
     const fedapayWebhookSecret = process.env.FEDAPAY_WEBHOOK_SECRET || FEDAPAY_SECRET_KEY;
     const headerSecret = String(req.headers['x-fedapay-webhook-secret'] || req.headers['x-fedapay-signature'] || '');
+    const requireWebhookSecret = process.env.NODE_ENV === 'production' || Boolean(process.env.FEDAPAY_WEBHOOK_SECRET);
 
-    if (fedapayWebhookSecret && headerSecret && headerSecret !== fedapayWebhookSecret) {
-      console.warn('[FEDAPAY] Webhook rejected: invalid signature header');
-      return res.status(401).json({ success: false, error: 'Signature webhook invalide' });
+    if (requireWebhookSecret) {
+      if (!fedapayWebhookSecret) {
+        console.error('[FEDAPAY] Webhook secret missing in production configuration');
+        return res.status(500).json({ success: false, error: 'Secret webhook non configuré.' });
+      }
+
+      if (!headerSecret || headerSecret !== fedapayWebhookSecret) {
+        console.warn('[FEDAPAY] Webhook rejected: invalid or missing signature header');
+        return res.status(401).json({ success: false, error: 'Signature webhook invalide' });
+      }
     }
 
     const event = req.body;
@@ -1032,7 +1083,7 @@ app.delete('/api/users/:email', requireAdmin, async (req, res) => {
   }
 });
 
-app.post('/api/users/login', async (req, res) => {
+app.post('/api/users/login', rateLimit('login', 10, 15 * 60 * 1000), async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -1081,7 +1132,7 @@ app.get('/api/validate-token', (req, res) => {
 });
 
 // Public registration endpoint (useful for local development)
-app.post('/api/users/register', async (req, res) => {
+app.post('/api/users/register', rateLimit('register', 5, 15 * 60 * 1000), async (req, res) => {
   try {
     const { firstName, lastName, name, email, dob, profession, gender, photoUrl, password } = req.body;
     const rawFirstName = String(firstName || '').trim();
