@@ -169,7 +169,7 @@ export default function ExtensionMarketplace({
 
           {/* Title */}
           <h1 className="text-3xl font-bold text-white mb-2">Ajouter des extensions</h1>
-          <p className="text-sm text-slate-400 mb-6">Parcourez notre catalogue d'extensions recommandées ou recherchez des packages NPM</p>
+          <p className="text-sm text-slate-400 mb-6">Parcourez notre catalogue d'extensions recommandées ou recherchez des packages NPM pour télécharger des plugins en ligne.</p>
 
           {/* Search Bar */}
           <div className="flex gap-2">
@@ -279,14 +279,28 @@ export default function ExtensionMarketplace({
                   key={extension.name}
                   className="rounded-lg border border-slate-700 bg-slate-800/50 hover:bg-slate-800 p-5 transition flex flex-col group"
                 >
-                  {/* Badge if local */}
-                  {isLocal && (
-                    <div className="mb-3">
+                  {/* Badge if local or online */}
+                  <div className="mb-3 flex items-center gap-2">
+                    {isLocal ? (
                       <span className="inline-block px-2 py-1 rounded bg-brand-green/20 text-brand-green text-xs font-semibold">
                         Catalogue local
                       </span>
-                    </div>
-                  )}
+                    ) : (
+                      <span className="inline-block px-2 py-1 rounded bg-sky-500/20 text-sky-300 text-xs font-semibold">
+                        En ligne
+                      </span>
+                    )}
+                    {!isLocal && (extension as ExtensionResult).links?.npm && (
+                      <a
+                        href={(extension as ExtensionResult).links?.npm}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-slate-400 hover:text-slate-200"
+                      >
+                        Voir sur NPM
+                      </a>
+                    )}
+                  </div>
 
                   {/* Header with favorite */}
                   <div className="flex items-start justify-between mb-3">
@@ -345,12 +359,22 @@ export default function ExtensionMarketplace({
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleInstall(extension)}
-                      disabled={isInstalling}
+                      disabled={isInstalling.has(extension.name)}
                       className="flex-1 rounded-lg bg-brand-green px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-brand-green/90 disabled:opacity-50 transition"
                     >
-                      {isInstalling ? 'Installation...' : 'Installer'}
+                      {isInstalling.has(extension.name) ? 'Installation...' : 'Télécharger'}
                     </button>
-                    {isLocal && 'homepage' in extension && (extension as ExtensionDetail).homepage && (
+                    {(extension as ExtensionResult).links?.npm || ((isLocal && 'homepage' in extension && (extension as ExtensionDetail).homepage)) ? (
+                      <a
+                        href={(extension as ExtensionResult).links?.npm || (extension as ExtensionDetail).homepage}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-lg border border-slate-700 px-3 py-2 text-slate-400 hover:text-slate-200 hover:border-slate-600 transition"
+                        title={isLocal ? 'Visiter le site' : 'Ouvrir sur NPM'}
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    ) : null}
                       <a
                         href={(extension as ExtensionDetail).homepage}
                         target="_blank"
