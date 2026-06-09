@@ -972,7 +972,7 @@ app.get('/api/fedapay/transactions', requireAdmin, async (req, res) => {
 app.get('/api/fedapay/investor-count', async (req, res) => {
   try {
     const row = queryOne(
-      'SELECT COUNT(DISTINCT lower(email)) AS count FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND status IN (?, ?, ?, ?, ?)',
+      'SELECT COUNT(*) AS count FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND status IN (?, ?, ?, ?, ?)',
       ['', 0, 'completed', 'success', 'paid', 'authorized', 'captured'],
     );
     const investorCount = Number(row?.count ?? 0);
@@ -986,7 +986,7 @@ app.get('/api/fedapay/investor-count', async (req, res) => {
 app.get('/api/fedapay/summary', async (req, res) => {
   try {
     const row = queryOne(
-      'SELECT COUNT(DISTINCT lower(email)) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND status IN (?, ?, ?, ?, ?)',
+      'SELECT COUNT(*) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND status IN (?, ?, ?, ?, ?)',
       ['', 0, 'completed', 'success', 'paid', 'authorized', 'captured'],
     );
     const investorCount = Number(row?.investorCount ?? 0);
