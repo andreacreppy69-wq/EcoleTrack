@@ -1575,7 +1575,10 @@ export default function App() {
     }
 
     const trimmedPhone = registerPhoneNumber.trim();
-    if (trimmedPhone) {
+    if (!trimmedPhone) {
+      setRegisterPhoneError('Le numéro de téléphone est requis.');
+      hasError = true;
+    } else {
       const digitsOnly = trimmedPhone.replace(/\D/g, '');
       if (!/^[0-9]+$/.test(digitsOnly)) {
         setRegisterPhoneError('Le numéro de téléphone doit contenir uniquement des chiffres.');
@@ -2494,13 +2497,16 @@ export default function App() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-2">Numéro de téléphone</label>
+                      <label className="block text-xs font-semibold text-slate-300 mb-2">
+                        Numéro de téléphone <span className="text-red-500 font-bold">*</span>
+                      </label>
                       <input
                         value={registerPhoneNumber}
                         onChange={(e) => setRegisterPhoneNumber(e.target.value)}
                         className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-green"
                         placeholder="Ex: 90123456"
                         type="tel"
+                        required
                       />
                       {registerPhoneError && (
                         <div className="mt-2 text-xs text-red-300">{registerPhoneError}</div>
