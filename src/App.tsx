@@ -2046,23 +2046,6 @@ export default function App() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        setShowCreateAccount(false);
-                        setShowAdminJournal(false);
-                        setShowEventLog(false);
-                        setShowUserAccounts(false);
-                        setShowPaymentSection(true);
-                        setShowPaymentExtensions(false);
-                        setTimeout(() => {
-                          paymentSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }, 50);
-                      }}
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-left text-xs font-semibold text-slate-200 hover:bg-slate-800 transition-all"
-                    >
-                      Initiate paiement
-                    </button>
-                    <button
-                      type="button"
                       onClick={handleAdminLogout}
                       className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-left text-sm font-bold text-slate-200 hover:bg-slate-800 transition-all"
                     >
@@ -2249,23 +2232,6 @@ export default function App() {
                   <h2 className="text-lg font-semibold text-white mb-4">Initier une transaction de paiement</h2>
                   <p className="text-sm text-slate-400 mb-5">Choisissez une passerelle de paiement et lancez une transaction.</p>
 
-                  <div className="rounded-2xl border border-slate-700 bg-slate-950 p-4">
-                    <p className="text-sm text-slate-400 mb-4">La passerelle PayGate a été remplacée par FedaPay pour tous les paiements.</p>
-                    <FedaPayForm
-                      isLoading={fedaPayProcessing}
-                      successMessage={fedaPaySuccess}
-                      errorMessage={fedaPayError}
-                      onPaymentInitiated={handleFedaPayInitiation}
-                      onError={setFedaPayError}
-                    />
-                  </div>
-
-                  {fedaPayRedirectUrl && (
-                    <div className="mt-4 p-4 rounded-lg bg-green-500/10 border border-green-500/30">
-                      <p className="text-sm text-green-200">Redirection vers FedaPay en cours...</p>
-                      <p className="text-xs text-green-400 mt-2 break-all">{fedaPayRedirectUrl}</p>
-                    </div>
-                  )}
               </div>
             )}
 
