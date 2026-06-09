@@ -209,6 +209,23 @@ const createTransactionRecord = (payload: {
   );
 };
 
+const safeCreateTransactionRecord = (payload: {
+  transactionId: string;
+  reference: string;
+  email: string;
+  amount: number;
+  currency: string;
+  status: string;
+  purpose: string;
+  projectId: string;
+}) => {
+  try {
+    createTransactionRecord(payload);
+  } catch (error: any) {
+    console.warn('[FEDAPAY] Failed to persist transaction record:', error?.message || error);
+  }
+};
+
 const updateTransactionStatus = (transactionId: string, status: string) => {
   const nowIso = new Date().toISOString();
   runWrite('UPDATE transactions SET status = ?, updatedAt = ? WHERE fedapayTransactionId = ?', [status, nowIso, transactionId]);
@@ -831,7 +848,7 @@ app.post('/api/fedapay', async (req, res) => {
       const transaction = result.data || result;
       const checkoutLink = transaction.payment_url || transaction.cta?.url || transaction.link || `https://app.fedapay.com/transactions/${transaction.id}`;
 
-      createTransactionRecord({
+      safeCreateTransactionRecord({
         transactionId: String(transaction.id),
         reference: String(transaction.reference || ''),
         email: customerEmailValue || String(phoneNumber),
@@ -842,7 +859,11 @@ app.post('/api/fedapay', async (req, res) => {
         projectId: transactionProjectId,
       });
 
-      await logActivity(String(customerEmail || phoneNumber), `Transaction FedaPay initiée (${transaction.id})`);
+      try {
+        await logActivity(String(customerEmail || phoneNumber), `Transaction FedaPay initiée (${transaction.id})`);
+      } catch (error: any) {
+        console.warn('[FEDAPAY] Failed to log activity after transaction:', error?.message || error);
+      }
 
       return res.json({
         success: true,
@@ -872,6 +893,20 @@ app.post('/api/fedapay', async (req, res) => {
 // FedaPay Transaction History
 app.get('/api/fedapay/transactions', async (req, res) => {
   try {
+    db.run(`CREATE TABLE IF NOT EXISTS transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      fedapayTransactionId TEXT UNIQUE,
+      reference TEXT,
+      email TEXT,
+      amount INTEGER,
+      currency TEXT,
+      status TEXT,
+      purpose TEXT,
+      projectId TEXT,
+      createdAt TEXT,
+      updatedAt TEXT
+    )`);
+
     const transactions = queryAll(
       'SELECT fedapayTransactionId AS transactionId, reference, email, amount, currency, status, purpose, projectId, createdAt, updatedAt FROM transactions ORDER BY createdAt DESC',
     );
