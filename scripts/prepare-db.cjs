@@ -37,7 +37,7 @@ const path = require('path');
     fs.copyFileSync(localDbPath, destPath);
     console.log('[prepare-db] Copied database.sqlite to', destPath);
   } catch (err) {
-    console.error('[prepare-db] Error preparing database:', err);
-    process.exit(1);
+    console.error('[prepare-db] Error preparing database (non-fatal):', err);
+    // Do not exit with non-zero to avoid failing the whole deploy when DB copy is optional
   }
 })();
