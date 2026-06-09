@@ -45,7 +45,7 @@ const FedaPayAdminDashboard = () => {
     const confirmedStatuses = new Set(['completed', 'success', 'paid', 'authorized', 'captured']);
     const investorCount = new Set(
       transactions
-        .filter((item) => confirmedStatuses.has(String(item.status || '').toLowerCase()))
+        .filter((item) => confirmedStatuses.has(String(item.status || '').toLowerCase()) && (item.amount || 0) > 0)
         .map((item) => String(item.email || '').trim().toLowerCase())
         .filter(Boolean),
     ).size;
