@@ -972,8 +972,8 @@ app.get('/api/fedapay/transactions', requireAdmin, async (req, res) => {
 app.get('/api/fedapay/investor-count', async (req, res) => {
   try {
     const row = queryOne(
-      'SELECT COUNT(*) AS count FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND status IN (?, ?, ?, ?, ?)',
-      ['', 0, 'completed', 'success', 'paid', 'authorized', 'captured'],
+      'SELECT COUNT(*) AS count FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ?',
+      ['', 0],
     );
     const investorCount = Number(row?.count ?? 0);
     return res.json({ investorCount });
@@ -986,8 +986,8 @@ app.get('/api/fedapay/investor-count', async (req, res) => {
 app.get('/api/fedapay/summary', async (req, res) => {
   try {
     const row = queryOne(
-      'SELECT COUNT(*) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND status IN (?, ?, ?, ?, ?)',
-      ['', 0, 'completed', 'success', 'paid', 'authorized', 'captured'],
+      'SELECT COUNT(*) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ?',
+      ['', 0],
     );
     const investorCount = Number(row?.investorCount ?? 0);
     const totalAmount = Number(row?.totalAmount ?? 0);

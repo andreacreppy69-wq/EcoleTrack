@@ -67,7 +67,7 @@ const FedaPayAdminDashboard = () => {
         </div>
         <div className="rounded-3xl border border-slate-700 bg-slate-950 p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Montant total</p>
-          <p className="text-3xl font-bold mt-4 text-brand-green">{formatFCFA(summary.totalAmount)}</p>
+          <p className="text-xl lg:text-2xl font-bold mt-4 text-brand-green break-words">{formatFCFA(summary.totalAmount)}</p>
         </div>
         <div className="rounded-3xl border border-slate-700 bg-slate-950 p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Statuts</p>
@@ -83,7 +83,7 @@ const FedaPayAdminDashboard = () => {
         </div>
         <div className="rounded-3xl border border-slate-700 bg-slate-950 p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Dernière mise à jour</p>
-          <p className="text-3xl font-bold mt-4 text-brand-green">{transactions[0]?.updatedAt ? new Date(transactions[0].updatedAt).toLocaleString('fr-FR') : 'Aucune'}</p>
+          <p className="text-sm lg:text-base font-bold mt-4 text-brand-green break-words">{transactions[0]?.updatedAt ? new Date(transactions[0].updatedAt).toLocaleString('fr-FR') : 'Aucune'}</p>
         </div>
       </div>
 
@@ -138,13 +138,13 @@ const FedaPayAdminDashboard = () => {
               ) : (
                 transactions.map((transaction) => (
                   <tr key={transaction.transactionId} className="hover:bg-slate-900/80 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs text-slate-300">{transaction.transactionId}</td>
-                    <td className="px-4 py-3 text-slate-200">{transaction.reference}</td>
-                    <td className="px-4 py-3 text-slate-300">{transaction.email}</td>
-                    <td className="px-4 py-3 text-slate-200">{formatFCFA(transaction.amount)}</td>
-                    <td className="px-4 py-3 text-slate-200">{transaction.currency}</td>
-                    <td className="px-4 py-3 text-slate-200">{statusLabels[transaction.status] || transaction.status}</td>
-                    <td className="px-4 py-3 text-slate-300">{new Date(transaction.createdAt).toLocaleString('fr-FR')}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-slate-300 break-words">{transaction.transactionId}</td>
+                    <td className="px-4 py-3 text-xs lg:text-sm text-slate-200 break-words">{transaction.reference}</td>
+                    <td className="px-4 py-3 text-xs lg:text-sm text-slate-300 break-words">{transaction.email}</td>
+                    <td className="px-4 py-3 text-xs lg:text-sm text-slate-200 break-words">{formatFCFA(transaction.amount)}</td>
+                    <td className="px-4 py-3 text-xs lg:text-sm text-slate-200">{transaction.currency}</td>
+                    <td className="px-4 py-3 text-xs lg:text-sm text-slate-200 break-words">{statusLabels[transaction.status] || transaction.status}</td>
+                    <td className="px-4 py-3 text-xs lg:text-sm text-slate-300 break-words">{new Date(transaction.createdAt).toLocaleString('fr-FR')}</td>
                   </tr>
                 ))
               )}
