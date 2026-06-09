@@ -1451,7 +1451,6 @@ export default function App() {
   const totalDonationAmount = DONATION_TOTAL;
   const totalInvestedAmount = Math.max(0, raisedAmount - DONATION_TOTAL);
   const totalMobilizedAmount = totalDonationAmount + totalInvestedAmount;
-  const remainingToMobilize = Math.max(0, CAMPAGNE_GOAL - totalMobilizedAmount);
   const rawPercentage = (raisedAmount / CAMPAGNE_GOAL) * 100;
   const percentage = Math.min(100, Math.round(rawPercentage * 10) / 10);
   const remainingAmount = Math.max(0, CAMPAGNE_GOAL - raisedAmount);
@@ -2130,8 +2129,8 @@ export default function App() {
                   <p className="text-3xl font-bold mt-4 text-brand-green break-words">{formatFCFA(totalMobilizedAmount)}</p>
                 </div>
                 <div className="rounded-3xl border border-amber-300 bg-amber-400/10 p-6 min-w-0">
-                  <p className="text-xs uppercase tracking-[0.2em] text-amber-600 font-semibold">Montant restant à mobiliser</p>
-                  <p className="text-3xl font-bold mt-4 text-amber-800 break-words">{formatFCFA(remainingToMobilize)}</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-amber-600 font-semibold">Montant restant à collecter</p>
+                  <p className="text-3xl font-bold mt-4 text-amber-800 break-words">{formatFCFA(remainingAmount)}</p>
                 </div>
                 <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 min-w-0">
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Nombre de donateurs</p>
