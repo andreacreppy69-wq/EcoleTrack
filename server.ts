@@ -8,7 +8,12 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { fileURLToPath } from 'url';
 
-dotenv.config();
+const envPath = path.resolve(process.cwd(), '.env');
+dotenv.config({ path: envPath });
+
+if (!process.env.FEDAPAY_SECRET_KEY && !process.env.FEDAPAY_API_KEY && !process.env.VITE_FEDAPAY_API_KEY) {
+  console.warn(`[ENV] FedaPay key not found in .env at ${envPath}`);
+}
 
 interface UserRecord {
   firstName?: string;
