@@ -1116,6 +1116,26 @@ app.post('/api/activity', async (req, res) => {
   return res.json({ success: true });
 });
 
+// Admin: reset collected amount and investor count to zero
+app.post('/api/admin/reset-metrics', requireAdmin, async (req, res) => {
+  try {
+    // Remove all transactions so investor count becomes 0
+    runWrite('DELETE FROM transactions');
+
+    // Reset project metrics (collectedAmount and investedAmount)
+    runWrite('UPDATE project_metrics SET collectedAmount = ?, investedAmount = ?, updatedAt = ? WHERE id = ?', [0, 0, new Date().toISOString(), 'default_project']);
+
+    // Persist changes
+    try { saveDb(); } catch (e) { console.warn('[ADMIN] saveDb failed after reset:', e); }
+
+    await logActivity(req.auth?.email || 'admin', 'Réinitialisation des métriques (montant collecté et nombre d\'investisseurs mis à zéro)');
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error('[ADMIN] Failed to reset metrics:', error);
+    return res.status(500).json({ success: false, error: 'Échec de la réinitialisation des métriques.' });
+  }
+});
+
 // Admin: delete a user by email
 app.delete('/api/users/:email', requireAdmin, async (req, res) => {
   try {

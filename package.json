@@ -11,6 +11,7 @@
     "server": "npm run prepare-db && tsx server.ts",
     "start": "npm run prepare-db && tsx server.ts",
     "postinstall": "npm run prepare-db || true",
+    "reset-metrics": "node ./scripts/reset-metrics.cjs",
     "clean": "rm -rf dist server.js database.sqlite",
     "lint": "tsc --noEmit"
   },
