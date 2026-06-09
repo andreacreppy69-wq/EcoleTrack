@@ -674,73 +674,141 @@ app.post('/api/fedapay', async (req, res) => {
     console.log('[FEDAPAY] Using API key:', fedapayApiKey.substring(0, 10) + '...');
 
     try {
-      const fedapayUrl = 'https://sandbox-api.fedapay.com/v1/transactions';
-      console.log('[FEDAPAY] Calling:', fedapayUrl);
+      const fedapayCustomerUrl = 'https://sandbox-api.fedapay.com/v1/customers';
+      const fedapayTransactionUrl = 'https://sandbox-api.fedapay.com/v1/transactions';
       const customerEmailValue = String(customerEmail || req.body.userEmail || '').trim();
       const transactionPurpose = String(purpose || 'investment');
       const transactionProjectId = String(projectId || 'default_project');
+      const customerNameValue = String(customerName || 'Client').trim();
+      const [firstName, ...restName] = customerNameValue.split(' ');
+      const lastNameValue = restName.join(' ') || 'Client';
 
-      const payload = {
-        amount: Math.round(Number(amount)),
-        currency: currency || 'XOF',
-        description: String(description).trim(),
-        customer: {
-          phone_number: String(phoneNumber).trim(),
-          first_name: String(customerName || 'Client').split(' ')[0],
-          last_name: String(customerName || 'Client').split(' ').slice(1).join(' ') || '',
-        },
-        callback_url: callbackUrl || fedapayWebhookUrl,
-        webhook_url: fedapayWebhookUrl,
-        return_url: returnUrl || 'https://ecolestrack.vercel.app/payment/success',
-        failure_url: fedapayFailureUrl,
-        cancel_url: fedapayFailureUrl,
-        metadata: {
-          email: customerEmailValue,
-          userEmail: customerEmailValue,
-          purpose: transactionPurpose,
-          projectId: transactionProjectId,
-        },
-      };
+      const customerPayload = new URLSearchParams();
+      customerPayload.append('firstname', firstName || 'Client');
+      customerPayload.append('lastname', lastNameValue || 'Client');
+      if (customerEmailValue) {
+        customerPayload.append('email', customerEmailValue);
+      }
+      customerPayload.append('phone', String(phoneNumber).trim());
 
-      console.log('[FEDAPAY] Transaction request:', { url: fedapayUrl, amount: payload.amount, currency: payload.currency });
+      console.log('[FEDAPAY] Searching or creating customer:', {
+        firstname: firstName,
+        lastname: lastNameValue,
+        email: customerEmailValue,
+        phone: phoneNumber,
+      });
+
+      let customerId: string | number | undefined;
+      if (customerEmailValue) {
+        try {
+          const searchResponse = await axios.get(fedapayCustomerUrl, {
+            headers: {
+              'Authorization': `Bearer ${fedapayApiKey}`,
+              'Accept': 'application/vnd.api+json',
+            },
+            params: {
+              email: customerEmailValue,
+            },
+            validateStatus: () => true,
+          });
+
+          if (searchResponse.status === 200 || searchResponse.status === 201) {
+            const customers = searchResponse.data?.['v1/customers'] || searchResponse.data?.data || [];
+            if (Array.isArray(customers) && customers.length > 0) {
+              customerId = customers[0]?.id || customers[0]?.['id'];
+              console.log('[FEDAPAY] Existing customer found, reusing ID:', customerId);
+            }
+          }
+        } catch (axiosError: any) {
+          console.warn('[FEDAPAY] Customer search failed, will create a new customer if possible.', axiosError?.message || axiosError);
+        }
+      }
+
+      let customerResponse: any;
+      if (!customerId) {
+        try {
+          customerResponse = await axios.post(fedapayCustomerUrl, customerPayload.toString(), {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'Authorization': `Bearer ${fedapayApiKey}`,
+              'Accept': 'application/vnd.api+json',
+            },
+            validateStatus: () => true,
+          });
+        } catch (axiosError: any) {
+          const status = axiosError.response?.status || 500;
+          const errorData = axiosError.response?.data || { error: axiosError.message };
+          console.error('[FEDAPAY] Customer creation failed:', { status, errorData });
+          return res.status(status).json({ success: false, error: 'Échec de création du client FedaPay', raw: errorData });
+        }
+
+        console.log('[FEDAPAY] Customer response status:', customerResponse.status);
+        console.log('[FEDAPAY] Customer response data:', customerResponse.data);
+
+        if (customerResponse.status !== 200 && customerResponse.status !== 201) {
+          const errMsg = (customerResponse.data && (customerResponse.data.message || customerResponse.data.error || customerResponse.data.errors?.[0]?.message)) || `Erreur FedaPay customer (${customerResponse.status})`;
+          return res.status(customerResponse.status).json({ success: false, error: errMsg, raw: customerResponse.data });
+        }
+
+        const customerData = customerResponse.data?.data || customerResponse.data?.['v1/customer'] || customerResponse.data;
+        customerId = customerData?.id || customerData?.['id'];
+        if (!customerId) {
+          console.error('[FEDAPAY] Customer creation returned no ID', customerResponse.data);
+          return res.status(500).json({ success: false, error: 'Impossible de récupérer l’identifiant client FedaPay' });
+        }
+      }
+
+      const transactionPayload = new URLSearchParams();
+      transactionPayload.append('amount', String(Math.round(Number(amount))));
+      transactionPayload.append('currency[iso]', currency || 'XOF');
+      transactionPayload.append('description', String(description).trim());
+      transactionPayload.append('customer[id]', String(customerId));
+      transactionPayload.append('callback_url', callbackUrl || fedapayWebhookUrl);
+      transactionPayload.append('webhook_url', fedapayWebhookUrl);
+      transactionPayload.append('return_url', returnUrl || 'https://ecolestrack.vercel.app/payment/success');
+      transactionPayload.append('failure_url', fedapayFailureUrl);
+      transactionPayload.append('cancel_url', fedapayFailureUrl);
+      transactionPayload.append('metadata[email]', customerEmailValue || String(phoneNumber));
+      transactionPayload.append('metadata[userEmail]', customerEmailValue || String(phoneNumber));
+      transactionPayload.append('metadata[purpose]', transactionPurpose);
+      transactionPayload.append('metadata[projectId]', transactionProjectId);
+
+      console.log('[FEDAPAY] Calling:', fedapayTransactionUrl);
+      console.log('[FEDAPAY] Transaction request:', { url: fedapayTransactionUrl, amount: amount, currency: currency || 'XOF', customerId });
 
       let result: any = null;
       try {
         console.log('[FEDAPAY] Request headers:', {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
           'Authorization': `Bearer ${fedapayApiKey.substring(0, 10)}...`,
-          'X-Version': '1.1.1',
-          'X-Source': 'FedaPay NodeLib',
-          'Accept': 'application/json',
+          'Accept': 'application/vnd.api+json',
         });
-        console.log('[FEDAPAY] Request payload:', JSON.stringify(payload, null, 2));
-        const paymentResponse = await axios.post(fedapayUrl, payload, {
+        console.log('[FEDAPAY] Request payload:', transactionPayload.toString());
+        const paymentResponse = await axios.post(fedapayTransactionUrl, transactionPayload.toString(), {
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
             'Authorization': `Bearer ${fedapayApiKey}`,
-            'X-Version': '1.1.1',
-            'X-Source': 'FedaPay NodeLib',
-            'Accept': 'application/json',
+            'Accept': 'application/vnd.api+json',
           },
-          validateStatus: () => true, // Capture toutes les réponses, même les erreurs
+          validateStatus: () => true,
         });
-        
+
         console.log('[FEDAPAY] Response status:', paymentResponse.status);
         console.log('[FEDAPAY] Response data:', paymentResponse.data);
-        
+
         if (paymentResponse.status !== 200 && paymentResponse.status !== 201) {
           const errMsg = (paymentResponse.data && (paymentResponse.data.message || paymentResponse.data.error || paymentResponse.data.errors?.[0]?.message)) || `Erreur FedaPay (${paymentResponse.status})`;
           console.warn('[FEDAPAY] Error response:', { status: paymentResponse.status, error: errMsg, raw: paymentResponse.data });
           return res.status(paymentResponse.status).json({ success: false, error: errMsg, raw: paymentResponse.data });
         }
-        
-        result = paymentResponse.data;
+
+        const paymentData = paymentResponse.data;
+        result = paymentData?.data || paymentData?.['v1/transaction'] || paymentData;
         console.log('[FEDAPAY] Success response:', result);
       } catch (axiosError: any) {
         const status = axiosError.response?.status || 500;
         let errorData = axiosError.response?.data || { error: axiosError.message };
-        
-        // Si on reçoit du contenu brut, on l'affiche
+
         if (axiosError.response?.data && typeof axiosError.response.data === 'string') {
           try {
             errorData = JSON.parse(axiosError.response.data);
@@ -748,7 +816,7 @@ app.post('/api/fedapay', async (req, res) => {
             errorData = { raw: axiosError.response.data };
           }
         }
-        
+
         const errMsg = (errorData && (errorData.message || errorData.error || errorData.errors?.[0]?.message)) || `Erreur FedaPay (${status})`;
         console.error('[FEDAPAY] Full error:', { status, errorData, axiosMessage: axiosError.message });
         console.warn('[FEDAPAY] Error response:', { status, error: errMsg, raw: errorData });
@@ -761,14 +829,14 @@ app.post('/api/fedapay', async (req, res) => {
       }
 
       const transaction = result.data || result;
-      const checkoutLink = transaction.cta?.url || transaction.link || `https://app.fedapay.com/transactions/${transaction.id}`;
+      const checkoutLink = transaction.payment_url || transaction.cta?.url || transaction.link || `https://app.fedapay.com/transactions/${transaction.id}`;
 
       createTransactionRecord({
         transactionId: String(transaction.id),
         reference: String(transaction.reference || ''),
         email: customerEmailValue || String(phoneNumber),
-        amount: Number(transaction.amount || payload.amount),
-        currency: String(transaction.currency || payload.currency),
+        amount: Number(transaction.amount || Math.round(Number(amount))),
+        currency: String(transaction.currency || currency || 'XOF'),
         status: String(transaction.status || 'pending'),
         purpose: transactionPurpose,
         projectId: transactionProjectId,
