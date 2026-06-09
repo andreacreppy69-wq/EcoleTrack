@@ -26,6 +26,7 @@ import {
   deleteUser,
   initiateFedaPayTransaction,
   getFedaPayInvestorCount,
+  getFedaPaySummary,
   logActivity,
 } from './api';
 
@@ -530,7 +531,7 @@ export default function App() {
   // Campaign State
   const CAMPAGNE_GOAL = FUNDING_PROGRESS.totalGoal; // 30,000,000 FCFA
   const DONATION_TOTAL = 150000;
-  const [raisedAmount, setRaisedAmount] = useState<number>(FUNDING_PROGRESS.amountRaised); // 3,455,090 FCFA collecté
+  const [raisedAmount, setRaisedAmount] = useState<number>(0);
   const [backersList, setBackersList] = useState<Backer[]>(INITIAL_RECENT_BACKERS);
   const [fedapayInvestorCount, setFedaPayInvestorCount] = useState<number | null>(null);
   const [hasContributed, setHasContributed] = useState<boolean>(false);
@@ -1350,17 +1351,18 @@ export default function App() {
   }, [currentUserEmail, isAdminAuthenticated]);
 
   useEffect(() => {
-    const loadInvestorCount = async () => {
+    const loadFedaPaySummary = async () => {
       try {
-        const count = await getFedaPayInvestorCount();
-        setFedaPayInvestorCount(count);
+        const summary = await getFedaPaySummary();
+        setFedaPayInvestorCount(summary.investorCount);
+        setRaisedAmount(summary.totalAmount);
       } catch (error) {
-        console.warn('Impossible de charger le nombre d\'investisseurs FedaPay :', error);
+        console.warn('Impossible de charger le résumé FedaPay :', error);
       }
     };
 
     if (typeof window !== 'undefined') {
-      loadInvestorCount();
+      loadFedaPaySummary();
     }
   }, []);
 

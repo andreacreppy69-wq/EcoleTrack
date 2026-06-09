@@ -230,6 +230,14 @@ export const getFedaPayInvestorCount = async (): Promise<number> => {
   return Number(data.investorCount || 0);
 };
 
+export const getFedaPaySummary = async (): Promise<{ investorCount: number; totalAmount: number }> => {
+  const data = await apiFetch<{ investorCount: number; totalAmount: number }>('/api/fedapay/summary');
+  return {
+    investorCount: Number(data.investorCount || 0),
+    totalAmount: Number(data.totalAmount || 0),
+  };
+};
+
 export const initiateFedaPayTransaction = async (
   payload: FedaPayTransactionPayload,
 ): Promise<FedaPayTransactionResponse> => {

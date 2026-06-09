@@ -976,6 +976,21 @@ app.get('/api/fedapay/investor-count', async (req, res) => {
   }
 });
 
+app.get('/api/fedapay/summary', async (req, res) => {
+  try {
+    const row = queryOne(
+      'SELECT COUNT(DISTINCT lower(email)) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND status IN (?, ?, ?, ?, ?)',
+      ['', 0, 'completed', 'success', 'paid', 'authorized', 'captured'],
+    );
+    const investorCount = Number(row?.investorCount ?? 0);
+    const totalAmount = Number(row?.totalAmount ?? 0);
+    return res.json({ investorCount, totalAmount });
+  } catch (error: any) {
+    console.error('[FEDAPAY] Failed to compute summary:', error);
+    return res.status(500).json({ success: false, error: 'Impossible de calculer le total des transactions FedaPay.' });
+  }
+});
+
 // FedaPay Callback Handler
 app.post('/api/fedapay/callback', async (req, res) => {
   try {
