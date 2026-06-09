@@ -631,6 +631,7 @@ export default function App() {
   const [fedaPayError, setFedaPayError] = useState<string>('');
   const [fedaPayRedirectUrl, setFedaPayRedirectUrl] = useState<string>('');
   const [fedaPaySuccess, setFedaPaySuccess] = useState<string>('');
+  const [showInvestmentForm, setShowInvestmentForm] = useState<boolean>(false);
 
   const [passwordChangeEmail, setPasswordChangeEmail] = useState<string>('');
   const [passwordChangeNew, setPasswordChangeNew] = useState<string>('');
@@ -986,15 +987,18 @@ export default function App() {
 
     try {
       const result = await initiateFedaPayTransaction({
-        amount: 5000,
-        phoneNumber: '+228 91551295',
+        amount: fedaPayAmount,
+        phoneNumber: profile.phoneNumber || currentUserEmail || '+228 91551295',
         currency: 'XOF',
-        description: 'Participation au projet Ecole Track Afrique',
-        customerName: 'Contribution Ecole Track',
-        customerEmail: 'participation@ecoletrack.africa',
+        description: 'Investissement sur le projet Ecole Track Afrique',
+        customerName: profile.name || currentUserEmail || 'Investisseur',
+        customerEmail: profile.email || currentUserEmail || 'investisseur@ecoletrack.africa',
         callbackUrl: `${window.location.origin}/api/fedapay/webhook`,
-        returnUrl: 'https://ecolestrack.vercel.app/paiement/succes',
+        returnUrl: 'https://ecolestrack.vercel.app/payment/success',
         failureUrl: 'https://ecolestrack.vercel.app/paiement/echec',
+        purpose: 'investment',
+        userEmail: profile.email || currentUserEmail || 'investisseur@ecoletrack.africa',
+        projectId: 'default_project',
       });
 
       if (result.success || result.transaction) {
@@ -1030,14 +1034,17 @@ export default function App() {
     try {
       const result = await initiateFedaPayTransaction({
         amount: 1000,
-        phoneNumber: '+228 91551295',
+        phoneNumber: profile.phoneNumber || currentUserEmail || '+228 91551295',
         currency: 'XOF',
         description: 'Don volontaire pour le projet Ecole Track Afrique',
-        customerName: 'Don pour Ecole Track',
-        customerEmail: 'donateur@ecoletrack.africa',
+        customerName: profile.name || currentUserEmail || 'Donateur',
+        customerEmail: profile.email || currentUserEmail || 'donateur@ecoletrack.africa',
         callbackUrl: `${window.location.origin}/api/fedapay/webhook`,
-        returnUrl: 'https://ecolestrack.vercel.app/paiement/succes',
+        returnUrl: 'https://ecolestrack.vercel.app/payment/success',
         failureUrl: 'https://ecolestrack.vercel.app/paiement/echec',
+        purpose: 'donation',
+        userEmail: profile.email || currentUserEmail || 'donateur@ecoletrack.africa',
+        projectId: 'default_project',
       });
 
       if (result.success || result.transaction) {
@@ -1085,8 +1092,8 @@ export default function App() {
         description: payloadData.description,
         customerName: payloadData.customerName,
         customerEmail: payloadData.customerEmail,
-        callbackUrl: 'https://ecoletrack-5481.onrender.com/api/fedapay/webhook',
-        returnUrl: 'https://ecolestrack.vercel.app/paiement/succes',
+        callbackUrl: 'https://api.ecolestrack.vercel.app/api/fedapay/webhook',
+        returnUrl: 'https://ecolestrack.vercel.app/payment/success',
         failureUrl: 'https://ecolestrack.vercel.app/paiement/echec',
       });
 
@@ -1250,7 +1257,7 @@ export default function App() {
     if (typeof window === 'undefined') return;
 
     const path = window.location.pathname;
-    if (path !== '/paiement/succes' && path !== '/payment-result') return;
+    if (path !== '/payment/success' && path !== '/payment-result') return;
 
     const params = new URLSearchParams(window.location.search);
     const entries = Array.from(params.entries());
@@ -3026,7 +3033,10 @@ export default function App() {
             <div className="flex items-center gap-2 flex-nowrap whitespace-nowrap">
               <button 
                 type="button"
-                onClick={handleParticipateClick}
+                onClick={() => {
+                  showSection('investment');
+                  setShowInvestmentForm(true);
+                }}
                 className="px-5 py-2.5 bg-brand-green hover:bg-brand-green/90 text-white hover:text-slate-900 rounded-xl text-xs font-bold transition-all shadow-xs hover:shadow-md flex items-center gap-1.5"
               >
                 <span>J'investis</span>
@@ -3459,7 +3469,10 @@ export default function App() {
                   <div className="grid gap-3">
                     <button 
                       type="button"
-                      onClick={() => showSection('investment')}
+                      onClick={() => {
+                        showSection('investment');
+                        setShowInvestmentForm(true);
+                      }}
                       className="w-full py-3.5 bg-brand-green hover:bg-brand-green/95 text-slate-900 font-extrabold rounded-2xl text-lg transition-all shadow-md block text-center"
                     >
                       Investir dès maintenant
@@ -3733,6 +3746,43 @@ export default function App() {
                 Découvrez les conditions de remboursement équitable et transparent selon le montant investi
               </p>
             </div>
+
+            {showInvestmentForm && (
+              <div className="mx-auto max-w-3xl mb-10 rounded-3xl border border-slate-200 bg-slate-950 p-6 text-white shadow-lg">
+                <div className="mb-4">
+                  <h3 className="text-xl font-semibold text-white">Entrer le montant à investir</h3>
+                  <p className="text-sm text-slate-400 mt-2">
+                    Indiquez le montant que vous souhaitez investir, puis validez pour être redirigé vers la page de paiement FedaPay.
+                  </p>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
+                  <label className="block text-sm text-slate-300">
+                    Montant (XOF)
+                    <input
+                      type="number"
+                      value={fedaPayAmount}
+                      onChange={(e) => setFedaPayAmount(Number(e.target.value))}
+                      min={100}
+                      className="mt-2 w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-brand-green"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleParticipateClick}
+                    disabled={fedaPayProcessing || fedaPayAmount <= 0}
+                    className="w-full rounded-2xl bg-brand-green px-6 py-3 text-sm font-bold text-slate-950 hover:bg-brand-green/90 transition-all disabled:opacity-60"
+                  >
+                    {fedaPayProcessing ? 'Chargement...' : 'Payer avec FedaPay'}
+                  </button>
+                </div>
+                {fedaPayError && <p className="mt-4 text-sm text-red-400">{fedaPayError}</p>}
+                {fedaPaySuccess && <p className="mt-4 text-sm text-emerald-300">{fedaPaySuccess}</p>}
+                {fedaPayRedirectUrl && (
+                  <p className="mt-4 text-sm text-slate-300 break-all">Redirection vers : {fedaPayRedirectUrl}</p>
+                )}
+              </div>
+            )}
+
             <InvestmentTable />
           </div>
         </section>
@@ -4005,6 +4055,16 @@ export default function App() {
             <p className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-100 max-w-2xl mx-auto leading-relaxed">
               “Rejoignez-nous pour transformer l’éducation en Afrique. Votre investissement n’est pas seulement financier, il est social et durable.”
             </p>
+            <button
+              type="button"
+              onClick={() => {
+                showSection('investment');
+                setShowInvestmentForm(true);
+              }}
+              className="mt-6 inline-flex items-center justify-center rounded-full bg-brand-green px-6 py-3 text-sm font-bold text-slate-950 hover:bg-brand-green/90 transition-all shadow-xl"
+            >
+              Investir dès maintenant
+            </button>
 
           </div>
         </section>

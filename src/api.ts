@@ -189,6 +189,9 @@ export interface FedaPayTransactionPayload {
   callbackUrl?: string;
   returnUrl?: string;
   failureUrl?: string;
+  purpose?: string;
+  userEmail?: string;
+  projectId?: string;
 }
 
 export interface FedaPayTransactionResponse {

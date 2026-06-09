@@ -181,6 +181,46 @@ const queryOne = (sql: string, params: any[] = []) => {
   return row;
 };
 
+const createTransactionRecord = (payload: {
+  transactionId: string;
+  reference: string;
+  email: string;
+  amount: number;
+  currency: string;
+  status: string;
+  purpose: string;
+  projectId: string;
+}) => {
+  const nowIso = new Date().toISOString();
+  runWrite(
+    'INSERT OR IGNORE INTO transactions (fedapayTransactionId, reference, email, amount, currency, status, purpose, projectId, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [
+      payload.transactionId,
+      payload.reference,
+      payload.email,
+      payload.amount,
+      payload.currency,
+      payload.status,
+      payload.purpose,
+      payload.projectId,
+      nowIso,
+      nowIso,
+    ],
+  );
+};
+
+const updateTransactionStatus = (transactionId: string, status: string) => {
+  const nowIso = new Date().toISOString();
+  runWrite('UPDATE transactions SET status = ?, updatedAt = ? WHERE fedapayTransactionId = ?', [status, nowIso, transactionId]);
+};
+
+const addConfirmedInvestment = (email: string, amount: number, projectId = 'default_project') => {
+  const nowIso = new Date().toISOString();
+  runWrite('UPDATE users SET investedAmount = investedAmount + ? WHERE email = ?', [amount, email]);
+  runWrite('UPDATE users SET totalCollected = totalCollected + ? WHERE email = ?', [amount, email]);
+  runWrite('UPDATE project_metrics SET collectedAmount = collectedAmount + ?, investedAmount = investedAmount + ?, updatedAt = ? WHERE id = ?', [amount, amount, nowIso, projectId]);
+};
+
 db.run(`CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   firstName TEXT,
@@ -195,7 +235,9 @@ db.run(`CREATE TABLE IF NOT EXISTS users (
   photoUrl TEXT,
   password TEXT,
   createdAt TEXT,
-  mustChangePassword INTEGER
+  mustChangePassword INTEGER,
+  investedAmount INTEGER DEFAULT 0,
+  totalCollected INTEGER DEFAULT 0
 )`);
 
 db.run(`CREATE TABLE IF NOT EXISTS activity (
@@ -251,6 +293,35 @@ db.run(`CREATE TABLE IF NOT EXISTS sessions (
   role TEXT NOT NULL,
   createdAt INTEGER NOT NULL
 )`);
+
+db.run(`CREATE TABLE IF NOT EXISTS transactions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  fedapayTransactionId TEXT UNIQUE,
+  reference TEXT,
+  email TEXT,
+  amount INTEGER,
+  currency TEXT,
+  status TEXT,
+  purpose TEXT,
+  projectId TEXT,
+  createdAt TEXT,
+  updatedAt TEXT
+)`);
+
+db.run(`CREATE TABLE IF NOT EXISTS project_metrics (
+  id TEXT PRIMARY KEY,
+  name TEXT,
+  collectedAmount INTEGER DEFAULT 0,
+  investedAmount INTEGER DEFAULT 0,
+  updatedAt TEXT
+)`);
+
+if (!queryOne('SELECT id FROM project_metrics WHERE id = ?', ['default_project'])) {
+  runWrite(
+    'INSERT INTO project_metrics (id, name, collectedAmount, investedAmount, updatedAt) VALUES (?, ?, ?, ?, ?)',
+    ['default_project', 'Projet principal', 0, 0, new Date().toISOString()],
+  );
+}
 
 saveDb();
 
@@ -574,14 +645,26 @@ app.post('/api/tier-progress', async (req, res) => {
 // FedaPay Payment Gateway Integration
 app.post('/api/fedapay', async (req, res) => {
   try {
-    const { amount, phoneNumber, currency, description, customerName, customerEmail, callbackUrl, returnUrl, failureUrl } = req.body;
+    const {
+      amount,
+      phoneNumber,
+      currency,
+      description,
+      customerName,
+      customerEmail,
+      callbackUrl,
+      returnUrl,
+      failureUrl,
+      purpose,
+      projectId,
+    } = req.body;
 
     if (!phoneNumber || !amount || !description) {
       return res.status(400).json({ error: 'phoneNumber, amount et description sont requis.' });
     }
 
     const fedapayApiKey = FEDAPAY_SECRET_KEY;
-    const fedapayWebhookUrl = process.env.FEDAPAY_WEBHOOK_URL || 'https://ecoletrack-5481.onrender.com/api/fedapay/webhook';
+    const fedapayWebhookUrl = process.env.FEDAPAY_WEBHOOK_URL || 'https://api.ecolestrack.vercel.app/api/fedapay/webhook';
     const fedapayFailureUrl = failureUrl || process.env.FEDAPAY_FAILURE_URL || 'https://ecolestrack.vercel.app/paiement/echec';
     if (!fedapayApiKey) {
       console.error('[FEDAPAY] Clé secrète non configurée (FEDAPAY_SECRET_KEY ou FEDAPAY_API_KEY requise).');
@@ -593,6 +676,10 @@ app.post('/api/fedapay', async (req, res) => {
     try {
       const fedapayUrl = 'https://sandbox-api.fedapay.com/v1/transactions';
       console.log('[FEDAPAY] Calling:', fedapayUrl);
+      const customerEmailValue = String(customerEmail || req.body.userEmail || '').trim();
+      const transactionPurpose = String(purpose || 'investment');
+      const transactionProjectId = String(projectId || 'default_project');
+
       const payload = {
         amount: Math.round(Number(amount)),
         currency: currency || 'XOF',
@@ -602,13 +689,16 @@ app.post('/api/fedapay', async (req, res) => {
           first_name: String(customerName || 'Client').split(' ')[0],
           last_name: String(customerName || 'Client').split(' ').slice(1).join(' ') || '',
         },
+        callback_url: callbackUrl || fedapayWebhookUrl,
+        webhook_url: fedapayWebhookUrl,
+        return_url: returnUrl || 'https://ecolestrack.vercel.app/payment/success',
+        failure_url: fedapayFailureUrl,
+        cancel_url: fedapayFailureUrl,
         metadata: {
-          email: customerEmail || '',
-          callback_url: callbackUrl || fedapayWebhookUrl,
-          webhook_url: fedapayWebhookUrl,
-          return_url: returnUrl || 'https://ecolestrack.vercel.app/paiement/succes',
-          failure_url: fedapayFailureUrl,
-          cancel_url: fedapayFailureUrl,
+          email: customerEmailValue,
+          userEmail: customerEmailValue,
+          purpose: transactionPurpose,
+          projectId: transactionProjectId,
         },
       };
 
@@ -673,6 +763,17 @@ app.post('/api/fedapay', async (req, res) => {
       const transaction = result.data || result;
       const checkoutLink = transaction.cta?.url || transaction.link || `https://app.fedapay.com/transactions/${transaction.id}`;
 
+      createTransactionRecord({
+        transactionId: String(transaction.id),
+        reference: String(transaction.reference || ''),
+        email: customerEmailValue || String(phoneNumber),
+        amount: Number(transaction.amount || payload.amount),
+        currency: String(transaction.currency || payload.currency),
+        status: String(transaction.status || 'pending'),
+        purpose: transactionPurpose,
+        projectId: transactionProjectId,
+      });
+
       await logActivity(String(customerEmail || phoneNumber), `Transaction FedaPay initiée (${transaction.id})`);
 
       return res.json({
@@ -734,17 +835,48 @@ app.post('/api/fedapay/callback', async (req, res) => {
 // Webhook handler for FedaPay (for server-to-server notifications)
 app.post('/api/fedapay/webhook', async (req, res) => {
   try {
+    const fedapayWebhookSecret = process.env.FEDAPAY_WEBHOOK_SECRET || FEDAPAY_SECRET_KEY;
+    const headerSecret = String(req.headers['x-fedapay-webhook-secret'] || req.headers['x-fedapay-signature'] || '');
+
+    if (fedapayWebhookSecret && headerSecret && headerSecret !== fedapayWebhookSecret) {
+      console.warn('[FEDAPAY] Webhook rejected: invalid signature header');
+      return res.status(401).json({ success: false, error: 'Signature webhook invalide' });
+    }
+
     const event = req.body;
     console.log('[FEDAPAY] Webhook reçu:', event?.type);
 
     if (event?.type === 'transaction.success' || event?.type === 'transaction.completed') {
       const transaction = event.data;
       const email = transaction?.customer?.email || 'webhook@fedapay';
+      const projectId = String(transaction?.metadata?.projectId || 'default_project');
+      const amount = Number(transaction?.amount || 0);
+      const status = String(transaction?.status || 'completed');
+      const reference = String(transaction?.reference || '');
+      const transactionId = String(transaction?.id || transaction?.transaction_id || '');
+
+      if (transactionId) {
+        createTransactionRecord({
+          transactionId,
+          reference,
+          email,
+          amount,
+          currency: String(transaction?.currency || 'XOF'),
+          status,
+          purpose: String(transaction?.metadata?.purpose || 'investment'),
+          projectId,
+        });
+        updateTransactionStatus(transactionId, status);
+      }
+
+      if (email && amount > 0) {
+        addConfirmedInvestment(email, amount, projectId);
+      }
 
       const createdAt = new Date().toLocaleString('fr-FR');
       runWrite('INSERT INTO activity (email, action, createdAt) VALUES (?, ?, ?)', [
         email,
-        `Paiement FedaPay confirmé: ${transaction?.reference}, Montant=${transaction?.amount}${transaction?.currency}`,
+        `Paiement FedaPay confirmé: ${reference}, Montant=${amount}${transaction?.currency}`,
         createdAt,
       ]);
       deleteOldActivity();
