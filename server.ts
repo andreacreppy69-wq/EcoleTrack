@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import initSqlJs from 'sql.js';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
+import axios from 'axios';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -610,27 +611,26 @@ app.post('/api/fedapay', async (req, res) => {
 
       console.log('[FEDAPAY] Transaction request:', { url: fedapayUrl, amount: payload.amount, currency: payload.currency });
 
-      const paymentResponse = await fetch(fedapayUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${fedapayApiKey}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
       let result: any = null;
       try {
-        result = await paymentResponse.json();
-      } catch (parseErr) {
-        const text = await paymentResponse.text().catch(() => null);
-        result = { raw: text };
+        const paymentResponse = await axios.post(fedapayUrl, payload, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${fedapayApiKey}`,
+          },
+        });
+        result = paymentResponse.data;
+      } catch (axiosError: any) {
+        const status = axiosError.response?.status || 500;
+        const errorData = axiosError.response?.data || { error: axiosError.message };
+        const errMsg = (errorData && (errorData.message || errorData.error || errorData.errors?.[0]?.message)) || 'Erreur FedaPay';
+        console.warn('[FEDAPAY] Error response:', { status, error: errMsg, raw: errorData });
+        return res.status(status).json({ success: false, error: errMsg, raw: errorData });
       }
 
-      if (!paymentResponse.ok) {
-        const errMsg = (result && (result.message || result.error || result.errors?.[0]?.message)) || 'Erreur FedaPay';
-        console.warn('[FEDAPAY] Error response:', { status: paymentResponse.status, error: errMsg, raw: result });
-        return res.status(paymentResponse.status).json({ success: false, error: errMsg, raw: result });
+      if (!result) {
+        console.warn('[FEDAPAY] Empty response from FedaPay');
+        return res.status(500).json({ success: false, error: 'Réponse vide de FedaPay' });
       }
 
       const transaction = result.data || result;
