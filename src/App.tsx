@@ -66,6 +66,20 @@ import {
 } from 'lucide-react';
 import classroomStudentsImage from './assets/images/classroom_students_1780310259872.png';
 
+const getFedaPayWebhookUrl = (): string => {
+  if (typeof window === 'undefined') {
+    return String(import.meta.env.VITE_FEDAPAY_WEBHOOK_URL || 'https://ecoletrack-5481.onrender.com/api/fedapay/webhook');
+  }
+
+  const origin = window.location.origin;
+  const localHostPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+  if (localHostPattern.test(origin)) {
+    return `${origin}/api/fedapay/webhook`;
+  }
+
+  return String(import.meta.env.VITE_FEDAPAY_WEBHOOK_URL || 'https://ecoletrack-5481.onrender.com/api/fedapay/webhook');
+};
+
 const PALIER_DETAILS = [
   {
     title: 'Architecture de base',
@@ -993,7 +1007,7 @@ export default function App() {
         description: 'Investissement sur le projet Ecole Track Afrique',
         customerName: profile.name || currentUserEmail || 'Investisseur',
         customerEmail: profile.email || currentUserEmail || 'investisseur@ecoletrack.africa',
-        callbackUrl: `${window.location.origin}/api/fedapay/webhook`,
+        callbackUrl: getFedaPayWebhookUrl(),
         returnUrl: 'https://ecolestrack.vercel.app/payment/success',
         failureUrl: 'https://ecolestrack.vercel.app/paiement/echec',
         purpose: 'investment',
@@ -1039,7 +1053,7 @@ export default function App() {
         description: 'Don volontaire pour le projet Ecole Track Afrique',
         customerName: profile.name || currentUserEmail || 'Donateur',
         customerEmail: profile.email || currentUserEmail || 'donateur@ecoletrack.africa',
-        callbackUrl: `${window.location.origin}/api/fedapay/webhook`,
+        callbackUrl: getFedaPayWebhookUrl(),
         returnUrl: 'https://ecolestrack.vercel.app/payment/success',
         failureUrl: 'https://ecolestrack.vercel.app/paiement/echec',
         purpose: 'donation',
@@ -1092,7 +1106,7 @@ export default function App() {
         description: payloadData.description,
         customerName: payloadData.customerName,
         customerEmail: payloadData.customerEmail,
-        callbackUrl: 'https://api.ecolestrack.vercel.app/api/fedapay/webhook',
+        callbackUrl: getFedaPayWebhookUrl(),
         returnUrl: 'https://ecolestrack.vercel.app/payment/success',
         failureUrl: 'https://ecolestrack.vercel.app/paiement/echec',
       });

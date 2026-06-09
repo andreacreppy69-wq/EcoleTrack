@@ -29,11 +29,11 @@ const getApiBase = () => {
     return base;
   }
 
-  // In production on Vercel, use the configured API backend.
+  // In production on Vercel, use the Render backend.
   if (import.meta.env.PROD && typeof window !== 'undefined') {
     const hostname = String(window.location.hostname).toLowerCase();
     if (hostname.endsWith('.vercel.app') || hostname === 'ecolestrack.vercel.app' || hostname === 'ecoletrack.vercel.app') {
-      return 'https://api.ecolestrack.vercel.app';
+      return 'https://ecoletrack-5481.onrender.com';
     }
   }
 
