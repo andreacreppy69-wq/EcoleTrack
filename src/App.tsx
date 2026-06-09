@@ -1634,8 +1634,14 @@ export default function App() {
             localStorage.setItem('siteAccountCreated', 'true');
             localStorage.setItem('siteUserProfile', JSON.stringify(user));
           }
-        } catch {
-          // If auto-login fails, the registration is still successful.
+        } catch (loginError: any) {
+          // If auto-login fails, the registration is still successful, but notify user
+          console.error('[REGISTER] Auto-login after registration failed:', loginError?.message);
+          // Set a flag so user can manually log in
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('siteAccountCreated', 'true');
+          }
+          setRegisterSuccess('Compte créé avec succès! Vous pouvez maintenant vous connecter avec vos identifiants.');
         }
       }
 

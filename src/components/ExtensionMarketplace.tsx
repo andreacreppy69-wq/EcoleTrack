@@ -359,10 +359,10 @@ export default function ExtensionMarketplace({
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleInstall(extension)}
-                      disabled={isInstalling.has(extension.name)}
+                      disabled={installing.has(extension.name)}
                       className="flex-1 rounded-lg bg-brand-green px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-brand-green/90 disabled:opacity-50 transition"
                     >
-                      {isInstalling.has(extension.name) ? 'Installation...' : 'Télécharger'}
+                      {installing.has(extension.name) ? 'Installation...' : 'Télécharger'}
                     </button>
                     {(extension as ExtensionResult).links?.npm || ((isLocal && 'homepage' in extension && (extension as ExtensionDetail).homepage)) ? (
                       <a

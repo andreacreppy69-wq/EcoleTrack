@@ -302,6 +302,20 @@ try {
   // ignore if column already exists or ALTER not needed
 }
 
+// Ensure users table has 'investedAmount' column
+try {
+  db.run('ALTER TABLE users ADD COLUMN investedAmount INTEGER DEFAULT 0');
+} catch (e) {
+  // ignore if column already exists or ALTER not needed
+}
+
+// Ensure users table has 'totalCollected' column
+try {
+  db.run('ALTER TABLE users ADD COLUMN totalCollected INTEGER DEFAULT 0');
+} catch (e) {
+  // ignore if column already exists or ALTER not needed
+}
+
 // Table to store email verification tokens
 db.run(`CREATE TABLE IF NOT EXISTS email_verifications (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1152,7 +1166,7 @@ app.post('/api/admin/reset-metrics', requireAdmin, async (req, res) => {
     // Persist changes
     try { saveDb(); } catch (e) { console.warn('[ADMIN] saveDb failed after reset:', e); }
 
-    await logActivity(req.auth?.email || 'admin', 'Réinitialisation des métriques (montant collecté et nombre d\'investisseurs mis à zéro)');
+    await logActivity((req as any).auth?.email || 'admin', 'Réinitialisation des métriques (montant collecté et nombre d\'investisseurs mis à zéro)');
     return res.json({ success: true });
   } catch (error: any) {
     console.error('[ADMIN] Failed to reset metrics:', error);
