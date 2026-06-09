@@ -8,8 +8,13 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { fileURLToPath } from 'url';
 
-const envPath = path.resolve(process.cwd(), '.env');
-dotenv.config({ path: envPath });
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const envPath = path.resolve(__dirname, '.env');
+const dotenvResult = dotenv.config({ path: envPath });
+if (dotenvResult.error) {
+  console.warn(`[ENV] .env file not loaded from ${envPath}: ${dotenvResult.error.message}`);
+}
 
 if (!process.env.FEDAPAY_SECRET_KEY && !process.env.FEDAPAY_API_KEY && !process.env.VITE_FEDAPAY_API_KEY) {
   console.warn(`[ENV] FedaPay key not found in .env at ${envPath}`);
@@ -95,15 +100,14 @@ app.use((req, res, next) => {
 // Ensure preflight OPTIONS requests to API routes are handled
 app.options('/api/*', cors());
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dbPath = process.env.DATABASE_FILE
-  ? path.resolve(process.cwd(), process.env.DATABASE_FILE)
+  ? path.resolve(__dirname, process.env.DATABASE_FILE)
   : process.env.RENDER_DATA_DIR
     ? path.resolve(process.env.RENDER_DATA_DIR, 'database.sqlite')
-    : path.resolve(process.cwd(), 'database.sqlite');
+    : path.resolve(__dirname, 'database.sqlite');
 
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-const sqlWasmPath = path.resolve(process.cwd(), 'node_modules/sql.js/dist/sql-wasm.wasm');
+const sqlWasmPath = path.resolve(__dirname, 'node_modules/sql.js/dist/sql-wasm.wasm');
 
 if (!fs.existsSync(sqlWasmPath)) {
   console.error(`Fichier WASM introuvable: ${sqlWasmPath}`);
