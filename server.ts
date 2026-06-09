@@ -782,7 +782,7 @@ app.post('/api/fedapay', async (req, res) => {
       transactionPayload.append('customer[id]', String(customerId));
       transactionPayload.append('callback_url', callbackUrl || fedapayWebhookUrl);
       transactionPayload.append('webhook_url', fedapayWebhookUrl);
-      transactionPayload.append('return_url', returnUrl || 'https://ecolestrack.vercel.app/payment/success');
+      transactionPayload.append('return_url', returnUrl || 'https://ecolestrack.vercel.app/payment-result');
       transactionPayload.append('failure_url', fedapayFailureUrl);
       transactionPayload.append('cancel_url', fedapayFailureUrl);
       transactionPayload.append('metadata[email]', customerEmailValue || String(phoneNumber));

@@ -1009,7 +1009,7 @@ export default function App() {
         customerName: profile.name || currentUserEmail || 'Investisseur',
         customerEmail: profile.email || currentUserEmail || 'investisseur@ecoletrack.africa',
         callbackUrl: getFedaPayWebhookUrl(),
-        returnUrl: 'https://ecolestrack.vercel.app/payment/success',
+        returnUrl: 'https://ecolestrack.vercel.app/payment-result',
         failureUrl: 'https://ecolestrack.vercel.app/paiement/echec',
         purpose: 'investment',
         userEmail: profile.email || currentUserEmail || 'investisseur@ecoletrack.africa',
@@ -1055,7 +1055,7 @@ export default function App() {
         customerName: profile.name || currentUserEmail || 'Donateur',
         customerEmail: profile.email || currentUserEmail || 'donateur@ecoletrack.africa',
         callbackUrl: getFedaPayWebhookUrl(),
-        returnUrl: 'https://ecolestrack.vercel.app/payment/success',
+        returnUrl: 'https://ecolestrack.vercel.app/payment-result',
         failureUrl: 'https://ecolestrack.vercel.app/paiement/echec',
         purpose: 'donation',
         userEmail: profile.email || currentUserEmail || 'donateur@ecoletrack.africa',
@@ -1108,7 +1108,7 @@ export default function App() {
         customerName: payloadData.customerName,
         customerEmail: payloadData.customerEmail,
         callbackUrl: getFedaPayWebhookUrl(),
-        returnUrl: 'https://ecolestrack.vercel.app/payment/success',
+        returnUrl: 'https://ecolestrack.vercel.app/payment-result',
         failureUrl: 'https://ecolestrack.vercel.app/paiement/echec',
       });
 
