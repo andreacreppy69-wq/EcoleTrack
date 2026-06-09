@@ -28,6 +28,12 @@ if (!process.env.FEDAPAY_SECRET_KEY && !process.env.FEDAPAY_API_KEY && !process.
   console.warn('[ENV] FedaPay key not found in environment (FEDAPAY_SECRET_KEY or FEDAPAY_API_KEY required).');
 }
 
+// Load FedaPay secret key from environment
+const FEDAPAY_SECRET_KEY = process.env.FEDAPAY_SECRET_KEY || process.env.FEDAPAY_API_KEY || process.env.VITE_FEDAPAY_API_KEY;
+if (FEDAPAY_SECRET_KEY) {
+  console.log('[FEDAPAY] Secret key loaded successfully');
+}
+
 interface UserRecord {
   firstName?: string;
   lastName?: string;
@@ -573,7 +579,7 @@ app.post('/api/fedapay', async (req, res) => {
       return res.status(400).json({ error: 'phoneNumber, amount et description sont requis.' });
     }
 
-    const fedapayApiKey = process.env.FEDAPAY_SECRET_KEY || process.env.FEDAPAY_API_KEY || process.env.VITE_FEDAPAY_API_KEY;
+    const fedapayApiKey = FEDAPAY_SECRET_KEY;
     const fedapayWebhookUrl = process.env.FEDAPAY_WEBHOOK_URL || 'https://ecoletrack-5481.onrender.com/api/fedapay/webhook';
     const fedapayFailureUrl = failureUrl || process.env.FEDAPAY_FAILURE_URL || 'https://ecolestrack.vercel.app/paiement/echec';
     if (!fedapayApiKey) {
