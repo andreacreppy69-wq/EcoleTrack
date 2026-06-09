@@ -207,6 +207,24 @@ export interface FedaPayTransactionResponse {
   [key: string]: unknown;
 }
 
+export interface FedaPayTransactionRecord {
+  transactionId: string;
+  reference: string;
+  email: string;
+  amount: number;
+  currency: string;
+  status: string;
+  purpose: string;
+  projectId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const getFedaPayTransactions = async (): Promise<FedaPayTransactionRecord[]> => {
+  const data = await apiFetch<{ transactions: FedaPayTransactionRecord[] }>('/api/fedapay/transactions');
+  return data.transactions;
+};
+
 export const initiateFedaPayTransaction = async (
   payload: FedaPayTransactionPayload,
 ): Promise<FedaPayTransactionResponse> => {

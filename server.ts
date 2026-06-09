@@ -869,6 +869,19 @@ app.post('/api/fedapay', async (req, res) => {
   }
 });
 
+// FedaPay Transaction History
+app.get('/api/fedapay/transactions', async (req, res) => {
+  try {
+    const transactions = queryAll(
+      'SELECT fedapayTransactionId AS transactionId, reference, email, amount, currency, status, purpose, projectId, createdAt, updatedAt FROM transactions ORDER BY createdAt DESC',
+    );
+    return res.json({ transactions });
+  } catch (error: any) {
+    console.error('[FEDAPAY] Failed to load transactions:', error);
+    return res.status(500).json({ success: false, error: 'Impossible de charger les transactions FedaPay.' });
+  }
+});
+
 // FedaPay Callback Handler
 app.post('/api/fedapay/callback', async (req, res) => {
   try {

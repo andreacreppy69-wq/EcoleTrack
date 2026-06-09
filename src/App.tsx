@@ -35,6 +35,7 @@ import SurveyResults from './components/SurveyResults';
 import { InvestmentTable } from './components/InvestmentTable';
 import ExtensionMarketplace from './components/ExtensionMarketplace';
 import FedaPayForm from './components/FedaPayForm';
+import FedaPayAdminDashboard from './components/FedaPayAdminDashboard';
 
 // Lucide icon assets
 import {
@@ -2053,6 +2054,23 @@ export default function App() {
                         setShowAdminJournal(false);
                         setShowEventLog(false);
                         setShowUserAccounts(false);
+                        setShowPaymentExtensions(false);
+                        setShowPaymentSection(true);
+                        setTimeout(() => {
+                          paymentSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 50);
+                      }}
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-left text-xs font-semibold text-slate-200 hover:bg-slate-800 transition-all"
+                    >
+                      Tableau de bord FedaPay
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateAccount(false);
+                        setShowAdminJournal(false);
+                        setShowEventLog(false);
+                        setShowUserAccounts(false);
                         setShowPaymentSection(false);
                         setShowPaymentExtensions(true);
                         setTimeout(() => {
@@ -2248,11 +2266,9 @@ export default function App() {
 
               {showPaymentSection && (
                 <div ref={paymentSectionRef} className="rounded-3xl border border-slate-700 bg-slate-950 p-6 mb-6">
-                  <h2 className="text-lg font-semibold text-white mb-4">Initier une transaction de paiement</h2>
-                  <p className="text-sm text-slate-400 mb-5">Choisissez une passerelle de paiement et lancez une transaction.</p>
-
-              </div>
-            )}
+                  <FedaPayAdminDashboard />
+                </div>
+              )}
 
               {showEventLog && (
                 <div ref={eventLogRef} className="rounded-3xl border border-slate-700 bg-slate-950 p-6 mb-6">
