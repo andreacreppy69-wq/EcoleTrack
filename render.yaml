@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: ecolestrack-api
+    env: node
+    plan: standard
+    # Build configuration
+    buildCommand: npm run build:ts
+    startCommand: npm run server
+    
+    # Persistent disk for database storage
+    disk:
+      - name: db-storage
+        mountPath: /var/data
+        sizeGB: 1
+    
+    # Environment variables for persistent storage
+    envVars:
+      - key: RENDER_DATA_DIR
+        value: /var/data
+      - key: DATABASE_FILE
+        value: /var/data/database.sqlite
+      - key: NODE_ENV
+        value: production
+      - key: FEDAPAY_WEBHOOK_URL
+        fromService:
+          type: web
+          property: url
+          suffixPath: /api/fedapay/webhook

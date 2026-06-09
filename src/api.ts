@@ -113,6 +113,15 @@ export const loginUser = async (email: string, password: string): Promise<{ user
   });
 };
 
+// Recover admin session after deployment (when token is lost on server but stored locally)
+export const recoverAdminSession = async (email: string, password: string): Promise<{ user: UserProfile; token: string; message: string }> => {
+  return apiFetch<{ user: UserProfile; token: string; message: string }>('/api/session/recover', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+};
+
 export const registerUser = async (account: Omit<UserAccount, 'createdAt' | 'mustChangePassword'>): Promise<any> => {
   const accountWithName = {
     ...account,

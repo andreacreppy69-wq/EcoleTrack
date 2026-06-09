@@ -18,6 +18,7 @@ import {
   getTierProgress,
   saveTierProgress,
   loginUser,
+  recoverAdminSession,
   registerUser,
   changePassword,
   resetPassword,
@@ -1399,7 +1400,9 @@ export default function App() {
         });
         
         if (!res.ok) {
-          // Token is invalid on server (likely expired/deleted), clear all auth
+          // Token is invalid on server (likely lost after deployment)
+          // Store this state so we can show recovery prompt
+          sessionStorage.setItem('sessionLostPostDeployment', 'true');
           localStorage.removeItem('siteAuthToken');
           localStorage.removeItem('siteAdminAuthenticated');
           localStorage.removeItem('siteCurrentUserEmail');
@@ -1408,6 +1411,7 @@ export default function App() {
           // Force state update
           setIsAdminAuthenticated(false);
           setCurrentUserEmail('');
+          console.log('[AUTH] Session lost post-deployment, showing recovery prompt');
         }
       } catch (error) {
         // On network error or timeout, don't clear auth

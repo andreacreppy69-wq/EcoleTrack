@@ -128,12 +128,20 @@ if (!fs.existsSync(sqlWasmPath)) {
   console.error(`Fichier WASM introuvable: ${sqlWasmPath}`);
 }
 
+console.log('[DB] Database path configuration:');
+console.log('[DB] DATABASE_FILE:', process.env.DATABASE_FILE || 'not set');
+console.log('[DB] RENDER_DATA_DIR:', process.env.RENDER_DATA_DIR || 'not set');
+console.log('[DB] Final dbPath:', dbPath);
+console.log('[DB] Database directory exists:', fs.existsSync(path.dirname(dbPath)));
+
 if (!process.env.DATABASE_FILE && process.env.RENDER_DATA_DIR) {
-  console.log(`Utilisation du stockage persistant Render : ${dbPath}`);
+  console.log(`[DB] ✓ Utilisation du stockage persistant Render : ${dbPath}`);
 }
 
 if (!process.env.DATABASE_FILE && !process.env.RENDER_DATA_DIR) {
-  console.warn('ATTENTION: database storage est en local. Les comptes utilisateurs risquent d\'être perdus lors d\'un redeploy. Définissez DATABASE_FILE sur un volume persistant ou montez un volume Render.');
+  console.warn('[DB] ⚠️  ATTENTION: storage est en local. Les sessions risquent d\'être perdues lors d\'un redeploy.');
+  console.warn('[DB] ⚠️  Pour Render: assurez-vous que RENDER_DATA_DIR est défini dans l\'environnement.');
+  console.warn('[DB] ⚠️  Ou définissez DATABASE_FILE sur un volume persistant (ex: /var/data/database.sqlite).');
 }
 
 const SQL = await initSqlJs({
@@ -383,18 +391,22 @@ const createSession = (email: string, role: string) => {
     'INSERT INTO sessions (token, email, role, createdAt) VALUES (?, ?, ?, ?)',
     [token, email.toLowerCase(), role, createdAt]
   );
+  console.log(`[SESSION] New session created for ${email} (${role}) - token: ${token.substring(0, 8)}...`);
   return token;
 };
 
 const getSession = (token: string | undefined) => {
   if (!token) return undefined;
   const row = queryOne('SELECT * FROM sessions WHERE token = ? LIMIT 1', [token]);
-  if (!row) return undefined;
+  if (!row) {
+    console.log(`[SESSION] Session not found for token: ${token?.substring(0, 8)}...`);
+    return undefined;
+  }
   
   const now = Date.now();
   const createdAt = Number(row.createdAt);
   if (now - createdAt > SESSION_TTL_MS) {
-    // Session expired, delete it
+    console.log(`[SESSION] Session expired for ${row.email} - created ${Math.round((now - createdAt) / 1000 / 60 / 60)} hours ago`);
     runWrite('DELETE FROM sessions WHERE token = ?', [token]);
     return undefined;
   }
@@ -402,6 +414,7 @@ const getSession = (token: string | undefined) => {
   // Refresh active sessions so administrators stay logged in while interacting with the app.
   const refreshedAt = now;
   if (now - createdAt > 1000 * 60 * 60) {
+    console.log(`[SESSION] Refreshing session for ${row.email} (${Math.round((now - createdAt) / 1000 / 60)} min old)`);
     runWrite('UPDATE sessions SET createdAt = ? WHERE token = ?', [refreshedAt, token]);
   }
   
@@ -1167,6 +1180,49 @@ app.get('/api/validate-token', (req, res) => {
   }
 
   return res.json({ valid: true, email: session.email, role: session.role });
+});
+
+// Session recovery endpoint - allows getting a new token if old one is lost (e.g., after deployment)
+// Only works for users who can provide their credentials
+app.post('/api/session/recover', rateLimit('session-recover', 5, 15 * 60 * 1000), async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email et mot de passe requis.' });
+    }
+
+    const user = getUserByEmail(String(email));
+    if (!user) {
+      return res.status(404).json({ error: 'Aucun compte trouvé avec cet email.' });
+    }
+
+    if (user.role !== 'admin') {
+      return res.status(403).json({ error: 'Seuls les administrateurs peuvent récupérer une session.' });
+    }
+
+    if (!user.password) {
+      return res.status(500).json({ error: 'Erreur d\'authentification.' });
+    }
+
+    const isPasswordValid = bcrypt.compareSync(String(password), user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
+    }
+
+    // Create a new session token for this user
+    const token = createSession(user.email, user.role);
+    console.log(`[SESSION] Recovery: New session issued for ${user.email}`);
+    
+    return res.json({ 
+      success: true, 
+      user: sanitizeUser(user), 
+      token,
+      message: 'Session récupérée avec succès après le déploiement.' 
+    });
+  } catch (error: any) {
+    console.error('[SESSION] Recovery error:', error);
+    return res.status(500).json({ error: 'Erreur lors de la récupération de la session.' });
+  }
 });
 
 // Public registration endpoint (useful for local development)
