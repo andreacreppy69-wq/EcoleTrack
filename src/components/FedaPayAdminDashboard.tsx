@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getFedaPayTransactions, FedaPayTransactionRecord } from '../api';
+import { getFedaPaySummary, getFedaPayTransactions, FedaPayTransactionRecord } from '../api';
 
 const formatFCFA = (value: number) => {
   return new Intl.NumberFormat('fr-FR', {
@@ -19,6 +19,7 @@ const statusLabels: Record<string, string> = {
 
 const FedaPayAdminDashboard = () => {
   const [transactions, setTransactions] = useState<FedaPayTransactionRecord[]>([]);
+  const [summaryData, setSummaryData] = useState<{ investorCount: number; totalAmount: number } | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
@@ -35,8 +36,18 @@ const FedaPayAdminDashboard = () => {
     }
   };
 
+  const loadSummary = async () => {
+    try {
+      const result = await getFedaPaySummary();
+      setSummaryData(result);
+    } catch (err: any) {
+      setError(err?.message || 'Impossible de charger le résumé FedaPay.');
+    }
+  };
+
   useEffect(() => {
     loadTransactions();
+    loadSummary();
   }, []);
 
   const summary = useMemo(() => {
@@ -54,12 +65,15 @@ const FedaPayAdminDashboard = () => {
     return { totalAmount, totalCount, investorCount, byStatus };
   }, [transactions]);
 
+  const activeInvestorCount = summaryData?.investorCount ?? summary.investorCount;
+  const activeTotalAmount = summaryData?.totalAmount ?? summary.totalAmount;
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-3xl border border-slate-700 bg-slate-950 p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Investisseurs uniques</p>
-          <p className="text-3xl font-bold mt-4 text-brand-green">{summary.investorCount}</p>
+          <p className="text-3xl font-bold mt-4 text-brand-green">{activeInvestorCount}</p>
         </div>
         <div className="rounded-3xl border border-slate-700 bg-slate-950 p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Transactions totales</p>
@@ -67,7 +81,7 @@ const FedaPayAdminDashboard = () => {
         </div>
         <div className="rounded-3xl border border-slate-700 bg-slate-950 p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Montant total</p>
-          <p className="text-xl lg:text-2xl font-bold mt-4 text-brand-green break-words">{formatFCFA(summary.totalAmount)}</p>
+          <p className="text-xl lg:text-2xl font-bold mt-4 text-brand-green break-words">{formatFCFA(activeTotalAmount)}</p>
         </div>
         <div className="rounded-3xl border border-slate-700 bg-slate-950 p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Statuts</p>

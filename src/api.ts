@@ -239,11 +239,26 @@ export const getFedaPayInvestorCount = async (): Promise<number> => {
   return Number(data.investorCount || 0);
 };
 
+export interface ProjectMetricsResponse {
+  collectedAmount: number;
+  investedAmount: number;
+  donorCount: number;
+}
+
 export const getFedaPaySummary = async (): Promise<{ investorCount: number; totalAmount: number }> => {
   const data = await apiFetch<{ investorCount: number; totalAmount: number }>('/api/fedapay/summary');
   return {
     investorCount: Number(data.investorCount || 0),
     totalAmount: Number(data.totalAmount || 0),
+  };
+};
+
+export const getProjectMetrics = async (): Promise<ProjectMetricsResponse> => {
+  const data = await apiFetch<ProjectMetricsResponse>('/api/project-metrics');
+  return {
+    collectedAmount: Number(data.collectedAmount || 0),
+    investedAmount: Number(data.investedAmount || 0),
+    donorCount: Number(data.donorCount || 0),
   };
 };
 

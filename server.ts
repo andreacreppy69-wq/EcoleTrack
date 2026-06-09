@@ -1011,6 +1011,30 @@ app.get('/api/fedapay/summary', async (req, res) => {
   }
 });
 
+app.get('/api/project-metrics', async (req, res) => {
+  try {
+    const metricsRow = queryOne('SELECT collectedAmount, investedAmount FROM project_metrics WHERE id = ?', ['default_project']);
+    const collectedAmount = Number(metricsRow?.collectedAmount ?? 0);
+    const investedAmount = Number(metricsRow?.investedAmount ?? 0);
+
+    let donorCount = 0;
+    const donorRow = queryOne('SELECT COUNT(*) AS donorCount FROM users WHERE totalCollected > ?', [0]);
+    donorCount = Number(donorRow?.donorCount ?? 0);
+    if (donorCount === 0) {
+      const fallbackRow = queryOne(
+        'SELECT COUNT(DISTINCT email) AS donorCount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ?',
+        ['', 0],
+      );
+      donorCount = Number(fallbackRow?.donorCount ?? 0);
+    }
+
+    return res.json({ collectedAmount, investedAmount, donorCount });
+  } catch (error: any) {
+    console.error('[PROJECT METRICS] Failed to load project metrics:', error);
+    return res.status(500).json({ success: false, error: 'Impossible de charger les métriques de projet.' });
+  }
+});
+
 // FedaPay Callback Handler
 app.post('/api/fedapay/callback', async (req, res) => {
   try {

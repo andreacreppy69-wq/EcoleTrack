@@ -28,6 +28,7 @@ import {
   initiateFedaPayTransaction,
   getFedaPayInvestorCount,
   getFedaPaySummary,
+  getProjectMetrics,
   logActivity,
 } from './api';
 
@@ -535,6 +536,7 @@ export default function App() {
   const [raisedAmount, setRaisedAmount] = useState<number>(0);
   const [backersList, setBackersList] = useState<Backer[]>(INITIAL_RECENT_BACKERS);
   const [fedapayInvestorCount, setFedaPayInvestorCount] = useState<number | null>(null);
+  const [projectMetrics, setProjectMetrics] = useState<{ collectedAmount: number; investedAmount: number; donorCount: number } | null>(null);
   const [hasContributed, setHasContributed] = useState<boolean>(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -640,6 +642,7 @@ export default function App() {
   const [fedaPayError, setFedaPayError] = useState<string>('');
   const [fedaPayRedirectUrl, setFedaPayRedirectUrl] = useState<string>('');
   const [fedaPaySuccess, setFedaPaySuccess] = useState<string>('');
+  const isDonationAvailable = false;
   const [showInvestmentForm, setShowInvestmentForm] = useState<boolean>(false);
 
   const [passwordChangeEmail, setPasswordChangeEmail] = useState<string>('');
@@ -1034,6 +1037,15 @@ export default function App() {
   };
 
   const handleDonateClick = async () => {
+    if (!isDonationAvailable) {
+      setFedaPayError('Le don est temporairement désactivé.');
+      setFedaPayResponse('');
+      setFedaPayRedirectUrl('');
+      setFedaPaySuccess('');
+      setFedaPayProcessing(false);
+      return;
+    }
+
     setFedaPayError('');
     setFedaPayResponse('');
     setFedaPayRedirectUrl('');
@@ -1362,8 +1374,18 @@ export default function App() {
       }
     };
 
+    const loadProjectMetrics = async () => {
+      try {
+        const metrics = await getProjectMetrics();
+        setProjectMetrics(metrics);
+      } catch (error) {
+        console.warn('Impossible de charger les métriques de don :', error);
+      }
+    };
+
     if (typeof window !== 'undefined') {
       loadFedaPaySummary();
+      loadProjectMetrics();
     }
   }, []);
 
@@ -1450,14 +1472,15 @@ export default function App() {
 
   // Compute stats
   const backersCount = 12 + (backersList.length - INITIAL_RECENT_BACKERS.length);
-  const totalDonorCount = fedapayInvestorCount !== null ? fedapayInvestorCount : 0;
+  const totalDonorCount = projectMetrics?.donorCount ?? (fedapayInvestorCount !== null ? fedapayInvestorCount : 0);
   const totalInvestorCount = fedapayInvestorCount !== null ? fedapayInvestorCount : 0;
-  const totalDonationAmount = DONATION_TOTAL;
-  const totalInvestedAmount = Math.max(0, raisedAmount - DONATION_TOTAL);
+  const displayedCollectedAmount = projectMetrics?.collectedAmount ?? raisedAmount;
+  const totalDonationAmount = displayedCollectedAmount;
+  const totalInvestedAmount = Math.max(0, raisedAmount - displayedCollectedAmount);
   const totalMobilizedAmount = totalDonationAmount + totalInvestedAmount;
-  const rawPercentage = (raisedAmount / CAMPAGNE_GOAL) * 100;
+  const rawPercentage = (displayedCollectedAmount / CAMPAGNE_GOAL) * 100;
   const percentage = Math.min(100, Math.round(rawPercentage * 10) / 10);
-  const remainingAmount = Math.max(0, CAMPAGNE_GOAL - raisedAmount);
+  const remainingAmount = Math.max(0, CAMPAGNE_GOAL - displayedCollectedAmount);
 
   const formatFCFA = (val: number) => {
     return new Intl.NumberFormat('fr-FR').format(val) + ' FCFA';
@@ -3088,7 +3111,8 @@ export default function App() {
               <button
                 type="button"
                 onClick={handleDonateClick}
-                className="px-3 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold transition-all shadow-xs hover:shadow-md"
+                disabled={!isDonationAvailable}
+                className={`px-3 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-xs ${isDonationAvailable ? 'bg-rose-600 hover:bg-rose-700 text-white hover:shadow-md' : 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-70'}`}
               >
                 Faire un don
               </button>
@@ -3460,7 +3484,7 @@ export default function App() {
                     <span className="text-[10px] uppercase text-slate-400 tracking-widest font-semibold block">Collecté</span>
                     <div className="flex items-baseline gap-2">
                       <span className="text-3xl md:text-4xl font-black text-brand-green tracking-tight font-mono">
-                        {formatFCFA(raisedAmount)}
+                        {formatFCFA(displayedCollectedAmount)}
                       </span>
                     </div>
                     <span className="text-xs text-slate-400 block mt-0.5">
@@ -3469,11 +3493,11 @@ export default function App() {
                     <div className="mt-3 rounded-3xl bg-slate-950/70 border border-slate-800 p-3 space-y-2">
                       <div>
                         <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Montant total de don collecté</span>
-                        <div className="mt-1 text-xl font-bold text-white">{formatFCFA(150000)}</div>
+                        <div className="mt-1 text-xl font-bold text-white">{formatFCFA(projectMetrics?.collectedAmount ?? raisedAmount)}</div>
                       </div>
                       <div>
                         <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Nombre de personnes ayant fait un don</span>
-                        <div className="mt-1 text-xl font-bold text-white">4</div>
+                        <div className="mt-1 text-xl font-bold text-white">{projectMetrics?.donorCount ?? totalDonorCount}</div>
                       </div>
                     </div>
                   </div>
@@ -3523,7 +3547,8 @@ export default function App() {
                     <button
                       type="button"
                       onClick={handleDonateClick}
-                      className="w-full py-3.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-2xl text-base transition-all shadow-md block text-center"
+                      disabled={!isDonationAvailable}
+                      className={`w-full py-3.5 rounded-2xl text-base font-semibold transition-all shadow-md block text-center ${isDonationAvailable ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-70'}`}
                     >
                       Faire un don
                     </button>
