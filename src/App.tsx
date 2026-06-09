@@ -1959,139 +1959,118 @@ export default function App() {
             </div>
           ) : (
             <div>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                <div>
-                  <h1 className="text-2xl font-extrabold text-white">Tableau de bord administrateur</h1>
-                  <p className="text-slate-400 text-sm mt-2">Gestion des comptes utilisateurs et suivi des connexions.</p>
-                </div>
-                <div className="flex items-center gap-3 relative">
-                  <button
-                    type="button"
-                    onClick={handleAdminLogout}
-                    className="inline-flex items-center rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm font-bold text-slate-200 hover:bg-slate-800 transition-all"
-                  >
-                    Déconnexion admin
-                  </button>
-
-                  <div ref={adminMenuRef} className="relative">
+              <div className="grid gap-6 lg:grid-cols-[280px_1fr] mb-6">
+                <aside className="rounded-3xl border border-slate-700 bg-slate-950 p-6">
+                  <div className="mb-6">
+                    <h1 className="text-2xl font-extrabold text-white">Tableau de bord administrateur</h1>
+                    <p className="text-slate-400 text-sm mt-2">Gestion des comptes utilisateurs et suivi des connexions.</p>
+                  </div>
+                  <nav className="space-y-2">
                     <button
                       type="button"
-                      onClick={() => setShowAdminMenu((s) => !s)}
-                      aria-label="Menu admin"
-                      className="inline-flex items-center justify-center h-10 w-10 rounded-2xl border border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800 transition-all"
+                      onClick={() => {
+                        setShowEventLog(true);
+                        setShowCreateAccount(false);
+                        setShowAdminJournal(false);
+                        setShowUserAccounts(false);
+                        setShowPaymentSection(false);
+                        setTimeout(() => {
+                          eventLogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 50);
+                      }}
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-left text-xs font-semibold text-slate-200 hover:bg-slate-800 transition-all"
                     >
-                      ⋮
+                      Journal d'événements
                     </button>
-                    {showAdminMenu && (
-                      <div className="absolute right-0 mt-2 w-56 bg-slate-900 border border-slate-700 rounded-xl shadow-lg z-50">
-                        <div className="p-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowEventLog(true);
-                              setShowCreateAccount(false);
-                              setShowAdminJournal(false);
-                              setShowUserAccounts(false);
-                              setShowPaymentSection(false);
-                              setShowAdminMenu(false);
-                              setTimeout(() => {
-                                eventLogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                              }, 50);
-                            }}
-                            className="w-full text-left px-3 py-2 rounded-md text-xs hover:bg-slate-800"
-                          >
-                            Voir le journal d'événements
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowCreateAccount(true);
-                              setShowAdminJournal(false);
-                              setShowEventLog(false);
-                              setShowUserAccounts(false);
-                              setShowPaymentSection(false);
-                              setShowAdminMenu(false);
-                            }}
-                            className="w-full text-left px-3 py-2 rounded-md text-xs hover:bg-slate-800"
-                          >
-                            Créer un compte utilisateur
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowAdminJournal(true);
-                              setShowCreateAccount(false);
-                              setShowEventLog(false);
-                              setShowUserAccounts(false);
-                              setShowPaymentSection(false);
-                              setShowAdminMenu(false);
-                              setTimeout(() => {
-                                activityJournalRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                              }, 50);
-                            }}
-                            className="w-full text-left px-3 py-2 rounded-md text-xs hover:bg-slate-800"
-                          >
-                            Voir le journal de connexion
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowCreateAccount(false);
-                              setShowAdminJournal(false);
-                              setShowEventLog(false);
-                              setShowUserAccounts(true);
-                              setShowPaymentSection(false);
-                              setShowAdminMenu(false);
-                              setTimeout(() => {
-                                userAccountsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                              }, 50);
-                            }}
-                            className="w-full text-left px-3 py-2 rounded-md text-xs hover:bg-slate-800"
-                          >
-                            Voir les comptes utilisateurs
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowCreateAccount(false);
-                              setShowAdminJournal(false);
-                              setShowEventLog(false);
-                              setShowUserAccounts(false);
-                              setShowPaymentSection(false);
-                              setShowPaymentExtensions(true);
-                              setShowAdminMenu(false);
-                              setTimeout(() => {
-                                paymentExtensionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                              }, 50);
-                            }}
-                            className="w-full text-left px-3 py-2 rounded-md text-xs hover:bg-slate-800"
-                          >
-                            Gérer les extensions de paiement
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowCreateAccount(false);
-                              setShowAdminJournal(false);
-                              setShowEventLog(false);
-                              setShowUserAccounts(false);
-                              setShowPaymentSection(true);
-                              setShowPaymentExtensions(false);
-                              setShowAdminMenu(false);
-                              setTimeout(() => {
-                                paymentSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                              }, 50);
-                            }}
-                            className="w-full text-left px-3 py-2 rounded-md text-xs hover:bg-slate-800"
-                          >
-                            Initier une transaction de paiement
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateAccount(true);
+                        setShowAdminJournal(false);
+                        setShowEventLog(false);
+                        setShowUserAccounts(false);
+                        setShowPaymentSection(false);
+                      }}
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-left text-xs font-semibold text-slate-200 hover:bg-slate-800 transition-all"
+                    >
+                      Créer un utilisateur
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAdminJournal(true);
+                        setShowCreateAccount(false);
+                        setShowEventLog(false);
+                        setShowUserAccounts(false);
+                        setShowPaymentSection(false);
+                        setTimeout(() => {
+                          activityJournalRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 50);
+                      }}
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-left text-xs font-semibold text-slate-200 hover:bg-slate-800 transition-all"
+                    >
+                      Journal de connexion
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateAccount(false);
+                        setShowAdminJournal(false);
+                        setShowEventLog(false);
+                        setShowUserAccounts(true);
+                        setShowPaymentSection(false);
+                        setTimeout(() => {
+                          userAccountsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 50);
+                      }}
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-left text-xs font-semibold text-slate-200 hover:bg-slate-800 transition-all"
+                    >
+                      Comptes utilisateurs
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateAccount(false);
+                        setShowAdminJournal(false);
+                        setShowEventLog(false);
+                        setShowUserAccounts(false);
+                        setShowPaymentSection(false);
+                        setShowPaymentExtensions(true);
+                        setTimeout(() => {
+                          paymentExtensionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 50);
+                      }}
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-left text-xs font-semibold text-slate-200 hover:bg-slate-800 transition-all"
+                    >
+                      Extensions paiement
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateAccount(false);
+                        setShowAdminJournal(false);
+                        setShowEventLog(false);
+                        setShowUserAccounts(false);
+                        setShowPaymentSection(true);
+                        setShowPaymentExtensions(false);
+                        setTimeout(() => {
+                          paymentSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 50);
+                      }}
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-left text-xs font-semibold text-slate-200 hover:bg-slate-800 transition-all"
+                    >
+                      Initiate paiement
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAdminLogout}
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-left text-sm font-bold text-slate-200 hover:bg-slate-800 transition-all"
+                    >
+                      Déconnexion admin
+                    </button>
+                  </nav>
+                </aside>
+                <div className="space-y-6">
 
               {(adminResetSuccess || adminResetError) && (
                 <div className="mb-6 space-y-3">
@@ -2878,6 +2857,8 @@ export default function App() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
           )}
         </div>
       </div>
