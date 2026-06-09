@@ -1379,7 +1379,7 @@ export default function App() {
         const apiBase = String(import.meta.env.VITE_API_BASE || '').trim() ||
           (import.meta.env.PROD && typeof window !== 'undefined' && 
            String(window.location.hostname).toLowerCase().endsWith('.vercel.app')
-           ? 'https://api.ecolestrack.vercel.app' : '');
+           ? 'https://ecoletrack-5481.onrender.com' : '');
         
         const target = apiBase ? `${apiBase}/api/validate-token` : '/api/validate-token';
         const res = await fetch(target, {
