@@ -588,8 +588,11 @@ app.post('/api/fedapay', async (req, res) => {
       return res.status(500).json({ error: 'Clé secrète FedaPay non configurée.' });
     }
 
+    console.log('[FEDAPAY] Using API key:', fedapayApiKey.substring(0, 10) + '...');
+
     try {
-      const fedapayUrl = 'https://api.fedapay.com/v1/transactions';
+      const fedapayUrl = 'https://sandbox-api.fedapay.com/v1/transactions';
+      console.log('[FEDAPAY] Calling:', fedapayUrl);
       const payload = {
         amount: Math.round(Number(amount)),
         currency: currency || 'XOF',
@@ -613,17 +616,51 @@ app.post('/api/fedapay', async (req, res) => {
 
       let result: any = null;
       try {
+        console.log('[FEDAPAY] Request headers:', {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${fedapayApiKey.substring(0, 10)}...`,
+          'X-Version': '1.1.1',
+          'X-Source': 'FedaPay NodeLib',
+          'Accept': 'application/json',
+        });
+        console.log('[FEDAPAY] Request payload:', JSON.stringify(payload, null, 2));
         const paymentResponse = await axios.post(fedapayUrl, payload, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${fedapayApiKey}`,
+            'X-Version': '1.1.1',
+            'X-Source': 'FedaPay NodeLib',
+            'Accept': 'application/json',
           },
+          validateStatus: () => true, // Capture toutes les réponses, même les erreurs
         });
+        
+        console.log('[FEDAPAY] Response status:', paymentResponse.status);
+        console.log('[FEDAPAY] Response data:', paymentResponse.data);
+        
+        if (paymentResponse.status !== 200 && paymentResponse.status !== 201) {
+          const errMsg = (paymentResponse.data && (paymentResponse.data.message || paymentResponse.data.error || paymentResponse.data.errors?.[0]?.message)) || `Erreur FedaPay (${paymentResponse.status})`;
+          console.warn('[FEDAPAY] Error response:', { status: paymentResponse.status, error: errMsg, raw: paymentResponse.data });
+          return res.status(paymentResponse.status).json({ success: false, error: errMsg, raw: paymentResponse.data });
+        }
+        
         result = paymentResponse.data;
+        console.log('[FEDAPAY] Success response:', result);
       } catch (axiosError: any) {
         const status = axiosError.response?.status || 500;
-        const errorData = axiosError.response?.data || { error: axiosError.message };
-        const errMsg = (errorData && (errorData.message || errorData.error || errorData.errors?.[0]?.message)) || 'Erreur FedaPay';
+        let errorData = axiosError.response?.data || { error: axiosError.message };
+        
+        // Si on reçoit du contenu brut, on l'affiche
+        if (axiosError.response?.data && typeof axiosError.response.data === 'string') {
+          try {
+            errorData = JSON.parse(axiosError.response.data);
+          } catch {
+            errorData = { raw: axiosError.response.data };
+          }
+        }
+        
+        const errMsg = (errorData && (errorData.message || errorData.error || errorData.errors?.[0]?.message)) || `Erreur FedaPay (${status})`;
+        console.error('[FEDAPAY] Full error:', { status, errorData, axiosMessage: axiosError.message });
         console.warn('[FEDAPAY] Error response:', { status, error: errMsg, raw: errorData });
         return res.status(status).json({ success: false, error: errMsg, raw: errorData });
       }
