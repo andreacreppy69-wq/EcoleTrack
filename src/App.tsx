@@ -3490,7 +3490,7 @@ export default function App() {
                   <div className="py-1.5 border-y border-slate-800/80">
                     <div className="flex items-center justify-between gap-4">
                       <div>
-                        <span className="block text-xl font-bold text-slate-100 font-mono">{backersCount}</span>
+                        <span className="block text-xl font-bold text-slate-100 font-mono">{totalInvestorCount}</span>
                         <span className="block text-[11px] text-slate-400 mt-0.5">Personnes ayant investi</span>
                       </div>
                       <div className="text-right">
