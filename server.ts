@@ -10,14 +10,22 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const envPath = path.resolve(__dirname, '.env');
-const dotenvResult = dotenv.config({ path: envPath });
-if (dotenvResult.error) {
-  console.warn(`[ENV] .env file not loaded from ${envPath}: ${dotenvResult.error.message}`);
+const cwdEnvPath = path.resolve(process.cwd(), '.env');
+const localEnvPath = path.resolve(__dirname, '.env');
+let dotenvResult = dotenv.config({ path: cwdEnvPath });
+if (!dotenvResult.error) {
+  console.log(`[ENV] Loaded .env from ${cwdEnvPath}`);
+} else {
+  dotenvResult = dotenv.config({ path: localEnvPath });
+  if (!dotenvResult.error) {
+    console.log(`[ENV] Loaded .env from ${localEnvPath}`);
+  } else if (!process.env.FEDAPAY_SECRET_KEY && !process.env.FEDAPAY_API_KEY && !process.env.VITE_FEDAPAY_API_KEY) {
+    console.warn(`[ENV] .env file not loaded from ${cwdEnvPath} or ${localEnvPath}; FedaPay key not found in environment.`);
+  }
 }
 
 if (!process.env.FEDAPAY_SECRET_KEY && !process.env.FEDAPAY_API_KEY && !process.env.VITE_FEDAPAY_API_KEY) {
-  console.warn(`[ENV] FedaPay key not found in .env at ${envPath}`);
+  console.warn('[ENV] FedaPay key not found in environment (FEDAPAY_SECRET_KEY or FEDAPAY_API_KEY required).');
 }
 
 interface UserRecord {
