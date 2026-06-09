@@ -1262,7 +1262,7 @@ export default function App() {
     if (typeof window === 'undefined') return;
 
     const path = window.location.pathname;
-    if (path !== '/payment/success' && path !== '/payment-result') return;
+    if (path !== '/payment-result') return;
 
     const params = new URLSearchParams(window.location.search);
     const entries = Array.from(params.entries());
