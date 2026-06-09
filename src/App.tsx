@@ -1801,6 +1801,9 @@ export default function App() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('siteAdminAuthenticated');
       localStorage.removeItem('siteAuthToken');
+      localStorage.removeItem('siteCurrentUserEmail');
+      localStorage.removeItem('siteAccountCreated');
+      localStorage.removeItem('siteUserProfile');
     }
   };
 

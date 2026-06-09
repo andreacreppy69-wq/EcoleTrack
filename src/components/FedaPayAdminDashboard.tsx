@@ -109,7 +109,12 @@ const FedaPayAdminDashboard = () => {
       )}
 
       {error && (
-        <div className="rounded-3xl border border-red-500 bg-red-500/10 p-6 text-red-200">{error}</div>
+        <div className="rounded-3xl border border-red-500 bg-red-500/10 p-6 text-red-200">
+          <p>{error}</p>
+          {error.toLowerCase().includes('session invalide') && (
+            <p className="mt-3 text-sm text-red-100">Veuillez vous reconnecter en tant qu'administrateur pour accéder au suivi des paiements.</p>
+          )}
+        </div>
       )}
 
       {!loading && !error && (

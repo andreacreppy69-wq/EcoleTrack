@@ -344,7 +344,8 @@ saveDb();
 
 // Clean up expired sessions on startup
 const now = Date.now();
-const SESSION_TTL_MS = 1000 * 60 * 60 * 24; // 24h
+// Extend session lifetime to 7 days and keep active admin sessions alive.
+const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 const expiredThreshold = now - SESSION_TTL_MS;
 const expiredTokens = queryAll(
   'SELECT token FROM sessions WHERE createdAt < ?',
@@ -397,11 +398,17 @@ const getSession = (token: string | undefined) => {
     runWrite('DELETE FROM sessions WHERE token = ?', [token]);
     return undefined;
   }
+
+  // Refresh active sessions so administrators stay logged in while interacting with the app.
+  const refreshedAt = now;
+  if (now - createdAt > 1000 * 60 * 60) {
+    runWrite('UPDATE sessions SET createdAt = ? WHERE token = ?', [refreshedAt, token]);
+  }
   
   return {
     email: row.email,
     role: row.role,
-    createdAt: createdAt,
+    createdAt: refreshedAt,
   };
 };
 
@@ -412,7 +419,7 @@ const requireAdmin = (req: any, res: any, next: any) => {
     const m = auth.match(/^Bearer\s+(.+)$/i);
     if (!m) {
       console.warn('[AUTH] Bearer token not found in Authorization header');
-      return res.status(401).json({ error: 'Token d\'authentification manquant.' });
+      return res.status(401).json({ error: 'Session invalide ou expirée.' });
     }
     const token = m[1];
     console.log('[AUTH] requireAdmin token:', token ? `${token.slice(0,6)}...` : '[empty]');
