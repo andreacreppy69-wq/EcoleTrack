@@ -960,6 +960,20 @@ app.get('/api/fedapay/transactions', requireAdmin, async (req, res) => {
   }
 });
 
+app.get('/api/fedapay/investor-count', async (req, res) => {
+  try {
+    const row = queryOne(
+      'SELECT COUNT(DISTINCT lower(email)) AS count FROM transactions WHERE email IS NOT NULL AND email != ? AND status IN (?, ?, ?)',
+      ['', 'completed', 'success', 'paid'],
+    );
+    const investorCount = Number(row?.count ?? 0);
+    return res.json({ investorCount });
+  } catch (error: any) {
+    console.error('[FEDAPAY] Failed to count investors:', error);
+    return res.status(500).json({ success: false, error: 'Impossible de compter les investisseurs FedaPay.' });
+  }
+});
+
 // FedaPay Callback Handler
 app.post('/api/fedapay/callback', async (req, res) => {
   try {

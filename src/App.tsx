@@ -25,6 +25,7 @@ import {
   updateUserProfile,
   deleteUser,
   initiateFedaPayTransaction,
+  getFedaPayInvestorCount,
   logActivity,
 } from './api';
 
@@ -531,6 +532,7 @@ export default function App() {
   const DONATION_TOTAL = 150000;
   const [raisedAmount, setRaisedAmount] = useState<number>(FUNDING_PROGRESS.amountRaised); // 3,455,090 FCFA collecté
   const [backersList, setBackersList] = useState<Backer[]>(INITIAL_RECENT_BACKERS);
+  const [fedapayInvestorCount, setFedaPayInvestorCount] = useState<number | null>(null);
   const [hasContributed, setHasContributed] = useState<boolean>(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -1347,6 +1349,21 @@ export default function App() {
     }
   }, [currentUserEmail, isAdminAuthenticated]);
 
+  useEffect(() => {
+    const loadInvestorCount = async () => {
+      try {
+        const count = await getFedaPayInvestorCount();
+        setFedaPayInvestorCount(count);
+      } catch (error) {
+        console.warn('Impossible de charger le nombre d\'investisseurs FedaPay :', error);
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      loadInvestorCount();
+    }
+  }, []);
+
   // Clean up invalid/expired tokens on app startup
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1428,7 +1445,7 @@ export default function App() {
   // Compute stats
   const backersCount = 12 + (backersList.length - INITIAL_RECENT_BACKERS.length);
   const totalDonorCount = 8;
-  const totalInvestorCount = backersCount;
+  const totalInvestorCount = fedapayInvestorCount !== null ? fedapayInvestorCount : backersCount;
   const totalDonationAmount = DONATION_TOTAL;
   const totalInvestedAmount = Math.max(0, raisedAmount - DONATION_TOTAL);
   const totalMobilizedAmount = totalDonationAmount + totalInvestedAmount;
@@ -2098,29 +2115,29 @@ export default function App() {
               )}
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-6">
-                <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6">
+                <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 min-w-0">
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Montant total du don</p>
-                  <p className="text-3xl font-bold mt-4 text-brand-green">{formatFCFA(totalDonationAmount)}</p>
+                  <p className="text-3xl font-bold mt-4 text-brand-green break-words">{formatFCFA(totalDonationAmount)}</p>
                 </div>
-                <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6">
+                <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 min-w-0">
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Montant total investi</p>
-                  <p className="text-3xl font-bold mt-4 text-brand-green">{formatFCFA(totalInvestedAmount)}</p>
+                  <p className="text-3xl font-bold mt-4 text-brand-green break-words">{formatFCFA(totalInvestedAmount)}</p>
                 </div>
-                <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6">
+                <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 min-w-0">
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Montant total mobilisé</p>
-                  <p className="text-3xl font-bold mt-4 text-brand-green">{formatFCFA(totalMobilizedAmount)}</p>
+                  <p className="text-3xl font-bold mt-4 text-brand-green break-words">{formatFCFA(totalMobilizedAmount)}</p>
                 </div>
-                <div className="rounded-3xl border border-amber-300 bg-amber-400/10 p-6">
+                <div className="rounded-3xl border border-amber-300 bg-amber-400/10 p-6 min-w-0">
                   <p className="text-xs uppercase tracking-[0.2em] text-amber-600 font-semibold">Montant restant à mobiliser</p>
-                  <p className="text-3xl font-bold mt-4 text-amber-800">{formatFCFA(remainingToMobilize)}</p>
+                  <p className="text-3xl font-bold mt-4 text-amber-800 break-words">{formatFCFA(remainingToMobilize)}</p>
                 </div>
-                <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6">
+                <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 min-w-0">
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Nombre de donateurs</p>
-                  <p className="text-3xl font-bold mt-4 text-brand-green">{totalDonorCount}</p>
+                  <p className="text-3xl font-bold mt-4 text-brand-green break-words">{totalDonorCount}</p>
                 </div>
-                <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6">
+                <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 min-w-0">
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Nombre d'investisseurs</p>
-                  <p className="text-3xl font-bold mt-4 text-brand-green">{totalInvestorCount}</p>
+                  <p className="text-3xl font-bold mt-4 text-brand-green break-words">{totalInvestorCount}</p>
                 </div>
               </div>
 
