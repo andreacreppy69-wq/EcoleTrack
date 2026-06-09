@@ -531,7 +531,7 @@ const getDialCodeFlag = (code: string) => {
 export default function App() {
   // Campaign State
   const CAMPAGNE_GOAL = FUNDING_PROGRESS.totalGoal; // 30,000,000 FCFA
-  const DONATION_TOTAL = 150000;
+  const DONATION_TOTAL = 0;
   const [raisedAmount, setRaisedAmount] = useState<number>(0);
   const [backersList, setBackersList] = useState<Backer[]>(INITIAL_RECENT_BACKERS);
   const [fedapayInvestorCount, setFedaPayInvestorCount] = useState<number | null>(null);
@@ -1450,7 +1450,7 @@ export default function App() {
 
   // Compute stats
   const backersCount = 12 + (backersList.length - INITIAL_RECENT_BACKERS.length);
-  const totalDonorCount = 8;
+  const totalDonorCount = fedapayInvestorCount !== null ? fedapayInvestorCount : 0;
   const totalInvestorCount = fedapayInvestorCount !== null ? fedapayInvestorCount : 0;
   const totalDonationAmount = DONATION_TOTAL;
   const totalInvestedAmount = Math.max(0, raisedAmount - DONATION_TOTAL);
