@@ -1445,7 +1445,7 @@ export default function App() {
   // Compute stats
   const backersCount = 12 + (backersList.length - INITIAL_RECENT_BACKERS.length);
   const totalDonorCount = 8;
-  const totalInvestorCount = fedapayInvestorCount !== null ? fedapayInvestorCount : backersCount;
+  const totalInvestorCount = fedapayInvestorCount !== null ? fedapayInvestorCount : 0;
   const totalDonationAmount = DONATION_TOTAL;
   const totalInvestedAmount = Math.max(0, raisedAmount - DONATION_TOTAL);
   const totalMobilizedAmount = totalDonationAmount + totalInvestedAmount;
