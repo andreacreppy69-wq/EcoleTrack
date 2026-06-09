@@ -42,19 +42,28 @@ const FedaPayAdminDashboard = () => {
   const summary = useMemo(() => {
     const totalAmount = transactions.reduce((sum, item) => sum + (item.amount || 0), 0);
     const totalCount = transactions.length;
+    const investorCount = new Set(
+      transactions
+        .map((item) => String(item.email || '').trim().toLowerCase())
+        .filter(Boolean),
+    ).size;
     const byStatus = transactions.reduce<Record<string, number>>((acc, item) => {
       const key = item.status || 'unknown';
       acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {});
-    return { totalAmount, totalCount, byStatus };
+    return { totalAmount, totalCount, investorCount, byStatus };
   }, [transactions]);
 
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-3xl border border-slate-700 bg-slate-950 p-5">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Transactions total</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Investisseurs uniques</p>
+          <p className="text-3xl font-bold mt-4 text-brand-green">{summary.investorCount}</p>
+        </div>
+        <div className="rounded-3xl border border-slate-700 bg-slate-950 p-5">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Transactions totales</p>
           <p className="text-3xl font-bold mt-4 text-brand-green">{summary.totalCount}</p>
         </div>
         <div className="rounded-3xl border border-slate-700 bg-slate-950 p-5">

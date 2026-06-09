@@ -889,11 +889,13 @@ app.post('/api/fedapay', rateLimit('fedapay', 15, 60 * 1000), async (req, res) =
       }
 
       const transaction = result.data || result;
-      const checkoutLink = transaction.payment_url || transaction.cta?.url || transaction.link || `https://app.fedapay.com/transactions/${transaction.id}`;
+      const transactionId = String(transaction.id || transaction.transaction_id || transaction.reference || `txn-${Date.now()}`);
+      const transactionReference = String(transaction.reference || transaction.id || transaction.transaction_id || '');
+      const checkoutLink = transaction.payment_url || transaction.cta?.url || transaction.link || `https://app.fedapay.com/transactions/${transactionId}`;
 
       safeCreateTransactionRecord({
-        transactionId: String(transaction.id),
-        reference: String(transaction.reference || ''),
+        transactionId,
+        reference: transactionReference,
         email: customerEmailValue || String(phoneNumber),
         amount: Number(transaction.amount || Math.round(Number(amount))),
         currency: String(transaction.currency || currency || 'XOF'),
@@ -963,8 +965,8 @@ app.get('/api/fedapay/transactions', requireAdmin, async (req, res) => {
 app.get('/api/fedapay/investor-count', async (req, res) => {
   try {
     const row = queryOne(
-      'SELECT COUNT(DISTINCT lower(email)) AS count FROM transactions WHERE email IS NOT NULL AND email != ? AND status IN (?, ?, ?)',
-      ['', 'completed', 'success', 'paid'],
+      'SELECT COUNT(DISTINCT lower(email)) AS count FROM transactions WHERE email IS NOT NULL AND email != ? AND status IN (?, ?, ?, ?, ?)',
+      ['', 'completed', 'success', 'paid', 'authorized', 'captured'],
     );
     const investorCount = Number(row?.count ?? 0);
     return res.json({ investorCount });
