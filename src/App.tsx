@@ -68,16 +68,6 @@ import {
 import classroomStudentsImage from './assets/images/classroom_students_1780310259872.png';
 
 const getFedaPayWebhookUrl = (): string => {
-  if (typeof window === 'undefined') {
-    return String(import.meta.env.VITE_FEDAPAY_WEBHOOK_URL || 'https://ecoletrack-5481.onrender.com/api/fedapay/webhook');
-  }
-
-  const origin = window.location.origin;
-  const localHostPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
-  if (localHostPattern.test(origin)) {
-    return `${origin}/api/fedapay/webhook`;
-  }
-
   return String(import.meta.env.VITE_FEDAPAY_WEBHOOK_URL || 'https://ecoletrack-5481.onrender.com/api/fedapay/webhook');
 };
 
