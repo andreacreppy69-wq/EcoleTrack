@@ -118,6 +118,31 @@ app.options('/api/*', cors());
 // PostgreSQL connection pool
 const pool = new Pool({ connectionString: process.env.DATABASE_URL || undefined });
 
+// Verify database connection with retry logic
+let dbConnectionReady = false;
+const verifyDatabaseConnection = async (retries = 10, delayMs = 2000) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const client = await pool.connect();
+      await client.query('SELECT 1');
+      client.release();
+      console.log('[DB] ✓ PostgreSQL connection successful');
+      dbConnectionReady = true;
+      return true;
+    } catch (error) {
+      const attempt = i + 1;
+      if (attempt < retries) {
+        console.warn(`[DB] Connection attempt ${attempt}/${retries} failed, retrying in ${delayMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      } else {
+        console.error(`[DB] Failed to connect after ${retries} attempts:`, error?.message);
+        console.error('[DB] DATABASE_URL:', process.env.DATABASE_URL ? '[set]' : '[not set]');
+      }
+    }
+  }
+  return false;
+};
+
 const paramize = (sql: string) => {
   let i = 0;
   return sql.replace(/\?/g, () => `$${++i}`);
@@ -249,6 +274,9 @@ const initDb = async () => {
     await runWrite('INSERT INTO project_metrics (id, name, collectedAmount, investedAmount, updatedAt) VALUES (?, ?, ?, ?, ?)', ['default_project', 'Projet principal', 0, 0, new Date().toISOString()]);
   }
 };
+
+// Verify database connection before initialization
+await verifyDatabaseConnection();
 
 // initialize DB now that initDb is declared
 await initDb();

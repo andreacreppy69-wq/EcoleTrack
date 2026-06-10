@@ -3,10 +3,9 @@ services:
   - type: pgsql
     name: ecolestrack-db
     plan: standard
-    ipAllowList:
-      - source: 0.0.0.0/0
-        description: Allow all (secure with DATABASE_URL)
-    # Database will be auto-created as specified in web service envVars
+    database: postgres
+    user: postgres
+    # ipAllowList can be removed; Render handles internal networking
 
   # Web API service
   - type: web
@@ -17,12 +16,17 @@ services:
     buildCommand: npm run lint
     startCommand: npm run server
     
+    # Depend on the database service to ensure it starts first
+    dependsOn:
+      - ecolestrack-db
+    
     # Environment variables
     envVars:
       - key: NODE_ENV
         value: production
       
-      # PostgreSQL connection (will be set by Render when linked to pgsql service)
+      # PostgreSQL connection string from the pgsql service
+      # Render automatically injects this when services are linked
       - key: DATABASE_URL
         fromService:
           type: pgsql
@@ -35,13 +39,3 @@ services:
           type: web
           property: url
           suffixPath: /api/fedapay/webhook
-      
-      # Optional: Set these in Render dashboard's Environment tab
-      # - key: FEDAPAY_SECRET_KEY
-      #   sync: false
-      # - key: FEDAPAY_API_KEY
-      #   sync: false
-      # - key: DEFAULT_ADMIN_EMAIL
-      #   value: admin@admin.com
-      # - key: DEFAULT_ADMIN_PASSWORD
-      #   sync: false
