@@ -1,28 +1,47 @@
 services:
+  # PostgreSQL database service (managed by Render)
+  - type: pgsql
+    name: ecolestrack-db
+    plan: standard
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: Allow all (secure with DATABASE_URL)
+    # Database will be auto-created as specified in web service envVars
+
+  # Web API service
   - type: web
     name: ecolestrack-api
     env: node
     plan: standard
-    # Build configuration
-    buildCommand: npm run build:ts
+    # Build configuration (optional type check)
+    buildCommand: npm run lint
     startCommand: npm run server
     
-    # Persistent disk for database storage
-    disk:
-      - name: db-storage
-        mountPath: /var/data
-        sizeGB: 1
-    
-    # Environment variables for persistent storage
+    # Environment variables
     envVars:
-      - key: RENDER_DATA_DIR
-        value: /var/data
-      - key: DATABASE_FILE
-        value: /var/data/database.sqlite
       - key: NODE_ENV
         value: production
+      
+      # PostgreSQL connection (will be set by Render when linked to pgsql service)
+      - key: DATABASE_URL
+        fromService:
+          type: pgsql
+          name: ecolestrack-db
+          property: connectionString
+      
+      # FedaPay configuration
       - key: FEDAPAY_WEBHOOK_URL
         fromService:
           type: web
           property: url
           suffixPath: /api/fedapay/webhook
+      
+      # Optional: Set these in Render dashboard's Environment tab
+      # - key: FEDAPAY_SECRET_KEY
+      #   sync: false
+      # - key: FEDAPAY_API_KEY
+      #   sync: false
+      # - key: DEFAULT_ADMIN_EMAIL
+      #   value: admin@admin.com
+      # - key: DEFAULT_ADMIN_PASSWORD
+      #   sync: false

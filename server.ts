@@ -3,7 +3,7 @@ import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
-import initSqlJs from 'sql.js';
+import { Pool } from 'pg';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import axios from 'axios';
@@ -115,81 +115,145 @@ app.use((req, res, next) => {
 // Ensure preflight OPTIONS requests to API routes are handled
 app.options('/api/*', cors());
 
-const dbPath = process.env.DATABASE_FILE
-  ? path.resolve(__dirname, process.env.DATABASE_FILE)
-  : process.env.RENDER_DATA_DIR
-    ? path.resolve(process.env.RENDER_DATA_DIR, 'database.sqlite')
-    : path.resolve(__dirname, 'database.sqlite');
+// PostgreSQL connection pool
+const pool = new Pool({ connectionString: process.env.DATABASE_URL || undefined });
 
-fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-const sqlWasmPath = path.resolve(__dirname, 'node_modules/sql.js/dist/sql-wasm.wasm');
-
-if (!fs.existsSync(sqlWasmPath)) {
-  console.error(`Fichier WASM introuvable: ${sqlWasmPath}`);
-}
-
-console.log('[DB] Database path configuration:');
-console.log('[DB] DATABASE_FILE:', process.env.DATABASE_FILE || 'not set');
-console.log('[DB] RENDER_DATA_DIR:', process.env.RENDER_DATA_DIR || 'not set');
-console.log('[DB] Final dbPath:', dbPath);
-console.log('[DB] Database directory exists:', fs.existsSync(path.dirname(dbPath)));
-
-if (!process.env.DATABASE_FILE && process.env.RENDER_DATA_DIR) {
-  console.log(`[DB] ✓ Utilisation du stockage persistant Render : ${dbPath}`);
-}
-
-if (!process.env.DATABASE_FILE && !process.env.RENDER_DATA_DIR) {
-  console.warn('[DB] ⚠️  ATTENTION: storage est en local. Les sessions risquent d\'être perdues lors d\'un redeploy.');
-  console.warn('[DB] ⚠️  Pour Render: assurez-vous que RENDER_DATA_DIR est défini dans l\'environnement.');
-  console.warn('[DB] ⚠️  Ou définissez DATABASE_FILE sur un volume persistant (ex: /var/data/database.sqlite).');
-}
-
-const SQL = await initSqlJs({
-  locateFile: () => sqlWasmPath,
-});
-
-const dbFileExists = fs.existsSync(dbPath);
-const db = dbFileExists
-  ? new SQL.Database(new Uint8Array(fs.readFileSync(dbPath)))
-  : new SQL.Database();
-
-const saveDb = () => {
-  const data = db.export();
-  fs.writeFileSync(dbPath, Buffer.from(data));
+const paramize = (sql: string) => {
+  let i = 0;
+  return sql.replace(/\?/g, () => `$${++i}`);
 };
 
-const runWrite = (sql: string, params: any[] = []) => {
-  const placeholderCount = (sql.match(/\?/g) || []).length;
-  if (params.length !== placeholderCount) {
-    throw new Error(`SQL parameter mismatch: expected ${placeholderCount} values, got ${params.length}. SQL=${sql}`);
+
+
+
+const runWrite = async (sql: string, params: any[] = []) => {
+  const q = paramize(sql);
+  await pool.query(q, params);
+};
+
+const queryAll = async (sql: string, params: any[] = []) => {
+  const q = paramize(sql);
+  const res = await pool.query(q, params);
+  return res.rows;
+};
+
+const queryOne = async (sql: string, params: any[] = []) => {
+  const rows = await queryAll(sql, params);
+  return rows[0];
+};
+
+const initDb = async () => {
+  await pool.query(`CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    firstName TEXT,
+    lastName TEXT,
+    name TEXT,
+    email TEXT UNIQUE,
+    dob TEXT,
+    profession TEXT,
+    phoneNumber TEXT,
+    gender TEXT,
+    role TEXT DEFAULT 'user',
+    photoUrl TEXT,
+    password TEXT,
+    createdAt TEXT,
+    mustChangePassword INTEGER,
+    verified INTEGER DEFAULT 0,
+    investedAmount INTEGER DEFAULT 0,
+    totalCollected INTEGER DEFAULT 0
+  )`);
+
+  await pool.query(`CREATE TABLE IF NOT EXISTS activity (
+    id SERIAL PRIMARY KEY,
+    email TEXT,
+    action TEXT,
+    createdAt TEXT
+  )`);
+
+  await pool.query(`CREATE TABLE IF NOT EXISTS messages (
+    id SERIAL PRIMARY KEY,
+    name TEXT,
+    email TEXT,
+    message TEXT,
+    createdAt TEXT
+  )`);
+
+  await pool.query(`CREATE TABLE IF NOT EXISTS tier_progress (
+    id INTEGER PRIMARY KEY,
+    p1 INTEGER NOT NULL,
+    p2 INTEGER NOT NULL,
+    p3 INTEGER NOT NULL,
+    p4 INTEGER NOT NULL
+  )`);
+
+  await pool.query(`CREATE TABLE IF NOT EXISTS email_verifications (
+    id SERIAL PRIMARY KEY,
+    email TEXT,
+    token TEXT UNIQUE,
+    createdAt TEXT,
+    expiresAt TEXT
+  )`);
+
+  await pool.query(`CREATE TABLE IF NOT EXISTS sessions (
+    token TEXT PRIMARY KEY,
+    email TEXT NOT NULL,
+    role TEXT NOT NULL,
+    createdAt BIGINT NOT NULL
+  )`);
+
+  await pool.query(`CREATE TABLE IF NOT EXISTS transactions (
+    id SERIAL PRIMARY KEY,
+    fedapayTransactionId TEXT UNIQUE,
+    reference TEXT,
+    email TEXT,
+    amount INTEGER,
+    currency TEXT,
+    status TEXT,
+    purpose TEXT,
+    projectId TEXT,
+    createdAt TEXT,
+    updatedAt TEXT
+  )`);
+
+  await pool.query(`CREATE TABLE IF NOT EXISTS project_metrics (
+    id TEXT PRIMARY KEY,
+    name TEXT,
+    collectedAmount INTEGER DEFAULT 0,
+    investedAmount INTEGER DEFAULT 0,
+    updatedAt TEXT
+  )`);
+
+  // Ensure optional columns exist (safe in PostgreSQL with IF NOT EXISTS)
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS verified INTEGER DEFAULT 0");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS phoneNumber TEXT DEFAULT ''");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS investedAmount INTEGER DEFAULT 0");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS totalCollected INTEGER DEFAULT 0");
+
+  // Ensure common user columns exist for older schemas
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user'");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS createdAt TEXT");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS mustChangePassword INTEGER DEFAULT 0");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS firstName TEXT");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS lastName TEXT");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS dob TEXT");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS profession TEXT");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS gender TEXT");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS photoUrl TEXT");
+
+  // Ensure default project metrics row
+  const existing = await queryOne('SELECT id FROM project_metrics WHERE id = ?', ['default_project']);
+  if (!existing) {
+    await runWrite('INSERT INTO project_metrics (id, name, collectedAmount, investedAmount, updatedAt) VALUES (?, ?, ?, ?, ?)', ['default_project', 'Projet principal', 0, 0, new Date().toISOString()]);
   }
-
-  const stmt = db.prepare(sql);
-  stmt.run(params);
-  stmt.free();
-  saveDb();
 };
 
-const queryAll = (sql: string, params: any[] = []) => {
-  const stmt = db.prepare(sql);
-  stmt.bind(params);
-  const rows: any[] = [];
-  while (stmt.step()) {
-    rows.push(stmt.getAsObject());
-  }
-  stmt.free();
-  return rows;
-};
+// initialize DB now that initDb is declared
+await initDb();
 
-const queryOne = (sql: string, params: any[] = []) => {
-  const stmt = db.prepare(sql);
-  stmt.bind(params);
-  const row = stmt.step() ? stmt.getAsObject() : undefined;
-  stmt.free();
-  return row;
-};
-
-const createTransactionRecord = (payload: {
+const createTransactionRecord = async (payload: {
   transactionId: string;
   reference: string;
   email: string;
@@ -200,8 +264,8 @@ const createTransactionRecord = (payload: {
   projectId: string;
 }) => {
   const nowIso = new Date().toISOString();
-  runWrite(
-    'INSERT OR IGNORE INTO transactions (fedapayTransactionId, reference, email, amount, currency, status, purpose, projectId, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+  await runWrite(
+      'INSERT INTO transactions (fedapayTransactionId, reference, email, amount, currency, status, purpose, projectId, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (fedapayTransactionId) DO NOTHING',
     [
       payload.transactionId,
       payload.reference,
@@ -217,7 +281,7 @@ const createTransactionRecord = (payload: {
   );
 };
 
-const safeCreateTransactionRecord = (payload: {
+const safeCreateTransactionRecord = async (payload: {
   transactionId: string;
   reference: string;
   email: string;
@@ -228,166 +292,45 @@ const safeCreateTransactionRecord = (payload: {
   projectId: string;
 }) => {
   try {
-    createTransactionRecord(payload);
-  } catch (error: any) {
+    await createTransactionRecord(payload);
+  } catch (error) {
     console.warn('[FEDAPAY] Failed to persist transaction record:', error?.message || error);
   }
 };
 
-const updateTransactionStatus = (transactionId: string, status: string) => {
+const updateTransactionStatus = async (transactionId: string, status: string) => {
   const nowIso = new Date().toISOString();
-  runWrite('UPDATE transactions SET status = ?, updatedAt = ? WHERE fedapayTransactionId = ?', [status, nowIso, transactionId]);
+  await runWrite('UPDATE transactions SET status = ?, updatedAt = ? WHERE fedapayTransactionId = ?', [status, nowIso, transactionId]);
 };
 
-const addConfirmedInvestment = (email: string, amount: number, projectId = 'default_project') => {
+const addConfirmedInvestment = async (email: string, amount: number, projectId = 'default_project') => {
   const nowIso = new Date().toISOString();
-  runWrite('UPDATE users SET investedAmount = investedAmount + ? WHERE email = ?', [amount, email]);
-  runWrite('UPDATE users SET totalCollected = totalCollected + ? WHERE email = ?', [amount, email]);
-  runWrite('UPDATE project_metrics SET collectedAmount = collectedAmount + ?, investedAmount = investedAmount + ?, updatedAt = ? WHERE id = ?', [amount, amount, nowIso, projectId]);
+  await runWrite('UPDATE users SET investedAmount = investedAmount + ? WHERE email = ?', [amount, email]);
+  await runWrite('UPDATE users SET totalCollected = totalCollected + ? WHERE email = ?', [amount, email]);
+  await runWrite('UPDATE project_metrics SET collectedAmount = collectedAmount + ?, investedAmount = investedAmount + ?, updatedAt = ? WHERE id = ?', [amount, amount, nowIso, projectId]);
 };
-
-db.run(`CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  firstName TEXT,
-  lastName TEXT,
-  name TEXT,
-  email TEXT UNIQUE,
-  dob TEXT,
-  profession TEXT,
-  phoneNumber TEXT,
-  gender TEXT,
-  role TEXT DEFAULT 'user',
-  photoUrl TEXT,
-  password TEXT,
-  createdAt TEXT,
-  mustChangePassword INTEGER,
-  investedAmount INTEGER DEFAULT 0,
-  totalCollected INTEGER DEFAULT 0
-)`);
-
-db.run(`CREATE TABLE IF NOT EXISTS activity (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  email TEXT,
-  action TEXT,
-  createdAt TEXT
-)`);
-
-db.run(`CREATE TABLE IF NOT EXISTS messages (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT,
-  email TEXT,
-  message TEXT,
-  createdAt TEXT
-)`);
-
-db.run(`CREATE TABLE IF NOT EXISTS tier_progress (
-  id INTEGER PRIMARY KEY,
-  p1 INTEGER NOT NULL,
-  p2 INTEGER NOT NULL,
-  p3 INTEGER NOT NULL,
-  p4 INTEGER NOT NULL
-)`);
-
-// Ensure users table has a 'verified' column (0/1)
-try {
-  db.run('ALTER TABLE users ADD COLUMN verified INTEGER DEFAULT 0');
-} catch (e) {
-  // ignore if column already exists or ALTER not needed
-}
-
-// Ensure users table has a 'phoneNumber' column
-try {
-  db.run('ALTER TABLE users ADD COLUMN phoneNumber TEXT DEFAULT \'\'');
-} catch (e) {
-  // ignore if column already exists or ALTER not needed
-}
-
-// Ensure users table has 'investedAmount' column
-try {
-  db.run('ALTER TABLE users ADD COLUMN investedAmount INTEGER DEFAULT 0');
-} catch (e) {
-  // ignore if column already exists or ALTER not needed
-}
-
-// Ensure users table has 'totalCollected' column
-try {
-  db.run('ALTER TABLE users ADD COLUMN totalCollected INTEGER DEFAULT 0');
-} catch (e) {
-  // ignore if column already exists or ALTER not needed
-}
-
-// Table to store email verification tokens
-db.run(`CREATE TABLE IF NOT EXISTS email_verifications (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  email TEXT,
-  token TEXT UNIQUE,
-  createdAt TEXT,
-  expiresAt TEXT
-)`);
-
-// Sessions table for persistent authentication across server restarts (Render support)
-db.run(`CREATE TABLE IF NOT EXISTS sessions (
-  token TEXT PRIMARY KEY,
-  email TEXT NOT NULL,
-  role TEXT NOT NULL,
-  createdAt INTEGER NOT NULL
-)`);
-
-db.run(`CREATE TABLE IF NOT EXISTS transactions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  fedapayTransactionId TEXT UNIQUE,
-  reference TEXT,
-  email TEXT,
-  amount INTEGER,
-  currency TEXT,
-  status TEXT,
-  purpose TEXT,
-  projectId TEXT,
-  createdAt TEXT,
-  updatedAt TEXT
-)`);
-
-db.run(`CREATE TABLE IF NOT EXISTS project_metrics (
-  id TEXT PRIMARY KEY,
-  name TEXT,
-  collectedAmount INTEGER DEFAULT 0,
-  investedAmount INTEGER DEFAULT 0,
-  updatedAt TEXT
-)`);
-
-if (!queryOne('SELECT id FROM project_metrics WHERE id = ?', ['default_project'])) {
-  runWrite(
-    'INSERT INTO project_metrics (id, name, collectedAmount, investedAmount, updatedAt) VALUES (?, ?, ?, ?, ?)',
-    ['default_project', 'Projet principal', 0, 0, new Date().toISOString()],
-  );
-}
-
-saveDb();
 
 // Clean up expired sessions on startup
 const now = Date.now();
 // Extend session lifetime to 7 days and keep active admin sessions alive.
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 const expiredThreshold = now - SESSION_TTL_MS;
-const expiredTokens = queryAll(
-  'SELECT token FROM sessions WHERE createdAt < ?',
-  [expiredThreshold]
-);
-expiredTokens.forEach((row: any) => {
-  runWrite('DELETE FROM sessions WHERE token = ?', [row.token]);
-});
+const expiredTokens = await queryAll('SELECT token FROM sessions WHERE createdAt < ?', [expiredThreshold]);
+for (const row of expiredTokens) {
+  await runWrite('DELETE FROM sessions WHERE token = ?', [row.token]);
+}
 
 // Ensure a default admin account exists (use env vars to override)
 const DEFAULT_ADMIN_EMAIL = String(process.env.DEFAULT_ADMIN_EMAIL || 'admin@admin.com').toLowerCase();
 const DEFAULT_ADMIN_PASSWORD = String(process.env.DEFAULT_ADMIN_PASSWORD || 'Admin@123');
-const ensureDefaultAdmin = () => {
-  const existing = getUserByEmail(DEFAULT_ADMIN_EMAIL);
+const ensureDefaultAdmin = async () => {
+  const existing = await getUserByEmail(DEFAULT_ADMIN_EMAIL);
   if (!existing) {
     const hashed = bcrypt.hashSync(DEFAULT_ADMIN_PASSWORD, 10);
-    runWrite(
-      `INSERT INTO users (firstName, lastName, name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ['Admin', 'Root', 'Admin Root', DEFAULT_ADMIN_EMAIL, '', 'Administrator', '', '', 'admin', '', hashed, new Date().toLocaleString('fr-FR'), 0],
+    await runWrite(
+      `INSERT INTO users (name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['Admin Root', DEFAULT_ADMIN_EMAIL, '', 'Administrator', '', '', 'admin', '', hashed, new Date().toLocaleString('fr-FR'), 0],
     );
     console.log(`Default admin created: ${DEFAULT_ADMIN_EMAIL}`);
   }
@@ -398,20 +341,17 @@ const ensureDefaultAdmin = () => {
 
 // Session management - persisted in SQLite for Render multi-dyno support
 
-const createSession = (email: string, role: string) => {
+const createSession = async (email: string, role: string) => {
   const token = crypto.randomBytes(24).toString('hex');
   const createdAt = Date.now();
-  runWrite(
-    'INSERT INTO sessions (token, email, role, createdAt) VALUES (?, ?, ?, ?)',
-    [token, email.toLowerCase(), role, createdAt]
-  );
+  await runWrite('INSERT INTO sessions (token, email, role, createdAt) VALUES (?, ?, ?, ?)', [token, email.toLowerCase(), role, createdAt]);
   console.log(`[SESSION] New session created for ${email} (${role}) - token: ${token.substring(0, 8)}...`);
   return token;
 };
 
-const getSession = (token: string | undefined) => {
+const getSession = async (token: string | undefined) => {
   if (!token) return undefined;
-  const row = queryOne('SELECT * FROM sessions WHERE token = ? LIMIT 1', [token]);
+  const row = await queryOne('SELECT * FROM sessions WHERE token = ? LIMIT 1', [token]);
   if (!row) {
     console.log(`[SESSION] Session not found for token: ${token?.substring(0, 8)}...`);
     return undefined;
@@ -421,7 +361,7 @@ const getSession = (token: string | undefined) => {
   const createdAt = Number(row.createdAt);
   if (now - createdAt > SESSION_TTL_MS) {
     console.log(`[SESSION] Session expired for ${row.email} - created ${Math.round((now - createdAt) / 1000 / 60 / 60)} hours ago`);
-    runWrite('DELETE FROM sessions WHERE token = ?', [token]);
+    await runWrite('DELETE FROM sessions WHERE token = ?', [token]);
     return undefined;
   }
 
@@ -429,7 +369,7 @@ const getSession = (token: string | undefined) => {
   const refreshedAt = now;
   if (now - createdAt > 1000 * 60 * 60) {
     console.log(`[SESSION] Refreshing session for ${row.email} (${Math.round((now - createdAt) / 1000 / 60)} min old)`);
-    runWrite('UPDATE sessions SET createdAt = ? WHERE token = ?', [refreshedAt, token]);
+    await runWrite('UPDATE sessions SET createdAt = ? WHERE token = ?', [refreshedAt, token]);
   }
   
   return {
@@ -439,7 +379,7 @@ const getSession = (token: string | undefined) => {
   };
 };
 
-const requireAdmin = (req: any, res: any, next: any) => {
+const requireAdmin = async (req: any, res: any, next: any) => {
   try {
     const auth = String(req.headers.authorization || '');
     console.log('[AUTH] requireAdmin header:', auth ? '[present]' : '[missing]');
@@ -450,12 +390,12 @@ const requireAdmin = (req: any, res: any, next: any) => {
     }
     const token = m[1];
     console.log('[AUTH] requireAdmin token:', token ? `${token.slice(0,6)}...` : '[empty]');
-    const s = getSession(token);
+    const s = await getSession(token);
     if (!s) return res.status(401).json({ error: 'Session invalide ou expirée.' });
     console.log('[AUTH] session found for', s.email, 'role=', s.role);
-    const user = getUserByEmail(s.email);
+    const user = await getUserByEmail(s.email);
     if (!user) return res.status(401).json({ error: 'Utilisateur introuvable pour la session.' });
-    if ((user.role || 'user') !== 'admin') return res.status(403).json({ error: 'Accès refusé: privilèges administrateur requis.' });
+    if (String(user.role || 'user').toLowerCase() !== 'admin' && String(user.role || 'user').toLowerCase() !== 'superadmin') return res.status(403).json({ error: 'Accès refusé.' });
     req.auth = s;
     next();
   } catch (e: any) {
@@ -490,7 +430,7 @@ const rateLimit = (routeName: string, maxRequests: number, windowMs: number) => 
   };
 };
 
-const requireAuth = (req: any, res: any, next: any) => {
+const requireAuth = async (req: any, res: any, next: any) => {
   const auth = String(req.headers.authorization || '');
   const m = auth.match(/^Bearer\s+(.+)$/i);
   if (!m) {
@@ -498,7 +438,7 @@ const requireAuth = (req: any, res: any, next: any) => {
   }
 
   const token = m[1];
-  const session = getSession(token);
+  const session = await getSession(token);
   if (!session) {
     return res.status(401).json({ error: 'Session invalide ou expirée.' });
   }
@@ -507,13 +447,13 @@ const requireAuth = (req: any, res: any, next: any) => {
   next();
 };
 
-const existingTier = queryOne('SELECT id FROM tier_progress WHERE id = 1');
+const existingTier = await queryOne('SELECT id FROM tier_progress WHERE id = 1');
 if (!existingTier) {
-  runWrite('INSERT INTO tier_progress (id, p1, p2, p3, p4) VALUES (1, ?, ?, ?, ?)', [15, 0, 0, 0]);
+  await runWrite('INSERT INTO tier_progress (id, p1, p2, p3, p4) VALUES (1, ?, ?, ?, ?)', [15, 0, 0, 0]);
 }
 
 const legacyJsonPath = path.resolve(process.cwd(), 'database.json');
-if (!dbFileExists && fs.existsSync(legacyJsonPath)) {
+if (fs.existsSync(legacyJsonPath)) {
   try {
     const legacyData = JSON.parse(fs.readFileSync(legacyJsonPath, 'utf8'));
     const users = Array.isArray(legacyData.users) ? legacyData.users : [];
@@ -521,15 +461,14 @@ if (!dbFileExists && fs.existsSync(legacyJsonPath)) {
     const messages = Array.isArray(legacyData.messages) ? legacyData.messages : [];
     const tierProgress = Array.isArray(legacyData.tierProgress) ? legacyData.tierProgress : [15, 0, 0, 0];
 
-    users.forEach((user: UserRecord) => {
-      runWrite(
-        `INSERT OR IGNORE INTO users (
-          firstName, lastName, name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    for (const user of users) {
+      const nameVal = user.name || `${String(user.firstName || '').trim()} ${String(user.lastName || '').trim()}`.trim();
+      await runWrite(
+        `INSERT INTO users (
+          name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (email) DO NOTHING`,
         [
-          user.firstName || '',
-          user.lastName || '',
-          user.name || '',
+          nameVal,
           user.email,
           user.dob,
           user.profession,
@@ -542,17 +481,17 @@ if (!dbFileExists && fs.existsSync(legacyJsonPath)) {
           user.mustChangePassword ? 1 : 0,
         ],
       );
-    });
+    }
 
-    activity.forEach((item: ActivityRecord) => {
-      runWrite('INSERT INTO activity (email, action, createdAt) VALUES (?, ?, ?)', [item.email, item.action, item.createdAt]);
-    });
+    for (const item of activity) {
+      await runWrite('INSERT INTO activity (email, action, createdAt) VALUES (?, ?, ?)', [item.email, item.action, item.createdAt]);
+    }
 
-    messages.forEach((item: MessageRecord) => {
-      runWrite('INSERT INTO messages (name, email, message, createdAt) VALUES (?, ?, ?, ?)', [item.name, item.email, item.message, item.createdAt]);
-    });
+    for (const item of messages) {
+      await runWrite('INSERT INTO messages (name, email, message, createdAt) VALUES (?, ?, ?, ?)', [item.name, item.email, item.message, item.createdAt]);
+    }
 
-    runWrite('INSERT OR REPLACE INTO tier_progress (id, p1, p2, p3, p4) VALUES (1, ?, ?, ?, ?)', [
+    await runWrite('INSERT INTO tier_progress (id, p1, p2, p3, p4) VALUES (1, ?, ?, ?, ?) ON CONFLICT (id) DO UPDATE SET p1 = EXCLUDED.p1, p2 = EXCLUDED.p2, p3 = EXCLUDED.p3, p4 = EXCLUDED.p4', [
       Number(tierProgress[0] ?? 15),
       Number(tierProgress[1] ?? 0),
       Number(tierProgress[2] ?? 0),
@@ -621,29 +560,29 @@ const rowsToUser = (row: any): UserRecord => ({
   mustChangePassword: Boolean(row.mustChangePassword),
 });
 
-const getUsersFromDb = (): UserRecord[] => {
-  const rows = queryAll('SELECT * FROM users ORDER BY id DESC');
+const getUsersFromDb = async (): Promise<UserRecord[]> => {
+  const rows = await queryAll('SELECT * FROM users ORDER BY id DESC');
   return rows.map(rowsToUser);
 };
 
-const getUserByEmail = (email: string): UserRecord | undefined => {
-  const row = queryOne('SELECT * FROM users WHERE lower(email) = ? LIMIT 1', [email.toLowerCase()]);
+const getUserByEmail = async (email: string): Promise<UserRecord | undefined> => {
+  const row = await queryOne('SELECT * FROM users WHERE lower(email) = ? LIMIT 1', [email.toLowerCase()]);
   return row ? rowsToUser(row) : undefined;
 };
 
-// create default admin now that DB helpers are available
-ensureDefaultAdmin();
+// create default admin after helper functions are available
+await ensureDefaultAdmin();
 
-const getActivityLogs = () => queryAll('SELECT email, action, createdAt FROM activity ORDER BY id DESC LIMIT 50');
-const getMessagesFromDb = () => queryAll('SELECT name, email, message, createdAt FROM messages ORDER BY id DESC LIMIT 50');
+const getActivityLogs = async () => await queryAll('SELECT email, action, createdAt FROM activity ORDER BY id DESC LIMIT 50');
+const getMessagesFromDb = async () => await queryAll('SELECT name, email, message, createdAt FROM messages ORDER BY id DESC LIMIT 50');
 
-const getTierProgressFromDb = () => {
-  const row = queryOne('SELECT p1, p2, p3, p4 FROM tier_progress WHERE id = 1');
+const getTierProgressFromDb = async () => {
+  const row = await queryOne('SELECT p1, p2, p3, p4 FROM tier_progress WHERE id = 1');
   return row ? [row.p1, row.p2, row.p3, row.p4] : [15, 0, 0, 0];
 };
 
-const updateTierProgressInDb = (tierProgress: number[]) => {
-  runWrite('UPDATE tier_progress SET p1 = ?, p2 = ?, p3 = ?, p4 = ? WHERE id = 1', [
+const updateTierProgressInDb = async (tierProgress: number[]) => {
+  await runWrite('UPDATE tier_progress SET p1 = ?, p2 = ?, p3 = ?, p4 = ? WHERE id = 1', [
     tierProgress[0],
     tierProgress[1],
     tierProgress[2],
@@ -651,45 +590,45 @@ const updateTierProgressInDb = (tierProgress: number[]) => {
   ]);
 };
 
-const deleteOldActivity = () => {
-  runWrite('DELETE FROM activity WHERE id NOT IN (SELECT id FROM activity ORDER BY id DESC LIMIT 50)');
+const deleteOldActivity = async () => {
+  await runWrite('DELETE FROM activity WHERE id NOT IN (SELECT id FROM activity ORDER BY id DESC LIMIT 50)');
 };
 
-const deleteOldMessages = () => {
-  runWrite('DELETE FROM messages WHERE id NOT IN (SELECT id FROM messages ORDER BY id DESC LIMIT 50)');
+const deleteOldMessages = async () => {
+  await runWrite('DELETE FROM messages WHERE id NOT IN (SELECT id FROM messages ORDER BY id DESC LIMIT 50)');
 };
 
 const logActivity = async (email: string, action: string) => {
   const createdAt = new Date().toLocaleString('fr-FR');
-  runWrite('INSERT INTO activity (email, action, createdAt) VALUES (?, ?, ?)', [email, action, createdAt]);
-  deleteOldActivity();
+  await runWrite('INSERT INTO activity (email, action, createdAt) VALUES (?, ?, ?)', [email, action, createdAt]);
+  await deleteOldActivity();
 };
 
-app.get('/api/users', requireAdmin, (req, res) => {
+app.get('/api/users', requireAdmin, async (req, res) => {
   const roleFilter = String(req.query.role || '').trim().toLowerCase();
-  let users = getUsersFromDb().map(sanitizeUser);
+  let users = (await getUsersFromDb()).map(sanitizeUser);
   if (roleFilter) {
     users = users.filter((u) => String(u.role || 'user').toLowerCase() === roleFilter);
   }
   res.json({ users });
 });
 
-app.get('/api/users/:email', requireAdmin, (req, res) => {
+app.get('/api/users/:email', requireAdmin, async (req, res) => {
   const email = String(req.params.email).toLowerCase();
-  const user = getUserByEmail(email);
+  const user = await getUserByEmail(email);
   if (!user) {
     return res.status(404).json({ error: 'Utilisateur introuvable.' });
   }
   return res.json({ user: sanitizeUser(user) });
 });
 
-app.get('/api/activity', requireAdmin, (req, res) => {
-  const activity = getActivityLogs();
+app.get('/api/activity', requireAdmin, async (req, res) => {
+  const activity = await getActivityLogs();
   res.json({ activity });
 });
 
-app.get('/api/messages', requireAdmin, (req, res) => {
-  const messages = getMessagesFromDb();
+app.get('/api/messages', requireAdmin, async (req, res) => {
+  const messages = await getMessagesFromDb();
   res.json({ messages });
 });
 
@@ -700,20 +639,20 @@ app.post('/api/messages', async (req, res) => {
   }
 
   const createdAt = new Date().toLocaleString('fr-FR');
-  runWrite('INSERT INTO messages (name, email, message, createdAt) VALUES (?, ?, ?, ?)', [
+  await runWrite('INSERT INTO messages (name, email, message, createdAt) VALUES (?, ?, ?, ?)', [
     String(name).trim(),
     String(email).trim().toLowerCase(),
     String(message).trim(),
     createdAt,
   ]);
-  deleteOldMessages();
+  await deleteOldMessages();
 
   await logActivity(String(email).trim().toLowerCase(), 'Requête sécurisée envoyée');
   return res.json({ success: true });
 });
 
-app.get('/api/tier-progress', (req, res) => {
-  const tierProgress = getTierProgressFromDb();
+app.get('/api/tier-progress', async (req, res) => {
+  const tierProgress = await getTierProgressFromDb();
   res.json({ tierProgress });
 });
 
@@ -725,7 +664,7 @@ app.post('/api/tier-progress', requireAdmin, async (req, res) => {
     }
 
     const normalizedProgress = tierProgress.map((value: number) => Math.round(Math.max(0, Math.min(100, value))));
-    updateTierProgressInDb(normalizedProgress);
+    await updateTierProgressInDb(normalizedProgress);
     await logActivity('admin@admin.com', 'Progression des paliers mise à jour');
     return res.json({ success: true, tierProgress: normalizedProgress });
   } catch (error: any) {
@@ -927,7 +866,7 @@ app.post('/api/fedapay', rateLimit('fedapay', 15, 60 * 1000), async (req, res) =
       const transactionReference = String(transaction.reference || transaction.id || transaction.transaction_id || '');
       const checkoutLink = transaction.payment_url || transaction.cta?.url || transaction.link || `https://app.fedapay.com/transactions/${transactionId}`;
 
-      safeCreateTransactionRecord({
+      await safeCreateTransactionRecord({
         transactionId,
         reference: transactionReference,
         email: customerEmailValue || String(phoneNumber),
@@ -972,21 +911,7 @@ app.post('/api/fedapay', rateLimit('fedapay', 15, 60 * 1000), async (req, res) =
 // FedaPay Transaction History
 app.get('/api/fedapay/transactions', requireAdmin, async (req, res) => {
   try {
-    db.run(`CREATE TABLE IF NOT EXISTS transactions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      fedapayTransactionId TEXT UNIQUE,
-      reference TEXT,
-      email TEXT,
-      amount INTEGER,
-      currency TEXT,
-      status TEXT,
-      purpose TEXT,
-      projectId TEXT,
-      createdAt TEXT,
-      updatedAt TEXT
-    )`);
-
-    const transactions = queryAll(
+    const transactions = await queryAll(
       'SELECT fedapayTransactionId AS transactionId, reference, email, amount, currency, status, purpose, projectId, createdAt, updatedAt FROM transactions ORDER BY createdAt DESC',
     );
     return res.json({ transactions });
@@ -998,7 +923,7 @@ app.get('/api/fedapay/transactions', requireAdmin, async (req, res) => {
 
 app.get('/api/fedapay/investor-count', async (req, res) => {
   try {
-    const row = queryOne(
+    const row = await queryOne(
       'SELECT COUNT(*) AS count FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ?',
       ['', 0],
     );
@@ -1012,7 +937,7 @@ app.get('/api/fedapay/investor-count', async (req, res) => {
 
 app.get('/api/fedapay/summary', async (req, res) => {
   try {
-    const row = queryOne(
+    const row = await queryOne(
       'SELECT COUNT(*) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ?',
       ['', 0],
     );
@@ -1027,18 +952,18 @@ app.get('/api/fedapay/summary', async (req, res) => {
 
 app.get('/api/project-metrics', async (req, res) => {
   try {
-    const metricsRow = queryOne('SELECT collectedAmount, investedAmount FROM project_metrics WHERE id = ?', ['default_project']);
+    const metricsRow = await queryOne('SELECT collectedAmount, investedAmount FROM project_metrics WHERE id = ?', ['default_project']);
     const collectedAmount = Number(metricsRow?.collectedAmount ?? 0);
     const investedAmount = Number(metricsRow?.investedAmount ?? 0);
 
     let donorCount = 0;
-    const donorRow = queryOne(
+    const donorRow = await queryOne(
       'SELECT COUNT(DISTINCT lower(trim(email))) AS donorCount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) NOT IN (?, ?, ?)',
       ['', 0, 'failed', 'cancelled', 'pending'],
     );
     donorCount = Number(donorRow?.donorCount ?? 0);
     if (donorCount === 0) {
-      const fallbackRow = queryOne('SELECT COUNT(*) AS donorCount FROM users WHERE totalCollected > ?', [0]);
+      const fallbackRow = await queryOne('SELECT COUNT(*) AS donorCount FROM users WHERE totalCollected > ?', [0]);
       donorCount = Number(fallbackRow?.donorCount ?? 0);
     }
 
@@ -1066,12 +991,12 @@ app.post('/api/fedapay/callback', async (req, res) => {
     console.log('[FEDAPAY] Callback reçu:', { transactionId, status, amount });
 
     const createdAt = new Date().toLocaleString('fr-FR');
-    runWrite('INSERT INTO activity (email, action, createdAt) VALUES (?, ?, ?)', [
+    await runWrite('INSERT INTO activity (email, action, createdAt) VALUES (?, ?, ?)', [
       email,
       `Callback FedaPay: Transaction ${transactionId}, Statut=${status}, Montant=${amount}`,
       createdAt,
     ]);
-    deleteOldActivity();
+    await deleteOldActivity();
 
     return res.json({ success: true, received: true });
   } catch (error: any) {
@@ -1122,20 +1047,20 @@ app.post('/api/fedapay/webhook', async (req, res) => {
           purpose: String(transaction?.metadata?.purpose || 'investment'),
           projectId,
         });
-        updateTransactionStatus(transactionId, status);
+        await updateTransactionStatus(transactionId, status);
       }
 
       if (email && amount > 0) {
-        addConfirmedInvestment(email, amount, projectId);
+        await addConfirmedInvestment(email, amount, projectId);
       }
 
       const createdAt = new Date().toLocaleString('fr-FR');
-      runWrite('INSERT INTO activity (email, action, createdAt) VALUES (?, ?, ?)', [
+      await runWrite('INSERT INTO activity (email, action, createdAt) VALUES (?, ?, ?)', [
         email,
         `Paiement FedaPay confirmé: ${reference}, Montant=${amount}${transaction?.currency}`,
         createdAt,
       ]);
-      deleteOldActivity();
+      await deleteOldActivity();
     }
 
     return res.json({ success: true, received: true });
@@ -1158,13 +1083,10 @@ app.post('/api/activity', async (req, res) => {
 app.post('/api/admin/reset-metrics', requireAdmin, async (req, res) => {
   try {
     // Remove all transactions so investor count becomes 0
-    runWrite('DELETE FROM transactions');
+    await runWrite('DELETE FROM transactions');
 
     // Reset project metrics (collectedAmount and investedAmount)
-    runWrite('UPDATE project_metrics SET collectedAmount = ?, investedAmount = ?, updatedAt = ? WHERE id = ?', [0, 0, new Date().toISOString(), 'default_project']);
-
-    // Persist changes
-    try { saveDb(); } catch (e) { console.warn('[ADMIN] saveDb failed after reset:', e); }
+    await runWrite('UPDATE project_metrics SET collectedAmount = ?, investedAmount = ?, updatedAt = ? WHERE id = ?', [0, 0, new Date().toISOString(), 'default_project']);
 
     await logActivity((req as any).auth?.email || 'admin', 'Réinitialisation des métriques (montant collecté et nombre d\'investisseurs mis à zéro)');
     return res.json({ success: true });
@@ -1180,10 +1102,10 @@ app.delete('/api/users/:email', requireAdmin, async (req, res) => {
     const email = String(req.params.email || '').toLowerCase();
     console.log('[DELETE] request for user:', email);
     if (!email) return res.status(400).json({ error: 'Email requis.' });
-    const existing = getUserByEmail(email);
+    const existing = await getUserByEmail(email);
     console.log('[DELETE] existing user lookup:', !!existing);
     if (!existing) return res.status(404).json({ error: 'Utilisateur introuvable.' });
-    runWrite('DELETE FROM users WHERE lower(email) = ?', [email]);
+    await runWrite('DELETE FROM users WHERE lower(email) = ?', [email]);
     await logActivity(email, 'Compte utilisateur supprimé par l\'administrateur');
     return res.json({ success: true });
   } catch (error: any) {
@@ -1199,7 +1121,7 @@ app.post('/api/users/login', rateLimit('login', 10, 15 * 60 * 1000), async (req,
       return res.status(400).json({ error: 'Email et mot de passe requis.' });
     }
 
-    const user = getUserByEmail(String(email));
+    const user = await getUserByEmail(String(email));
     if (!user) {
       return res.status(404).json({ error: 'Aucun compte trouvé avec cet email.' });
     }
@@ -1215,7 +1137,7 @@ app.post('/api/users/login', rateLimit('login', 10, 15 * 60 * 1000), async (req,
     }
 
     await logActivity(user.email, 'Connexion');
-    const token = createSession(user.email, user.role || 'user');
+    const token = await createSession(user.email, user.role || 'user');
     return res.json({ user: sanitizeUser(user), mustChangePassword: user.mustChangePassword, token });
   } catch (error: any) {
     console.error('[LOGIN] Erreur lors de la connexion:', error);
@@ -1224,15 +1146,15 @@ app.post('/api/users/login', rateLimit('login', 10, 15 * 60 * 1000), async (req,
 });
 
 // Validate token endpoint - returns 200 if token is valid, 401 if invalid/expired
-app.get('/api/validate-token', (req, res) => {
+app.get('/api/validate-token', async (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !String(authHeader).startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Session invalide ou expirée' });
   }
 
   const token = String(authHeader).substring(7).trim();
-  const session = getSession(token);
-  
+  const session = await getSession(token);
+
   if (!session) {
     return res.status(401).json({ error: 'Session invalide ou expirée' });
   }
@@ -1249,7 +1171,7 @@ app.post('/api/session/recover', rateLimit('session-recover', 5, 15 * 60 * 1000)
       return res.status(400).json({ error: 'Email et mot de passe requis.' });
     }
 
-    const user = getUserByEmail(String(email));
+    const user = await getUserByEmail(String(email));
     if (!user) {
       return res.status(404).json({ error: 'Aucun compte trouvé avec cet email.' });
     }
@@ -1268,7 +1190,7 @@ app.post('/api/session/recover', rateLimit('session-recover', 5, 15 * 60 * 1000)
     }
 
     // Create a new session token for this user
-    const token = createSession(user.email, user.role);
+    const token = await createSession(user.email, user.role);
     console.log(`[SESSION] Recovery: New session issued for ${user.email}`);
     
     return res.json({ 
@@ -1308,7 +1230,7 @@ app.post('/api/users/register', rateLimit('register', 5, 15 * 60 * 1000), async 
     }
 
     const lowerEmail = String(email).toLowerCase();
-    if (getUserByEmail(lowerEmail)) {
+    if (await getUserByEmail(lowerEmail)) {
       return res.status(409).json({ error: 'Un compte existe déjà avec cette adresse email.' });
     }
 
@@ -1316,7 +1238,7 @@ app.post('/api/users/register', rateLimit('register', 5, 15 * 60 * 1000), async 
     const hashedPassword = bcrypt.hashSync(resolvedPassword, 10);
 
     // insert user (verified defaults to 0)
-    runWrite(
+    await runWrite(
       `INSERT INTO users (firstName, lastName, name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
@@ -1342,7 +1264,7 @@ app.post('/api/users/register', rateLimit('register', 5, 15 * 60 * 1000), async 
     const createdAtToken = now.toLocaleString('fr-FR');
     const expires = new Date(now.getTime() + 1000 * 60 * 60 * 24); // 24h
     const expiresAt = expires.toLocaleString('fr-FR');
-    runWrite(
+    await runWrite(
       `INSERT INTO email_verifications (email, token, createdAt, expiresAt) VALUES (?, ?, ?, ?)`,
       [lowerEmail, token, createdAtToken, expiresAt],
     );
@@ -1377,7 +1299,7 @@ app.get('/api/users/verify', async (req, res) => {
     const token = String(req.query.token || '').trim();
     if (!token) return res.status(400).json({ error: 'Token de vérification requis.' });
 
-    const row = queryOne('SELECT * FROM email_verifications WHERE token = ? LIMIT 1', [token]);
+    const row = await queryOne('SELECT * FROM email_verifications WHERE token = ? LIMIT 1', [token]);
     if (!row) return res.status(404).json({ error: 'Token invalide ou expiré.' });
 
     const now = new Date();
@@ -1386,9 +1308,9 @@ app.get('/api/users/verify', async (req, res) => {
     if (!email) return res.status(400).json({ error: 'Email associé introuvable.' });
 
     // mark user verified
-    runWrite('UPDATE users SET verified = 1 WHERE lower(email) = ?', [email]);
+    await runWrite('UPDATE users SET verified = 1 WHERE lower(email) = ?', [email]);
     // remove the token
-    runWrite('DELETE FROM email_verifications WHERE token = ?', [token]);
+    await runWrite('DELETE FROM email_verifications WHERE token = ?', [token]);
 
     await logActivity(email, 'Email vérifié');
     return res.json({ success: true, email });
@@ -1421,7 +1343,7 @@ app.post('/api/users/create', requireAdmin, async (req, res) => {
   }
 
   const lowerEmail = String(email).toLowerCase();
-  if (getUserByEmail(lowerEmail)) {
+  if (await getUserByEmail(lowerEmail)) {
     return res.status(409).json({ error: 'Un compte existe déjà avec cette adresse email.' });
   }
 
@@ -1433,7 +1355,7 @@ app.post('/api/users/create', requireAdmin, async (req, res) => {
   const allowedRoles = ['admin', 'user'];
   const finalRole = allowedRoles.includes(normalizedRole) ? normalizedRole : 'user';
 
-  runWrite(
+  await runWrite(
     `INSERT INTO users (firstName, lastName, name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
@@ -1473,12 +1395,11 @@ app.post('/api/users/change-password', async (req, res) => {
   }
 
   const lowerEmail = String(email).toLowerCase();
-  const user = getUserByEmail(lowerEmail);
+  const user = await getUserByEmail(lowerEmail);
   if (!user) {
     return res.status(404).json({ error: 'Utilisateur introuvable.' });
   }
-
-  runWrite('UPDATE users SET password = ?, mustChangePassword = 0 WHERE lower(email) = ?', [bcrypt.hashSync(String(newPassword), 10), lowerEmail]);
+  await runWrite('UPDATE users SET password = ?, mustChangePassword = 0 WHERE lower(email) = ?', [bcrypt.hashSync(String(newPassword), 10), lowerEmail]);
 
   await logActivity(lowerEmail, 'Modification du mot de passe');
   return res.json({ success: true });
@@ -1491,12 +1412,11 @@ app.post('/api/users/reset-password', async (req, res) => {
   }
 
   const lowerEmail = String(email).toLowerCase();
-  const user = getUserByEmail(lowerEmail);
+  const user = await getUserByEmail(lowerEmail);
   if (!user) {
     return res.status(404).json({ error: 'Utilisateur introuvable.' });
   }
-
-  runWrite('UPDATE users SET password = ?, mustChangePassword = 1 WHERE lower(email) = ?', [bcrypt.hashSync(String(newPassword), 10), lowerEmail]);
+  await runWrite('UPDATE users SET password = ?, mustChangePassword = 1 WHERE lower(email) = ?', [bcrypt.hashSync(String(newPassword), 10), lowerEmail]);
 
   await logActivity(lowerEmail, 'Mot de passe administrateur réinitialisé');
   return res.json({ success: true });
@@ -1515,16 +1435,15 @@ app.post('/api/users/update', async (req, res) => {
 
   const lowerOldEmail = String(oldEmail).toLowerCase();
   const lowerNewEmail = String(email).toLowerCase();
-  const user = getUserByEmail(lowerOldEmail);
+  const user = await getUserByEmail(lowerOldEmail);
   if (!user) {
     return res.status(404).json({ error: 'Utilisateur introuvable.' });
   }
-
-  if (lowerOldEmail !== lowerNewEmail && getUserByEmail(lowerNewEmail)) {
+  if (lowerOldEmail !== lowerNewEmail && await getUserByEmail(lowerNewEmail)) {
     return res.status(409).json({ error: 'Un compte existe déjà avec cette adresse email.' });
   }
 
-  runWrite(
+  await runWrite(
     `UPDATE users SET firstName = ?, lastName = ?, name = ?, email = ?, dob = ?, profession = ?, phoneNumber = ?, gender = ?, photoUrl = ? WHERE lower(email) = ?`,
     [
       resolvedFirstName,
@@ -1541,7 +1460,7 @@ app.post('/api/users/update', async (req, res) => {
   );
 
   await logActivity(lowerNewEmail, 'Profil utilisateur modifié');
-  const updatedUser = getUserByEmail(lowerNewEmail);
+  const updatedUser = await getUserByEmail(lowerNewEmail);
   return res.json({
     success: true,
     user: updatedUser ? sanitizeUser(updatedUser) : null,
