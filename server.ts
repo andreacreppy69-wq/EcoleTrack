@@ -115,8 +115,27 @@ app.use((req, res, next) => {
 // Ensure preflight OPTIONS requests to API routes are handled
 app.options('/api/*', cors());
 
+// Validate DATABASE_URL is configured
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) {
+  console.error('[DB] ❌ FATAL: DATABASE_URL environment variable is not set!');
+  console.error('[DB] Expected format: postgresql://user:password@host:port/database');
+  console.error('[DB] ');
+  console.error('[DB] **On Render, this should be automatically injected by the pgsql service.**');
+  console.error('[DB] **If you\'re seeing this error, the Blueprint did not create the pgsql service correctly.**');
+  console.error('[DB] ');
+  console.error('[DB] Solutions:');
+  console.error('[DB] 1. Delete the current web service in Render');
+  console.error('[DB] 2. Delete the current pgsql service in Render (if it exists)');
+  console.error('[DB] 3. Create a NEW Blueprint and let Render create both services');
+  console.error('[DB] 4. Make sure render.yaml is present in your repository');
+  process.exit(1);
+}
+
+console.log('[DB] DATABASE_URL configured (host:', DATABASE_URL.split('@')[1]?.split(':')[0] || 'unknown', ')');
+
 // PostgreSQL connection pool
-const pool = new Pool({ connectionString: process.env.DATABASE_URL || undefined });
+const pool = new Pool({ connectionString: DATABASE_URL });
 
 // Verify database connection with retry logic
 let dbConnectionReady = false;
@@ -135,8 +154,14 @@ const verifyDatabaseConnection = async (retries = 10, delayMs = 2000) => {
         console.warn(`[DB] Connection attempt ${attempt}/${retries} failed, retrying in ${delayMs}ms...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
       } else {
-        console.error(`[DB] Failed to connect after ${retries} attempts:`, error?.message);
-        console.error('[DB] DATABASE_URL:', process.env.DATABASE_URL ? '[set]' : '[not set]');
+        console.error(`[DB] ❌ Failed to connect to PostgreSQL after ${retries} attempts`);
+        console.error(`[DB] Error: ${error?.message}`);
+        console.error('[DB] ');
+        console.error('[DB] Troubleshooting:');
+        console.error('[DB] 1. Verify the pgsql service is Running in Render Dashboard');
+        console.error('[DB] 2. Check DATABASE_URL: postgresql://user:password@host:port/database');
+        console.error('[DB] 3. If host is ::1 or 127.0.0.1, DATABASE_URL was not injected by pgsql service');
+        process.exit(1);
       }
     }
   }
