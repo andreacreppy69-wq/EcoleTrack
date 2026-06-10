@@ -1032,13 +1032,13 @@ app.get('/api/project-metrics', async (req, res) => {
     const investedAmount = Number(metricsRow?.investedAmount ?? 0);
 
     let donorCount = 0;
-    const donorRow = queryOne('SELECT COUNT(*) AS donorCount FROM users WHERE totalCollected > ?', [0]);
+    const donorRow = queryOne(
+      'SELECT COUNT(DISTINCT lower(trim(email))) AS donorCount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) NOT IN (?, ?, ?)',
+      ['', 0, 'failed', 'cancelled', 'pending'],
+    );
     donorCount = Number(donorRow?.donorCount ?? 0);
     if (donorCount === 0) {
-      const fallbackRow = queryOne(
-        'SELECT COUNT(DISTINCT email) AS donorCount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ?',
-        ['', 0],
-      );
+      const fallbackRow = queryOne('SELECT COUNT(*) AS donorCount FROM users WHERE totalCollected > ?', [0]);
       donorCount = Number(fallbackRow?.donorCount ?? 0);
     }
 
