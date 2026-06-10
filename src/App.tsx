@@ -1476,8 +1476,9 @@ export default function App() {
   const totalInvestorCount = fedapayInvestorCount !== null ? fedapayInvestorCount : 0;
   const displayedCollectedAmount = projectMetrics?.collectedAmount ?? raisedAmount;
   const totalDonationAmount = displayedCollectedAmount;
+  const displayedInvestedAmount = projectMetrics?.investedAmount ?? Math.max(0, raisedAmount - displayedCollectedAmount);
   const totalInvestedAmount = Math.max(0, raisedAmount - displayedCollectedAmount);
-  const totalMobilizedAmount = totalDonationAmount + totalInvestedAmount;
+  const totalMobilizedAmount = totalDonationAmount + displayedInvestedAmount;
   const rawPercentage = (displayedCollectedAmount / CAMPAGNE_GOAL) * 100;
   const percentage = Math.min(100, Math.round(rawPercentage * 10) / 10);
   const remainingAmount = Math.max(0, CAMPAGNE_GOAL - displayedCollectedAmount);
@@ -3506,6 +3507,10 @@ export default function App() {
                       <div>
                         <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Montant total de don collecté</span>
                         <div className="mt-1 text-xl font-bold text-white">{formatFCFA(projectMetrics?.collectedAmount ?? raisedAmount)}</div>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Montant total investi</span>
+                        <div className="mt-1 text-xl font-bold text-white">{formatFCFA(displayedInvestedAmount)}</div>
                       </div>
                       <div>
                         <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Nombre de personnes ayant fait un don</span>
