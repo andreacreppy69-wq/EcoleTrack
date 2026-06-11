@@ -1989,7 +1989,7 @@ export default function App() {
         localStorage.setItem('siteAccountCreated', 'true');
         localStorage.setItem('siteUserProfile', JSON.stringify(updatedProfile));
       }
-      logUserActivity(updatedUser.email, 'Modification du mot de passe');
+      logUserActivity(updatedProfile.email, 'Modification du mot de passe');
       setPasswordChangeEmail('');
       setPasswordChangeNew('');
       setPasswordChangeConfirm('');
