@@ -1570,10 +1570,17 @@ export default function App() {
       setRegisterEmailError('Veuillez saisir une adresse email valide.');
       hasError = true;
     }
-    if (!registerPassword.trim()) {
-      setRegisterPasswordError('Le mot de passe est requis.');
-      hasError = true;
-    } else if (registerPassword.trim().length < 6) {
+    // For admin creating users, password is optional and defaults to 123456
+    // For public registration, password is required
+    if (!isAdminAuthenticated) {
+      if (!registerPassword.trim()) {
+        setRegisterPasswordError('Le mot de passe est requis.');
+        hasError = true;
+      } else if (registerPassword.trim().length < 6) {
+        setRegisterPasswordError('Le mot de passe doit contenir au moins 6 caractères.');
+        hasError = true;
+      }
+    } else if (registerPassword.trim() && registerPassword.trim().length < 6) {
       setRegisterPasswordError('Le mot de passe doit contenir au moins 6 caractères.');
       hasError = true;
     }
@@ -1619,7 +1626,9 @@ export default function App() {
         gender: registerGender.trim(),
         role: registerRole,
         photoUrl: registerPhotoUrl,
-        password: registerPassword.trim(),
+        // For admin: if password is empty, backend defaults to 123456
+        // For public: password is validated as required above
+        password: registerPassword.trim() || (isAdminAuthenticated ? '' : registerPassword),
       });
 
       if (result && result.verificationLink) {
@@ -1631,10 +1640,38 @@ export default function App() {
       if (!isAdminAuthenticated) {
         // Only auto-login for public self-registration.
         try {
-          const { user, token } = await loginUser(registerEmail.trim(), registerPassword.trim());
+          const { user, token, mustChangePassword } = await loginUser(registerEmail.trim(), registerPassword.trim());
           if (token && typeof window !== 'undefined') {
             localStorage.setItem('siteAuthToken', token);
           }
+          
+          // If password must be changed, show password change screen instead of logging in
+          if (mustChangePassword) {
+            setPasswordChangeEmail(user.email);
+            setPasswordChangeError('');
+            setRegisterFirstName('');
+            setRegisterLastName('');
+            setRegisterEmail('');
+            setRegisterPassword('');
+            setRegisterDob('');
+            setRegisterProfession('');
+            setRegisterCountryCode('+228');
+            setRegisterPhoneNumber('');
+            setRegisterGender('');
+            setRegisterPhotoUrl('');
+            setRegisterError('');
+            setRegisterSuccess('');
+            setProfile(user);
+            setProfileDraft(user);
+            setCurrentUserEmail(user.email);
+            saveCurrentUserEmail(user.email);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('siteAccountCreated', 'true');
+              localStorage.setItem('siteUserProfile', JSON.stringify(user));
+            }
+            return;
+          }
+          
           const isAdmin = String(user.role || '').toLowerCase() === 'admin';
           setProfile(user);
           setProfileDraft(user);
@@ -2448,14 +2485,15 @@ export default function App() {
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-2">
-                      Mot de passe temporaire <span className="text-red-500 font-bold">*</span>
+                      Mot de passe temporaire {!isAdminAuthenticated && <span className="text-red-500 font-bold">*</span>}
+                      {isAdminAuthenticated && <span className="text-slate-400 text-xs">(optionnel - défaut: 123456)</span>}
                     </label>
                     <div className="relative">
                       <input
                         value={registerPassword}
                         onChange={(e) => setRegisterPassword(e.target.value)}
                         className="w-full pr-12 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-green"
-                        placeholder="Au moins 6 caractères"
+                        placeholder={isAdminAuthenticated ? "Laisser vide pour 123456" : "Au moins 6 caractères"}
                         type={showRegisterPassword ? 'text' : 'password'}
                       />
                       {registerPasswordError && (

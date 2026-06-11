@@ -604,18 +604,18 @@ const sanitizeUser = (user: UserRecord) => ({
 
 const rowsToUser = (row: any): UserRecord => ({
   firstName: row.firstName || '',
-  lastName: row.lastName || '',
-  name: row.name || `${row.firstName || ''} ${row.lastName || ''}`.trim(),
+  lastName: row.lastName || row.lastname || '',
+  name: row.name || `${row.firstName || row.firstname || ''} ${row.lastName || row.lastname || ''}`.trim(),
   email: row.email,
   dob: row.dob,
   profession: row.profession,
-  phoneNumber: row.phoneNumber || '',
-  gender: row.gender || '',
+  phoneNumber: row.phoneNumber || row.phonenumber || '',
+  gender: row.gender,
   role: row.role || 'user',
-  photoUrl: row.photoUrl || '',
+  photoUrl: row.photoUrl || row.photourl || '',
   password: row.password,
-  createdAt: row.createdAt,
-  mustChangePassword: Boolean(row.mustChangePassword),
+  createdAt: row.createdAt || row.createdat,
+  mustChangePassword: Boolean(row.mustChangePassword || row.mustchangepassword),
 });
 
 const getUsersFromDb = async (): Promise<UserRecord[]> => {
@@ -1297,26 +1297,31 @@ app.post('/api/users/register', rateLimit('register', 5, 15 * 60 * 1000), async 
     const createdAt = new Date().toLocaleString('fr-FR');
     const hashedPassword = bcrypt.hashSync(resolvedPassword, 10);
 
-    // insert user (verified defaults to 0)
-    await runWrite(
-      `INSERT INTO users (firstName, lastName, name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        resolvedFirstName,
-        resolvedLastName,
-        resolvedName,
-        lowerEmail,
-        String(dob).trim(),
-        resolvedProfession,
-        String(req.body.phoneNumber || '').trim(),
-        resolvedGender,
-        'user',
-        String(photoUrl || ''),
-        hashedPassword,
-        createdAt,
-        1,
-      ],
-    );
+    // insert user with mustChangePassword=1 for new accounts
+    try {
+      await runWrite(
+        `INSERT INTO users (firstName, lastName, name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          resolvedFirstName,
+          resolvedLastName,
+          resolvedName,
+          lowerEmail,
+          String(dob).trim(),
+          resolvedProfession,
+          String(req.body.phoneNumber || '').trim(),
+          resolvedGender,
+          'user',
+          String(photoUrl || ''),
+          hashedPassword,
+          createdAt,
+          1,
+        ],
+      );
+    } catch (insertError) {
+      console.error(`[REGISTER] INSERT failed for ${lowerEmail}:`, insertError);
+      throw insertError;
+    }
 
     // create verification token
     const token = crypto.randomBytes(24).toString('hex');
