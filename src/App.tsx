@@ -1570,17 +1570,9 @@ export default function App() {
       setRegisterEmailError('Veuillez saisir une adresse email valide.');
       hasError = true;
     }
-    // For admin creating users, password is optional and defaults to 123456
-    // For public registration, password is required
-    if (!isAdminAuthenticated) {
-      if (!registerPassword.trim()) {
-        setRegisterPasswordError('Le mot de passe est requis.');
-        hasError = true;
-      } else if (registerPassword.trim().length < 6) {
-        setRegisterPasswordError('Le mot de passe doit contenir au moins 6 caractères.');
-        hasError = true;
-      }
-    } else if (registerPassword.trim() && registerPassword.trim().length < 6) {
+    // Password is optional for all users and defaults to 123456
+    // Only validate if a password is provided
+    if (registerPassword.trim() && registerPassword.trim().length < 6) {
       setRegisterPasswordError('Le mot de passe doit contenir au moins 6 caractères.');
       hasError = true;
     }
@@ -2485,15 +2477,14 @@ export default function App() {
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-2">
-                      Mot de passe temporaire {!isAdminAuthenticated && <span className="text-red-500 font-bold">*</span>}
-                      {isAdminAuthenticated && <span className="text-slate-400 text-xs">(optionnel - défaut: 123456)</span>}
+                      Mot de passe temporaire <span className="text-slate-400 text-xs">(optionnel - défaut: 123456)</span>
                     </label>
                     <div className="relative">
                       <input
                         value={registerPassword}
                         onChange={(e) => setRegisterPassword(e.target.value)}
                         className="w-full pr-12 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-green"
-                        placeholder={isAdminAuthenticated ? "Laisser vide pour 123456" : "Au moins 6 caractères"}
+                        placeholder="Laisser vide pour 123456"
                         type={showRegisterPassword ? 'text' : 'password'}
                       />
                       {registerPasswordError && (
