@@ -1907,9 +1907,10 @@ export default function App() {
         }
       }
       closeDeleteModal();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Suppression échouée', err);
-      alert('Impossible de supprimer le compte côté serveur.');
+      const message = err?.message || 'Impossible de supprimer le compte côté serveur.';
+      alert(message);
       setDeletingUser(false);
     }
   };

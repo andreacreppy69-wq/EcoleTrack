@@ -86,8 +86,8 @@ const allowedOrigins = envOrigins.length ? [...defaultOrigins, ...envOrigins] : 
 const localOriginPattern = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/;
 const vercelOriginPattern = /^https:\/\/[a-z0-9-]+\.vercel\.app$/;
 
-app.use(cors({
-  origin: (origin, callback) => {
+const corsOptions = {
+  origin: (origin: any, callback: any) => {
     if (!origin) {
       return callback(null, true);
     }
@@ -97,7 +97,11 @@ app.use(cors({
     return callback(new Error(`Origin ${origin} not allowed by CORS`));
   },
   credentials: true,
-}));
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+app.options('/api/*', cors(corsOptions));
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
