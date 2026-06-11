@@ -1238,8 +1238,8 @@ app.post('/api/users/login', rateLimit('login', 10, 15 * 60 * 1000), async (req,
       return res.status(404).json({ error: 'Aucun compte trouvé avec cet email.' });
     }
 
-    // Check if email is verified before allowing login
-    if (!user.verified) {
+    // Allow the default root admin account to sign in without email verification
+    if (!user.verified && normalizedEmail !== DEFAULT_ADMIN_EMAIL) {
       return res.status(403).json({ 
         error: 'Veuillez vérifier votre adresse email avant de vous connecter. Vérifiez votre boîte mail pour le lien de vérification.' 
       });
