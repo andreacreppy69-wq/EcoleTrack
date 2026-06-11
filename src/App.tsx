@@ -1311,8 +1311,18 @@ export default function App() {
     try {
       const allUsers = await getUsers();
       saveUsers(allUsers);
-    } catch {
+    } catch (error: any) {
       // Backend inaccessible ou erreur API.
+      // If the call failed due to lack of admin privileges, clear admin flag to avoid
+      // repeatedly calling admin routes and showing an 'Accès refusé.' error.
+      const msg = String(error?.message || '').toLowerCase();
+      if (msg.includes('accès refusé') || msg.includes('access denied')) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('siteAdminAuthenticated');
+          localStorage.removeItem('siteAuthToken');
+        }
+        setIsAdminAuthenticated(false);
+      }
     }
   };
 
@@ -1535,6 +1545,7 @@ export default function App() {
     e.preventDefault();
 
     setRegisterError('');
+    setRegisterSuccess('');
     setRegisterFirstNameError('');
     setRegisterLastNameError('');
     setRegisterEmailError('');
@@ -1612,6 +1623,7 @@ export default function App() {
       });
 
       if (result && result.verificationLink) {
+        setRegisterError('');
         setRegisterSuccess(`Compte créé. Vérifiez l'email à l'adresse suivante: ${result.verificationLink}`);
         setTimeout(() => setRegisterSuccess(''), 20000);
       }
@@ -1642,6 +1654,7 @@ export default function App() {
           if (typeof window !== 'undefined') {
             localStorage.setItem('siteAccountCreated', 'true');
           }
+          setRegisterError('');
           setRegisterSuccess('Compte créé avec succès! Vous pouvez maintenant vous connecter avec vos identifiants.');
         }
       }
@@ -1663,7 +1676,9 @@ export default function App() {
       setRegisterGender('');
       setRegisterPhotoUrl('');
       setRegisterError('');
+      setRegisterSuccess('');
     } catch (error: any) {
+      setRegisterSuccess('');
       setRegisterError(error?.message || 'Impossible de créer le compte utilisateur.');
     }
   };
