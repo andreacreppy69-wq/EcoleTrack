@@ -1978,15 +1978,16 @@ export default function App() {
 
     try {
       await changePassword(passwordChangeEmail, passwordChangeNew);
-      const updatedUser = await getUserByEmail(passwordChangeEmail);
-
-      setProfile(updatedUser);
-      setProfileDraft(updatedUser);
+      
+      // Update local profile to mark password as changed (no need to refetch)
+      const updatedProfile = { ...profile, mustChangePassword: 0 };
+      setProfile(updatedProfile);
+      setProfileDraft(updatedProfile);
       setIsRegistered(true);
-      saveCurrentUserEmail(updatedUser.email);
+      saveCurrentUserEmail(updatedProfile.email);
       if (typeof window !== 'undefined') {
         localStorage.setItem('siteAccountCreated', 'true');
-        localStorage.setItem('siteUserProfile', JSON.stringify(updatedUser));
+        localStorage.setItem('siteUserProfile', JSON.stringify(updatedProfile));
       }
       logUserActivity(updatedUser.email, 'Modification du mot de passe');
       setPasswordChangeEmail('');
