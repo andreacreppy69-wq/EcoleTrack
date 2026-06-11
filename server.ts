@@ -1238,6 +1238,13 @@ app.post('/api/users/login', rateLimit('login', 10, 15 * 60 * 1000), async (req,
       return res.status(404).json({ error: 'Aucun compte trouvé avec cet email.' });
     }
 
+    // Check if email is verified before allowing login
+    if (!user.verified) {
+      return res.status(403).json({ 
+        error: 'Veuillez vérifier votre adresse email avant de vous connecter. Vérifiez votre boîte mail pour le lien de vérification.' 
+      });
+    }
+
     if (!user.password) {
       console.error(`[LOGIN] Erreur: Mot de passe manquant pour l'utilisateur ${user.email}`);
       return res.status(500).json({ error: 'Erreur d\'authentification. Contacter l\'administrateur.' });

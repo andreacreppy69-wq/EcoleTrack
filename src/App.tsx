@@ -713,6 +713,8 @@ export default function App() {
   const [loginError, setLoginError] = useState<string>('');
   const [showLoginPassword, setShowLoginPassword] = useState<boolean>(false);
   const [loginEmailError, setLoginEmailError] = useState<string>('');
+  const [emailNotVerifiedEmail, setEmailNotVerifiedEmail] = useState<string>('');
+  const [resendingVerificationEmail, setResendingVerificationEmail] = useState<boolean>(false);
 
   const getDisplayName = (user: Partial<UserProfile> & { name?: string }) => {
     const firstName = String(user.firstName || '').trim();
@@ -1733,6 +1735,7 @@ export default function App() {
   const handleLoginSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoginError('');
+    setEmailNotVerifiedEmail('');
 
     if (!loginEmail.trim() || !loginPassword.trim()) {
       setLoginError('Veuillez renseigner votre email et votre mot de passe.');
@@ -1772,7 +1775,41 @@ export default function App() {
         localStorage.setItem('siteUserProfile', JSON.stringify(user));
       }
     } catch (error: any) {
-      setLoginError(error?.message || 'Échec de la connexion.');
+      const errorMsg = error?.message || 'Échec de la connexion.';
+      // Check if error is related to email verification
+      if (errorMsg.includes('Veuillez vérifier votre adresse email')) {
+        setEmailNotVerifiedEmail(loginEmail.trim());
+        setLoginError('');
+      } else {
+        setLoginError(errorMsg);
+      }
+    }
+  };
+
+  const handleResendVerificationEmail = async () => {
+    if (!emailNotVerifiedEmail) return;
+    
+    setResendingVerificationEmail(true);
+    try {
+      // Call the register endpoint with just email to get a new verification token
+      await registerUser({
+        firstName: '',
+        lastName: '',
+        email: emailNotVerifiedEmail,
+        password: '123456',
+        dob: '',
+        profession: '',
+        phoneNumber: '',
+        gender: '',
+        countryCode: '',
+      });
+      setLoginError('');
+      setEmailNotVerifiedEmail('');
+      alert('Un nouveau lien de vérification a été envoyé à votre adresse email.');
+    } catch (error: any) {
+      setLoginError('Impossible d\'envoyer le lien de vérification. ' + (error?.message || ''));
+    } finally {
+      setResendingVerificationEmail(false);
     }
   };
 
@@ -3045,6 +3082,44 @@ export default function App() {
           {loginError && (
             <div className="mb-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-300 px-4 py-3 text-sm">
               {loginError}
+            </div>
+          )}
+
+          {emailNotVerifiedEmail && (
+            <div className="mb-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 px-4 py-4 text-sm">
+              <div className="flex items-start gap-3">
+                <ShieldCheck className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-amber-200 font-semibold mb-3">
+                    Vérification d'email requise
+                  </p>
+                  <p className="text-amber-100 text-xs mb-4">
+                    Vous devez vérifier votre adresse email avant de pouvoir vous connecter. 
+                    Un lien de vérification a été envoyé à <strong>{emailNotVerifiedEmail}</strong>.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleResendVerificationEmail}
+                      disabled={resendingVerificationEmail}
+                      className="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-500/50 text-slate-950 font-semibold rounded-lg text-xs transition-colors"
+                    >
+                      {resendingVerificationEmail ? 'Envoi en cours...' : 'Renvoyer le lien'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmailNotVerifiedEmail('');
+                        setLoginEmail('');
+                        setLoginPassword('');
+                      }}
+                      className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg text-xs transition-colors"
+                    >
+                      Retour
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
