@@ -8,6 +8,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import axios from 'axios';
 import { fileURLToPath } from 'url';
+import emailService from './src/emailService.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,6 +34,14 @@ if (!process.env.FEDAPAY_SECRET_KEY && !process.env.FEDAPAY_API_KEY && !process.
 const FEDAPAY_SECRET_KEY = process.env.FEDAPAY_SECRET_KEY || process.env.FEDAPAY_API_KEY || process.env.VITE_FEDAPAY_API_KEY;
 if (FEDAPAY_SECRET_KEY) {
   console.log('[FEDAPAY] Secret key loaded successfully');
+}
+
+// Load and verify Brevo API Key
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
+if (BREVO_API_KEY) {
+  console.log('[BREVO] ✓ API key loaded successfully');
+} else {
+  console.warn('[BREVO] ⚠ API key not configured - email notifications will be unavailable');
 }
 
 interface UserRecord {
@@ -707,15 +716,32 @@ app.post('/api/messages', async (req, res) => {
   }
 
   const createdAt = new Date().toLocaleString('fr-FR');
+  const trimmedEmail = String(email).trim().toLowerCase();
+  const trimmedMessage = String(message).trim();
+  
   await runWrite('INSERT INTO messages (name, email, message, createdAt) VALUES (?, ?, ?, ?)', [
     String(name).trim(),
-    String(email).trim().toLowerCase(),
-    String(message).trim(),
+    trimmedEmail,
+    trimmedMessage,
     createdAt,
   ]);
   await deleteOldMessages();
 
-  await logActivity(String(email).trim().toLowerCase(), 'Requête sécurisée envoyée');
+  // Send admin notification
+  const adminNotificationSent = await emailService.sendAdminNotificationNewMessage(
+    DEFAULT_ADMIN_EMAIL,
+    String(name).trim(),
+    trimmedEmail,
+    trimmedMessage
+  );
+  
+  if (adminNotificationSent) {
+    console.log(`[EMAIL] Admin notification sent for new message from ${trimmedEmail}`);
+  } else {
+    console.warn(`[EMAIL] Failed to send admin notification for new message from ${trimmedEmail}`);
+  }
+
+  await logActivity(trimmedEmail, 'Requête sécurisée envoyée');
   return res.json({ success: true });
 });
 
@@ -1098,6 +1124,7 @@ app.post('/api/fedapay/webhook', async (req, res) => {
     if (event?.type === 'transaction.success' || event?.type === 'transaction.completed') {
       const transaction = event.data;
       const email = transaction?.customer?.email || 'webhook@fedapay';
+      const firstName = transaction?.customer?.name || 'Investisseur';
       const projectId = String(transaction?.metadata?.projectId || 'default_project');
       const amount = Number(transaction?.amount || 0);
       const status = String(transaction?.status || 'completed');
@@ -1129,6 +1156,22 @@ app.post('/api/fedapay/webhook', async (req, res) => {
         createdAt,
       ]);
       await deleteOldActivity();
+
+      // Send payment confirmation email
+      if (email && email !== 'webhook@fedapay') {
+        const paymentConfirmationSent = await emailService.sendPaymentConfirmationEmail(
+          email,
+          firstName,
+          amount,
+          reference
+        );
+        
+        if (paymentConfirmationSent) {
+          console.log(`[EMAIL] Payment confirmation sent to ${email}`);
+        } else {
+          console.warn(`[EMAIL] Failed to send payment confirmation to ${email}`);
+        }
+      }
     }
 
     return res.json({ success: true, received: true });
@@ -1343,15 +1386,41 @@ app.post('/api/users/register', rateLimit('register', 5, 15 * 60 * 1000), async 
       [lowerEmail, token, createdAtToken, expiresAt],
     );
 
-    // build verification link
+    // Send verification email via Brevo
+    const emailSent = await emailService.sendVerificationEmail(
+      lowerEmail,
+      resolvedFirstName,
+      token
+    );
+    
+    if (emailSent) {
+      console.log(`[EMAIL] Verification email sent to ${lowerEmail}`);
+    } else {
+      console.warn(`[EMAIL] Failed to send verification email to ${lowerEmail}`);
+    }
+
+    // Send admin notification
+    const adminNotificationSent = await emailService.sendAdminNotificationNewUser(
+      DEFAULT_ADMIN_EMAIL,
+      resolvedFirstName,
+      lowerEmail
+    );
+    
+    if (adminNotificationSent) {
+      console.log(`[EMAIL] Admin notification sent for new user ${lowerEmail}`);
+    } else {
+      console.warn(`[EMAIL] Failed to send admin notification for new user ${lowerEmail}`);
+    }
+
+    // build verification link (for dev/fallback)
     const origin = (req.headers.origin && String(req.headers.origin)) || `http://localhost:${port}`;
     const verificationLink = `${origin.replace(/\/$/, '')}/api/users/verify?token=${encodeURIComponent(token)}`;
 
-    // Log the link (and return it in response for local dev). In production replace with real email sending.
+    // Log the link for development. In production, users will receive it via email.
     console.log(`Email verification link for ${lowerEmail}: ${verificationLink}`);
 
     await logActivity(lowerEmail, 'Inscription publique (verification envoyée)');
-    return res.status(201).json({ success: true, verificationLink });
+    return res.status(201).json({ success: true, verificationLink, emailSent });
   } catch (error: any) {
     console.error('Erreur lors de l\'inscription publique :', error);
     
