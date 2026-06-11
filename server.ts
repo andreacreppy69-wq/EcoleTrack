@@ -451,9 +451,8 @@ const requireAdmin = async (req: any, res: any, next: any) => {
     const s = await getSession(token);
     if (!s) return res.status(401).json({ error: 'Session invalide ou expirée.' });
     console.log('[AUTH] session found for', s.email, 'role=', s.role);
-    const user = await getUserByEmail(s.email);
-    if (!user) return res.status(401).json({ error: 'Utilisateur introuvable pour la session.' });
-    if (String(user.role || 'user').toLowerCase() !== 'admin' && String(user.role || 'user').toLowerCase() !== 'superadmin') return res.status(403).json({ error: 'Accès refusé.' });
+    // Use session role directly instead of re-querying DB to avoid race condition
+    if (String(s.role || 'user').toLowerCase() !== 'admin' && String(s.role || 'user').toLowerCase() !== 'superadmin') return res.status(403).json({ error: 'Accès refusé.' });
     req.auth = s;
     next();
   } catch (e: any) {
@@ -513,50 +512,60 @@ if (!existingTier) {
 const legacyJsonPath = path.resolve(process.cwd(), 'database.json');
 if (fs.existsSync(legacyJsonPath)) {
   try {
-    const legacyData = JSON.parse(fs.readFileSync(legacyJsonPath, 'utf8'));
-    const users = Array.isArray(legacyData.users) ? legacyData.users : [];
-    const activity = Array.isArray(legacyData.activity) ? legacyData.activity : [];
-    const messages = Array.isArray(legacyData.messages) ? legacyData.messages : [];
-    const tierProgress = Array.isArray(legacyData.tierProgress) ? legacyData.tierProgress : [15, 0, 0, 0];
+    // Only import if database is empty (first time) to prevent restoring deleted users on restart
+    const userCountResult = await queryOne('SELECT COUNT(*) as count FROM users');
+    const userCount = Number(userCountResult?.count || 0);
+    
+    if (userCount === 0) {
+      console.log('[MIGRATION] Database is empty, importing from database.json');
+      const legacyData = JSON.parse(fs.readFileSync(legacyJsonPath, 'utf8'));
+      const users = Array.isArray(legacyData.users) ? legacyData.users : [];
+      const activity = Array.isArray(legacyData.activity) ? legacyData.activity : [];
+      const messages = Array.isArray(legacyData.messages) ? legacyData.messages : [];
+      const tierProgress = Array.isArray(legacyData.tierProgress) ? legacyData.tierProgress : [15, 0, 0, 0];
 
-    for (const user of users) {
-      const nameVal = user.name || `${String(user.firstName || '').trim()} ${String(user.lastName || '').trim()}`.trim();
-      await runWrite(
-        `INSERT INTO users (
-          name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (email) DO NOTHING`,
-        [
-          nameVal,
-          user.email,
-          user.dob,
-          user.profession,
-          user.phoneNumber || '',
-          user.gender,
-          user.role || 'user',
-          user.photoUrl,
-          user.password,
-          user.createdAt,
-          user.mustChangePassword ? 1 : 0,
-        ],
-      );
+      for (const user of users) {
+        const nameVal = user.name || `${String(user.firstName || '').trim()} ${String(user.lastName || '').trim()}`.trim();
+        await runWrite(
+          `INSERT INTO users (
+            name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (email) DO NOTHING`,
+          [
+            nameVal,
+            user.email,
+            user.dob,
+            user.profession,
+            user.phoneNumber || '',
+            user.gender,
+            user.role || 'user',
+            user.photoUrl,
+            user.password,
+            user.createdAt,
+            user.mustChangePassword ? 1 : 0,
+          ],
+        );
+      }
+
+      for (const item of activity) {
+        await runWrite('INSERT INTO activity (email, action, createdAt) VALUES (?, ?, ?)', [item.email, item.action, item.createdAt]);
+      }
+
+      for (const item of messages) {
+        await runWrite('INSERT INTO messages (name, email, message, createdAt) VALUES (?, ?, ?, ?)', [item.name, item.email, item.message, item.createdAt]);
+      }
+
+      await runWrite('INSERT INTO tier_progress (id, p1, p2, p3, p4) VALUES (1, ?, ?, ?, ?) ON CONFLICT (id) DO UPDATE SET p1 = EXCLUDED.p1, p2 = EXCLUDED.p2, p3 = EXCLUDED.p3, p4 = EXCLUDED.p4', [
+        Number(tierProgress[0] ?? 15),
+        Number(tierProgress[1] ?? 0),
+        Number(tierProgress[2] ?? 0),
+        Number(tierProgress[3] ?? 0),
+      ]);
+      console.log('[MIGRATION] Data imported from database.json');
+    } else {
+      console.log('[MIGRATION] Database already has users, skipping import from database.json');
     }
-
-    for (const item of activity) {
-      await runWrite('INSERT INTO activity (email, action, createdAt) VALUES (?, ?, ?)', [item.email, item.action, item.createdAt]);
-    }
-
-    for (const item of messages) {
-      await runWrite('INSERT INTO messages (name, email, message, createdAt) VALUES (?, ?, ?, ?)', [item.name, item.email, item.message, item.createdAt]);
-    }
-
-    await runWrite('INSERT INTO tier_progress (id, p1, p2, p3, p4) VALUES (1, ?, ?, ?, ?) ON CONFLICT (id) DO UPDATE SET p1 = EXCLUDED.p1, p2 = EXCLUDED.p2, p3 = EXCLUDED.p3, p4 = EXCLUDED.p4', [
-      Number(tierProgress[0] ?? 15),
-      Number(tierProgress[1] ?? 0),
-      Number(tierProgress[2] ?? 0),
-      Number(tierProgress[3] ?? 0),
-    ]);
   } catch (error) {
-    console.warn('Migration de database.json vers SQLite échouée :', error);
+    console.warn('Migration de database.json vers PostgreSQL échouée :', error);
   }
 }
 
