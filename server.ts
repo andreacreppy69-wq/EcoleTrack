@@ -216,6 +216,7 @@ const initDb = async () => {
     investedAmount INTEGER DEFAULT 0,
     totalCollected INTEGER DEFAULT 0
   )`);
+  await pool.query(`UPDATE users SET email = trim(email) WHERE email IS NOT NULL`);
 
   await pool.query(`CREATE TABLE IF NOT EXISTS activity (
     id SERIAL PRIMARY KEY,
@@ -590,7 +591,7 @@ const sanitizeUser = (user: UserRecord) => ({
   firstName: String(user.firstName || '').trim(),
   lastName: String(user.lastName || '').trim(),
   name: getDisplayName(user),
-  email: user.email,
+  email: String(user.email || '').trim().toLowerCase(),
   dob: user.dob,
   profession: user.profession,
   phoneNumber: user.phoneNumber || '',
@@ -623,7 +624,8 @@ const getUsersFromDb = async (): Promise<UserRecord[]> => {
 };
 
 const getUserByEmail = async (email: string): Promise<UserRecord | undefined> => {
-  const row = await queryOne('SELECT * FROM users WHERE lower(email) = ? LIMIT 1', [email.toLowerCase()]);
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const row = await queryOne('SELECT * FROM users WHERE lower(trim(email)) = ? LIMIT 1', [normalizedEmail]);
   return row ? rowsToUser(row) : undefined;
 };
 
@@ -1156,7 +1158,7 @@ app.post('/api/admin/reset-metrics', requireAdmin, async (req, res) => {
 // Admin: delete a user by email
 app.delete('/api/users/:email', requireAdmin, async (req, res) => {
   try {
-    const email = String(req.params.email || '').toLowerCase();
+    const email = String(req.params.email || '').trim().toLowerCase();
     console.log('[DELETE] request for user:', email);
     if (!email) return res.status(400).json({ error: 'Email requis.' });
     const existing = await getUserByEmail(email);
@@ -1178,7 +1180,8 @@ app.post('/api/users/login', rateLimit('login', 10, 15 * 60 * 1000), async (req,
       return res.status(400).json({ error: 'Email et mot de passe requis.' });
     }
 
-    const user = await getUserByEmail(String(email));
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const user = await getUserByEmail(normalizedEmail);
     if (!user) {
       return res.status(404).json({ error: 'Aucun compte trouvé avec cet email.' });
     }
@@ -1399,7 +1402,7 @@ app.post('/api/users/create', requireAdmin, async (req, res) => {
     return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères.' });
   }
 
-  const lowerEmail = String(email).toLowerCase();
+  const lowerEmail = String(email || '').trim().toLowerCase();
   if (await getUserByEmail(lowerEmail)) {
     return res.status(409).json({ error: 'Un compte existe déjà avec cette adresse email.' });
   }
@@ -1490,8 +1493,8 @@ app.post('/api/users/update', async (req, res) => {
     return res.status(400).json({ error: 'Tous les champs obligatoires sont requis (Email, DOB, Nom, Prénom).' });
   }
 
-  const lowerOldEmail = String(oldEmail).toLowerCase();
-  const lowerNewEmail = String(email).toLowerCase();
+  const lowerOldEmail = String(oldEmail || '').trim().toLowerCase();
+  const lowerNewEmail = String(email || '').trim().toLowerCase();
   const user = await getUserByEmail(lowerOldEmail);
   if (!user) {
     return res.status(404).json({ error: 'Utilisateur introuvable.' });

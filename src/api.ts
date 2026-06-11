@@ -138,6 +138,7 @@ export const createUser = async (account: Omit<UserAccount, 'createdAt' | 'mustC
   const accountWithName = {
     ...account,
     name: `${account.firstName} ${account.lastName}`.trim(),
+    email: account.email.trim().toLowerCase(),
   };
   const isAdminSession = typeof window !== 'undefined' && localStorage.getItem('siteAdminAuthenticated') === 'true' && !!localStorage.getItem('siteAuthToken');
   const path = isAdminSession ? '/api/users/create' : '/api/users/register';
