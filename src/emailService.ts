@@ -1,6 +1,4 @@
-import * as SibApiV3Sdk from '@getbrevo/brevo';
-
-const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+import axios from 'axios';
 
 // Load Brevo API key from environment
 const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
@@ -25,25 +23,27 @@ export const sendEmail = async (emailData: EmailData): Promise<boolean> => {
       return false;
     }
 
-    const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
-    sendSmtpEmail.to = emailData.to;
-    sendSmtpEmail.subject = emailData.subject;
-    sendSmtpEmail.htmlContent = emailData.htmlContent;
-    sendSmtpEmail.textContent = emailData.textContent || emailData.htmlContent;
-    sendSmtpEmail.sender = {
-      name: 'EcolesTrack',
-      email: 'noreply@ecolestrack.com',
+    const payload = {
+      sender: {
+        name: 'EcolesTrack',
+        email: 'noreply@ecolestrack.com',
+      },
+      to: emailData.to,
+      subject: emailData.subject,
+      htmlContent: emailData.htmlContent,
+      textContent: emailData.textContent || emailData.htmlContent,
     };
 
-    const configuration = new SibApiV3Sdk.Configuration();
-    configuration.apiKeys['api-key'] = BREVO_API_KEY;
-    apiInstance.setApiConfiguration(configuration);
-
-    const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
-    console.log('[BREVO] Email sent successfully:', response);
+    const response = await axios.post('https://api.brevo.com/v3/smtp/email', payload, {
+      headers: {
+        'api-key': BREVO_API_KEY,
+        'Content-Type': 'application/json',
+      },
+    });
+    console.log('[BREVO] Email sent successfully to', emailData.to.map(t => t.email).join(', '));
     return true;
   } catch (error: any) {
-    console.error('[BREVO] Error sending email:', error?.message || error);
+    console.error('[BREVO] Error sending email:', error?.response?.data || error?.message || error);
     return false;
   }
 };
