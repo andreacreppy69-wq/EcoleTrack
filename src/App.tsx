@@ -70,6 +70,7 @@ import {
   X,
 } from 'lucide-react';
 import classroomStudentsImage from './assets/images/classroom_students_1780310259872.png';
+import logoEcolesTrackImage from './assets/images/logo_ecoles_track.png';
 
 const getFedaPayWebhookUrl = (): string => {
   return String(import.meta.env.VITE_FEDAPAY_WEBHOOK_URL || 'https://ecoletrack-5481.onrender.com/api/fedapay/webhook');
@@ -2072,6 +2073,9 @@ export default function App() {
           {!isAdminAuthenticated ? (
             <div>
               <div className="text-center mb-8">
+                <div className="mx-auto mb-4 h-24 w-24 overflow-hidden rounded-3xl border border-slate-700 bg-transparent">
+                  <img src={logoEcolesTrackImage} alt="Logo Ecoles Track" className="h-full w-full object-contain" />
+                </div>
                 <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-green/10 text-brand-green mb-4">
                   <ShieldCheck className="w-6 h-6" />
                 </span>
@@ -3094,11 +3098,11 @@ export default function App() {
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl p-8">
           <div className="text-center mb-8 space-y-4">
-            <div className="mx-auto w-full max-w-xs overflow-hidden rounded-3xl border border-slate-700 bg-slate-950 shadow-xl">
+            <div className="mx-auto h-24 w-24 overflow-hidden rounded-3xl border border-slate-700 bg-transparent">
               <img
-                src={classroomStudentsImage}
-                alt="Connexion aux comptes Ecoles Track"
-                className="h-52 w-full object-cover"
+                src={logoEcolesTrackImage}
+                alt="Logo Ecoles Track"
+                className="h-full w-full object-contain"
               />
             </div>
             <div>
