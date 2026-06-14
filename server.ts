@@ -605,6 +605,12 @@ const normalizeUserRecord = (user: UserRecord): UserRecord => {
   return { ...user, firstName, lastName, gender, name };
 };
 
+const isPersonNameValid = (value: string) => {
+  const normalized = String(value || '').trim();
+  if (!normalized) return false;
+  return /^[\p{L}' -]+$/u.test(normalized);
+};
+
 const sanitizeUser = (user: UserRecord) => ({
   firstName: String(user.firstName || '').trim(),
   lastName: String(user.lastName || '').trim(),
@@ -1337,6 +1343,10 @@ app.post('/api/users/register', rateLimit('register', 5, 15 * 60 * 1000), async 
       return res.status(400).json({ error: 'Tous les champs obligatoires sont requis.' });
     }
 
+    if (!isPersonNameValid(resolvedFirstName) || (resolvedLastName && !isPersonNameValid(resolvedLastName))) {
+      return res.status(400).json({ error: 'Le prénom et le nom ne doivent contenir que des lettres, des espaces, des apostrophes ou des traits d’union.' });
+    }
+
     if (rawPassword && rawPassword.length < 6) {
       return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères.' });
     }
@@ -1481,6 +1491,10 @@ app.post('/api/users/create', requireAdmin, async (req, res) => {
     return res.status(400).json({ error: 'Tous les champs obligatoires sont requis.' });
   }
 
+  if (!isPersonNameValid(resolvedFirstName) || (resolvedLastName && !isPersonNameValid(resolvedLastName))) {
+    return res.status(400).json({ error: 'Le prénom et le nom ne doivent contenir que des lettres, des espaces, des apostrophes ou des traits d’union.' });
+  }
+
   if (rawPassword && rawPassword.length < 6) {
     return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères.' });
   }
@@ -1574,6 +1588,10 @@ app.post('/api/users/update', async (req, res) => {
 
   if (!oldEmail || !email || !dob || !resolvedFirstName || !resolvedLastName) {
     return res.status(400).json({ error: 'Tous les champs obligatoires sont requis (Email, DOB, Nom, Prénom).' });
+  }
+
+  if (!isPersonNameValid(resolvedFirstName) || !isPersonNameValid(resolvedLastName)) {
+    return res.status(400).json({ error: 'Le prénom et le nom ne doivent contenir que des lettres, des espaces, des apostrophes ou des traits d’union.' });
   }
 
   const lowerOldEmail = String(oldEmail || '').trim().toLowerCase();
