@@ -304,6 +304,95 @@ const COUNTRY_DIAL_CODES = [
   { code: '+998', country: 'Ouzbékistan' },
 ];
 
+const TRANSLATIONS = {
+  navHero: { fr: "Accueil", en: "Home" },
+  navProbleme: { fr: "Le Problème", en: "The Problem" },
+  navSolution: { fr: "Notre Solution", en: "Our Solution" },
+  navPourquoi: { fr: "Pourquoi Investir ?", en: "Why Invest?" },
+  navInvestment: { fr: "Revenus sur investissement", en: "Investment Returns" },
+  navBudget: { fr: "Financement", en: "Funding" },
+  navProgress: { fr: "État d'avancement", en: "Progress" },
+  investButton: { fr: "J'investis", en: "Invest" },
+  donateButton: { fr: "Faire un don", en: "Donate" },
+  activeCampaignAlert: { fr: "Campagne Active : Suivi Scolaire en temps réel.", en: "Active Campaign: Real-time School Tracking." },
+  campaignGoalLabel: { fr: "Financement visé :", en: "Target funding:" },
+  launchPlannedLabel: { fr: "Lancement prévu : Troisième trimestre 2027", en: "Launch planned: Q3 2027" },
+  openMobileMenu: { fr: "Ouvrir le menu mobile", en: "Open mobile menu" },
+  profileMenuAccount: { fr: "Mon compte", en: "My account" },
+  editProfile: { fr: "Éditer le profil", en: "Edit profile" },
+  logout: { fr: "Déconnexion", en: "Logout" },
+  user: { fr: "Utilisateur", en: "User" },
+  profileImageAlt: { fr: "Aperçu profil", en: "Profile preview" },
+  profileImagePreviewAlt: { fr: "Aperçu du profil", en: "Profile preview" },
+  profileEditTitle: { fr: "Édition de profil", en: "Profile editing" },
+  profileEditHeading: { fr: "Modifier vos informations", en: "Update your information" },
+  profilePhotoLabel: { fr: "Photo de profil (optionnelle)", en: "Profile photo (optional)" },
+  saveProfileButton: { fr: "Enregistrer le profil", en: "Save profile" },
+  paymentResultTitle: { fr: "Résultat de paiement :", en: "Payment result:" },
+  brandTagline: { fr: "Mécénat Éducatif", en: "Educational Sponsorship" },
+  investNowButton: { fr: "Investir dès maintenant", en: "Invest now" },
+  heroFeatureLabel: { fr: "Projet d’Impact Social National", en: "National Social Impact Project" },
+  heroHeading: { fr: "Investissez dans l’avenir de l’éducation avec l’Application de suivi scolaire en temps réel.", en: "Invest in the future of education with the real-time school tracking app." },
+  heroDescription: { fr: "Un projet innovant qui améliore la communication entre écoles et parents, réduit l’échec scolaire et garantit un suivi académique efficace.", en: "An innovative project that improves communication between schools and parents, reduces school failure, and ensures effective academic tracking." },
+  heroDiscoverButton: { fr: "Découvrir la solution", en: "Discover the solution" },
+  heroStatusActive: { fr: "Simulateur Actif", en: "Simulator Active" },
+  heroCollectedLabel: { fr: "Collecté", en: "Collected" },
+  heroGoalLabel: { fr: "sur un objectif total estimé de", en: "of an estimated total goal of" },
+  heroDonatedLabel: { fr: "Montant total de don collecté", en: "Total donation amount collected" },
+  heroInvestedLabel: { fr: "Montant total investi", en: "Total invested amount" },
+  heroDonorLabel: { fr: "Nombre de personnes ayant fait un don", en: "Number of donors" },
+  heroProgressLabel: { fr: "Progression globale", en: "Overall progress" },
+  heroFundedLabel: { fr: "% financé", en: "funded" },
+  heroTrustedLabel1: { fr: "Transparent & Audit prévu", en: "Transparent & planned audit" },
+  heroTrustedLabel2: { fr: "Zéro coupure réseau", en: "No network interruption" },
+  heroQuote: { fr: "Rejoignez-nous pour transformer l’éducation en Afrique. Votre investissement n’est pas seulement financier, il est social et durable.", en: "Join us to transform education in Africa. Your investment is not only financial; it is social and sustainable." },
+  footerCompanyName: { fr: "Ecole Track Afrique", en: "Ecole Track Africa" },
+  footerCopyright: { fr: "© 2026 AYISSOU Koffi Elom. Tous Droits Réservés.", en: "© 2026 AYISSOU Koffi Elom. All Rights Reserved." },
+  footerEncryptedData: { fr: "Données cryptées SSL", en: "SSL encrypted data" },
+  footerSandbox: { fr: "Simulateur Sandbox local", en: "Local sandbox simulator" },
+  openWhatsApp: { fr: "Ouvrir WhatsApp", en: "Open WhatsApp" },
+  loginTitle: { fr: "Se connecter", en: "Sign in" },
+  loginSubtitle: { fr: "Connectez-vous avec votre email et mot de passe. La création de compte est réservée à l’administrateur.", en: "Log in with your email and password. Account creation is reserved for administrators." },
+  emailLabel: { fr: "Adresse email", en: "Email address" },
+  passwordLabel: { fr: "Mot de passe", en: "Password" },
+  showPassword: { fr: "Afficher le mot de passe", en: "Show password" },
+  hidePassword: { fr: "Masquer le mot de passe", en: "Hide password" },
+  loginSubmit: { fr: "Se connecter", en: "Sign in" },
+  loginAdminNotice: { fr: "Les comptes sont créés uniquement par l’administrateur. Contactez un administrateur si vous n’avez pas encore d’accès.", en: "Accounts are created only by the administrator. Contact an administrator if you do not yet have access." },
+  emailVerificationTitle: { fr: "Vérification d'email requise", en: "Email verification required" },
+  emailVerificationMessage: { fr: "Vous devez vérifier votre adresse email avant de pouvoir vous connecter. Un lien de vérification a été envoyé à", en: "You must verify your email address before you can sign in. A verification link has been sent to" },
+  sendingLink: { fr: "Envoi en cours...", en: "Sending..." },
+  resendLink: { fr: "Renvoyer le lien", en: "Resend link" },
+  backButton: { fr: "Retour", en: "Back" },
+  adminDashboardTitle: { fr: "Admin Dashboard", en: "Admin Dashboard" },
+  adminDashboardDescription: { fr: "Connectez-vous pour gérer les comptes utilisateurs et suivre les connexions.", en: "Sign in to manage user accounts and track logins." },
+  adminEmailLabel: { fr: "Email administrateur", en: "Administrator email" },
+  adminPasswordLabel: { fr: "Mot de passe", en: "Password" },
+  adminLoginButton: { fr: "Se connecter en tant qu'admin", en: "Sign in as admin" },
+  passwordChangeTitle: { fr: "Changement de mot de passe", en: "Change password" },
+  passwordChangeSubtitle: { fr: "Vous devez changer votre mot de passe avant de pouvoir accéder au site.", en: "You must change your password before accessing the site." },
+  passwordChangeSubmit: { fr: "Valider le nouveau mot de passe", en: "Confirm new password" },
+  newPasswordLabel: { fr: "Nouveau mot de passe", en: "New password" },
+  newPasswordPlaceholder: { fr: "Nouveau mot de passe", en: "New password" },
+  confirmPasswordLabel: { fr: "Confirmez le mot de passe", en: "Confirm password" },
+  confirmPasswordPlaceholder: { fr: "Confirmez le mot de passe", en: "Confirm password" },
+  emailPlaceholder: { fr: "email@exemple.com", en: "email@example.com" },
+  passwordPlaceholder: { fr: "Votre mot de passe", en: "Your password" },
+  invalidEmailError: { fr: "Adresse email invalide.", en: "Invalid email address." },
+  loginFillError: { fr: "Veuillez renseigner votre email et votre mot de passe.", en: "Please enter both email and password." },
+  verificationLinkSent: { fr: "Un nouveau lien de vérification a été envoyé à votre adresse email.", en: "A new verification link has been sent to your email address." },
+  verificationLinkSendError: { fr: "Impossible d'envoyer le lien de vérification.", en: "Unable to send the verification link." },
+  languageLabel: { fr: "Langue", en: "Language" },
+  adminJournal: { fr: "Journal de connexion", en: "Login Journal" },
+  adminMessages: { fr: "Messages sécurisés reçus", en: "Secure Messages" },
+  userManagement: { fr: "Gestion des utilisateurs", en: "User Management" },
+  userAccounts: { fr: "Comptes utilisateurs", en: "User Accounts" },
+  createUser: { fr: "Créer un utilisateur", en: "Create User" },
+  adminLogout: { fr: "Déconnexion admin", en: "Admin Logout" },
+} as const;
+
+type Language = 'fr' | 'en';
+
 const DIAL_CODE_FLAGS: Record<string, string> = {
   '+1': '🇺🇸',
   '+7': '🇷🇺',
@@ -593,6 +682,21 @@ export default function App() {
   const [showUserAccounts, setShowUserAccounts] = useState<boolean>(false);
   const [showPaymentSection, setShowPaymentSection] = useState<boolean>(false);
   const [showPaymentExtensions, setShowPaymentExtensions] = useState<boolean>(false);
+  const [language, setLanguage] = useState<Language>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('siteLanguage') as Language | null;
+      return saved === 'en' ? 'en' : 'fr';
+    }
+    return 'fr';
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('siteLanguage', language);
+    }
+  }, [language]);
+
+  const t = <K extends keyof typeof TRANSLATIONS>(key: K) => TRANSLATIONS[key][language];
 
   type PaymentExtension = {
     id: string;
@@ -652,7 +756,7 @@ export default function App() {
   const [passwordChangeNew, setPasswordChangeNew] = useState<string>('');
 
   const WHATSAPP_ADMIN_NUMBER = '22891551295';
-  const whatsappAdminUrl = `https://wa.me/${WHATSAPP_ADMIN_NUMBER}?text=${encodeURIComponent('Bonjour, je souhaite contacter l’administrateur du projet.')}`;
+  const whatsappAdminUrl = `https://wa.me/${WHATSAPP_ADMIN_NUMBER}?text=${encodeURIComponent(language === 'en' ? 'Hello, I would like to contact the project administrator.' : 'Bonjour, je souhaite contacter l’administrateur du projet.')}`;
   const [passwordChangeConfirm, setPasswordChangeConfirm] = useState<string>('');
   const [passwordChangeError, setPasswordChangeError] = useState<string>('');
   const [showPasswordChangeFields, setShowPasswordChangeFields] = useState<boolean>(false);
@@ -1500,7 +1604,7 @@ export default function App() {
   const remainingAmount = Math.max(0, CAMPAGNE_GOAL - displayedCollectedAmount);
 
   const formatFCFA = (val: number) => {
-    return new Intl.NumberFormat('fr-FR').format(val) + ' FCFA';
+    return new Intl.NumberFormat(language === 'en' ? 'en-US' : 'fr-FR').format(val) + ' FCFA';
   };
 
   const launchCost = LAUNCH_COST;
@@ -1742,7 +1846,7 @@ export default function App() {
     setEmailNotVerifiedEmail('');
 
     if (!loginEmail.trim() || !loginPassword.trim()) {
-      setLoginError('Veuillez renseigner votre email et votre mot de passe.');
+      setLoginError(t('loginFillError'));
       return;
     }
 
@@ -1792,7 +1896,7 @@ export default function App() {
 
   const handleResendVerificationEmail = async () => {
     if (!emailNotVerifiedEmail) return;
-    
+
     setResendingVerificationEmail(true);
     try {
       // Call the register endpoint with just email to get a new verification token
@@ -1805,13 +1909,13 @@ export default function App() {
         profession: '',
         phoneNumber: '',
         gender: '',
-        countryCode: '',
+        photoUrl: '',
       });
       setLoginError('');
       setEmailNotVerifiedEmail('');
-      alert('Un nouveau lien de vérification a été envoyé à votre adresse email.');
+      alert(t('verificationLinkSent'));
     } catch (error: any) {
-      setLoginError('Impossible d\'envoyer le lien de vérification. ' + (error?.message || ''));
+      setLoginError(t('verificationLinkSendError') + ' ' + (error?.message || ''));
     } finally {
       setResendingVerificationEmail(false);
     }
@@ -2079,8 +2183,8 @@ export default function App() {
                 <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-green/10 text-brand-green mb-4">
                   <ShieldCheck className="w-6 h-6" />
                 </span>
-                <h1 className="text-2xl font-extrabold text-white">Admin Dashboard</h1>
-                <p className="text-slate-400 text-sm mt-3">Connectez-vous pour gérer les comptes utilisateurs et suivre les connexions.</p>
+                <h1 className="text-2xl font-extrabold text-white">{t('adminDashboardTitle')}</h1>
+                <p className="text-slate-400 text-sm mt-3">{t('adminDashboardDescription')}</p>
               </div>
 
               {adminError && (
@@ -2091,7 +2195,7 @@ export default function App() {
 
               <form onSubmit={handleAdminLoginSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-2">Email administrateur</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">{t('adminEmailLabel')}</label>
                   <input
                     type="email"
                     value={adminEmail}
@@ -2101,7 +2205,7 @@ export default function App() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-2">Mot de passe</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">{t('adminPasswordLabel')}</label>
                   <input
                     type="password"
                     value={adminPassword}
@@ -2111,7 +2215,7 @@ export default function App() {
                   />
                 </div>
                 <button type="submit" className="w-full rounded-2xl bg-brand-green px-4 py-3 text-sm font-bold text-slate-950 hover:bg-brand-green/90 transition-all">
-                  Se connecter en tant qu'admin
+                  {t('adminLoginButton')}
                 </button>
               </form>
             </div>
@@ -2663,7 +2767,7 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-2">Photo de profil (optionnelle)</label>
+                    <label className="block text-xs font-semibold text-slate-300 mb-2">{t('profilePhotoLabel')}</label>
                     <input
                       type="file"
                       accept="image/*"
@@ -2978,7 +3082,7 @@ export default function App() {
 
               {showSecureMessages && (
                 <div ref={secureMessagesRef} className="rounded-3xl border border-slate-700 bg-slate-950 p-6 mb-6">
-                  <h2 className="text-lg font-semibold text-white mb-4">Messages sécurisés reçus</h2>
+                  <h2 className="text-lg font-semibold text-white mb-4">{t('adminMessages')}</h2>
                   <div className="space-y-3">
                     {adminMessages.length === 0 ? (
                       <p className="text-sm text-slate-400">Aucun message sécurisé reçu pour le moment.</p>
@@ -3001,7 +3105,7 @@ export default function App() {
 
               {showAdminJournal && (
                 <div ref={activityJournalRef} className="rounded-3xl border border-slate-700 bg-slate-950 p-6">
-                  <h2 className="text-lg font-semibold text-white mb-4">Journal de connexion</h2>
+                  <h2 className="text-lg font-semibold text-white mb-4">{t('adminJournal')}</h2>
                   <div className="space-y-3">
                     {userActivity.length === 0 ? (
                       <p className="text-sm text-slate-400">Aucun événement enregistré.</p>
@@ -3036,9 +3140,9 @@ export default function App() {
             <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-green/10 text-brand-green mb-4">
               <ShieldCheck className="w-6 h-6" />
             </span>
-            <h1 className="text-2xl font-extrabold text-white">Changement de mot de passe</h1>
+            <h1 className="text-2xl font-extrabold text-white">{t('passwordChangeTitle')}</h1>
             <p className="text-slate-400 text-sm mt-3">
-              Vous devez changer votre mot de passe avant de pouvoir accéder au site.
+              {t('passwordChangeSubtitle')}
             </p>
           </div>
 
@@ -3050,20 +3154,20 @@ export default function App() {
 
           <form onSubmit={handlePasswordChangeSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-2">Nouveau mot de passe</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-2">{t('newPasswordLabel')}</label>
               <div className="relative">
                 <input
                   value={passwordChangeNew}
                   onChange={(e) => setPasswordChangeNew(e.target.value)}
                   className="w-full pr-12 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-green"
-                  placeholder="Nouveau mot de passe"
+                  placeholder={t('newPasswordPlaceholder')}
                   type={showPasswordChangeFields ? 'text' : 'password'}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPasswordChangeFields((s) => !s)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-                  aria-label={showPasswordChangeFields ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  aria-label={showPasswordChangeFields ? t('hidePassword') : t('showPassword')}
                 >
                   {showPasswordChangeFields ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -3071,12 +3175,12 @@ export default function App() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-2">Confirmation du mot de passe</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-2">{t('confirmPasswordLabel')}</label>
               <input
                 value={passwordChangeConfirm}
                 onChange={(e) => setPasswordChangeConfirm(e.target.value)}
                 className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-green"
-                placeholder="Confirmez le mot de passe"
+                placeholder={t('confirmPasswordPlaceholder')}
                 type={showPasswordChangeFields ? 'text' : 'password'}
               />
             </div>
@@ -3085,7 +3189,7 @@ export default function App() {
               type="submit"
               className="w-full rounded-2xl bg-brand-green px-4 py-3 text-sm font-bold text-slate-950 hover:bg-brand-green/90 transition-all"
             >
-              Valider le nouveau mot de passe
+              {t('passwordChangeSubmit')}
             </button>
           </form>
         </div>
@@ -3109,9 +3213,9 @@ export default function App() {
               <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-green/10 text-brand-green mb-4">
                 <ShieldCheck className="w-6 h-6" />
               </span>
-              <h1 className="text-2xl font-extrabold text-white">Se connecter</h1>
+              <h1 className="text-2xl font-extrabold text-white">{t('loginTitle')}</h1>
               <p className="text-slate-400 text-sm mt-3">
-                Connectez-vous avec votre email et mot de passe. La création de compte est réservée à l’administrateur.
+                {t('loginSubtitle')}
               </p>
             </div>
           </div>
@@ -3128,11 +3232,10 @@ export default function App() {
                 <ShieldCheck className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-amber-200 font-semibold mb-3">
-                    Vérification d'email requise
+                    {t('emailVerificationTitle')}
                   </p>
                   <p className="text-amber-100 text-xs mb-4">
-                    Vous devez vérifier votre adresse email avant de pouvoir vous connecter. 
-                    Un lien de vérification a été envoyé à <strong>{emailNotVerifiedEmail}</strong>.
+                    {t('emailVerificationMessage')} <strong>{emailNotVerifiedEmail}</strong>.
                   </p>
                   <div className="flex gap-2">
                     <button
@@ -3141,7 +3244,7 @@ export default function App() {
                       disabled={resendingVerificationEmail}
                       className="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-500/50 text-slate-950 font-semibold rounded-lg text-xs transition-colors"
                     >
-                      {resendingVerificationEmail ? 'Envoi en cours...' : 'Renvoyer le lien'}
+                      {resendingVerificationEmail ? t('sendingLink') : t('resendLink')}
                     </button>
                     <button
                       type="button"
@@ -3152,7 +3255,7 @@ export default function App() {
                       }}
                       className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg text-xs transition-colors"
                     >
-                      Retour
+                      {t('backButton')}
                     </button>
                   </div>
                 </div>
@@ -3162,16 +3265,16 @@ export default function App() {
 
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-2">Adresse email</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-2">{t('emailLabel')}</label>
               <input
                 value={loginEmail}
                 onChange={(e) => {
                   const v = e.target.value;
                   setLoginEmail(v);
-                  setLoginEmailError(v && !isValidEmail(v) ? 'Adresse email invalide.' : '');
+                  setLoginEmailError(v && !isValidEmail(v) ? t('invalidEmailError') : '');
                 }}
                 className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-green"
-                placeholder="email@exemple.com"
+                placeholder={t('emailPlaceholder')}
                 type="email"
               />
               {loginEmailError && (
@@ -3180,20 +3283,20 @@ export default function App() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-2">Mot de passe</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-2">{t('passwordLabel')}</label>
               <div className="relative">
                 <input
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   className="w-full pr-12 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-green"
-                  placeholder="Votre mot de passe"
+                  placeholder={t('passwordPlaceholder')}
                   type={showLoginPassword ? 'text' : 'password'}
                 />
                 <button
                   type="button"
                   onClick={() => setShowLoginPassword((s) => !s)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-                  aria-label={showLoginPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  aria-label={showLoginPassword ? t('hidePassword') : t('showPassword')}
                 >
                   {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -3204,12 +3307,12 @@ export default function App() {
               type="submit"
               className="w-full rounded-2xl bg-brand-green px-4 py-3 text-sm font-bold text-slate-950 hover:bg-brand-green/90 transition-all"
             >
-              Se connecter
+              {t('loginSubmit')}
             </button>
           </form>
 
           <p className="text-slate-500 text-xs text-center mt-6">
-            Les comptes sont créés uniquement par l’administrateur. Contactez un administrateur si vous n’avez pas encore d’accès.
+            {t('loginAdminNotice')}
           </p>
         </div>
       </div>
@@ -3224,12 +3327,12 @@ export default function App() {
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-1.5 font-medium">
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-brand-green animate-ping" />
-            <span>Campagne Active : Suivi Scolaire en temps réel.</span>
+            <span>{t('activeCampaignAlert')}</span>
           </div>
           <div className="flex items-center gap-4 text-slate-300">
-            <span>Financement visé : {formatFCFA(CAMPAGNE_GOAL)}</span>
+            <span>{t('campaignGoalLabel')} {formatFCFA(CAMPAGNE_GOAL)}</span>
             <span className="hidden md:inline">|</span>
-            <span className="hidden md:inline">Lancement prévu : Troisième trimestre 2027</span>
+            <span className="hidden md:inline">{t('launchPlannedLabel')}</span>
           </div>
         </div>
       </div>
@@ -3243,25 +3346,25 @@ export default function App() {
             </div>
             <div>
               <span className="font-extrabold text-brand-blue tracking-tight text-lg block leading-none">Ecole Track</span>
-              <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider block mt-0.5">Mécénat Éducatif</span>
+              <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider block mt-0.5">{t('brandTagline')}</span>
             </div>
           </div>
 
           <nav className="hidden lg:flex items-center gap-1 text-xs font-semibold text-slate-600 ml-6">
-            <button type="button" onClick={() => showSection('hero')} className={getNavButtonClasses('hero')}>Accueil</button>
-            <button type="button" onClick={() => showSection('probleme')} className={getNavButtonClasses('probleme')}>Le Problème</button>
-            <button type="button" onClick={() => showSection('solution')} className={getNavButtonClasses('solution')}>Notre Solution</button>
-            <button type="button" onClick={() => showSection('pourquoi')} className={getNavButtonClasses('pourquoi')}>Pourquoi Investir ?</button>
-            <button type="button" onClick={() => showSection('investment')} className={getNavButtonClasses('investment')}>Revenus sur investissement</button>
-            <button type="button" onClick={() => showSection('budget')} className={getNavButtonClasses('budget')}>Financement</button>
-            <button type="button" onClick={() => showSection('progress')} className={getNavButtonClasses('progress')}>État d'avancement</button>
+            <button type="button" onClick={() => showSection('hero')} className={getNavButtonClasses('hero')}>{t('navHero')}</button>
+            <button type="button" onClick={() => showSection('probleme')} className={getNavButtonClasses('probleme')}>{t('navProbleme')}</button>
+            <button type="button" onClick={() => showSection('solution')} className={getNavButtonClasses('solution')}>{t('navSolution')}</button>
+            <button type="button" onClick={() => showSection('pourquoi')} className={getNavButtonClasses('pourquoi')}>{t('navPourquoi')}</button>
+            <button type="button" onClick={() => showSection('investment')} className={getNavButtonClasses('investment')}>{t('navInvestment')}</button>
+            <button type="button" onClick={() => showSection('budget')} className={getNavButtonClasses('budget')}>{t('navBudget')}</button>
+            <button type="button" onClick={() => showSection('progress')} className={getNavButtonClasses('progress')}>{t('navProgress')}</button>
           </nav>
 
           <button
             type="button"
             onClick={() => setShowMobileNav((prev) => !prev)}
             className="inline-flex items-center justify-center h-10 w-10 rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 lg:hidden"
-            aria-label="Ouvrir le menu mobile"
+            aria-label={t('openMobileMenu')}
           >
             {showMobileNav ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -3276,7 +3379,7 @@ export default function App() {
                 }}
                 className="px-5 py-2.5 bg-brand-green hover:bg-brand-green/90 text-white hover:text-slate-900 rounded-xl text-xs font-bold transition-all shadow-xs hover:shadow-md flex items-center gap-1.5"
               >
-                <span>J'investis</span>
+                <span>{t('investButton')}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
               <button
@@ -3285,9 +3388,22 @@ export default function App() {
                 disabled={!isDonationAvailable}
                 className={`px-3 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-xs ${isDonationAvailable ? 'bg-rose-600 hover:bg-rose-700 text-white hover:shadow-md' : 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-70'}`}
               >
-                Faire un don
+                {t('donateButton')}
               </button>
               {/* WhatsApp header button removed; kept floating admin chat as WhatsApp */}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label htmlFor="language-select" className="hidden sm:inline-flex text-[10px] uppercase tracking-[0.25em] text-slate-500">{t('languageLabel')}</label>
+              <select
+                id="language-select"
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as Language)}
+                className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700"
+              >
+                <option value="fr">FR</option>
+                <option value="en">EN</option>
+              </select>
             </div>
 
             {isRegistered && (
@@ -3298,7 +3414,7 @@ export default function App() {
                   className="h-10 w-10 rounded-full border border-slate-200 bg-white flex items-center justify-center overflow-hidden shadow-sm"
                 >
                   {profile.photoUrl ? (
-                    <img src={profile.photoUrl} alt="Profil" className="h-full w-full max-w-full max-h-full object-cover" />
+                    <img src={profile.photoUrl} alt={t('profileImageAlt')} className="h-full w-full max-w-full max-h-full object-cover" />
                   ) : (
                     <UserCheck className="w-5 h-5 text-slate-700" />
                   )}
@@ -3307,8 +3423,8 @@ export default function App() {
                 {showProfileMenu && (
                   <div className="absolute right-0 mt-2 w-52 rounded-3xl bg-white border border-slate-200 shadow-xl text-slate-800 overflow-hidden z-50">
                     <div className="px-4 py-3 border-b border-slate-200">
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Mon compte</p>
-                      <p className="font-semibold text-sm mt-2 truncate">{getDisplayName(profile) || 'Utilisateur'}</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{t('profileMenuAccount')}</p>
+                      <p className="font-semibold text-sm mt-2 truncate">{getDisplayName(profile) || t('user')}</p>
                       <p className="text-xs text-slate-500 truncate">{profile.email}</p>
                     </div>
                     <button
@@ -3316,14 +3432,14 @@ export default function App() {
                       onClick={handleOpenEditProfile}
                       className="w-full px-4 py-3 text-left text-sm hover:bg-slate-100"
                     >
-                      Éditer le profil
+                      {t('editProfile')}
                     </button>
                     <button
                       type="button"
                       onClick={handleLogout}
                       className="w-full px-4 py-3 text-left text-sm text-rose-600 hover:bg-slate-100"
                     >
-                      Déconnexion
+                      {t('logout')}
                     </button>
                   </div>
                 )}
@@ -3337,25 +3453,25 @@ export default function App() {
         <div className="lg:hidden bg-white border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 grid gap-2">
             <button type="button" onClick={() => showSection('hero')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
-              Accueil
+              {t('navHero')}
             </button>
             <button type="button" onClick={() => showSection('probleme')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
-              Le Problème
+              {t('navProbleme')}
             </button>
             <button type="button" onClick={() => showSection('solution')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
-              Notre Solution
+              {t('navSolution')}
             </button>
             <button type="button" onClick={() => showSection('pourquoi')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
-              Pourquoi Investir ?
+              {t('navPourquoi')}
             </button>
             <button type="button" onClick={() => showSection('investment')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
-              Revenus sur investissement
+              {t('navInvestment')}
             </button>
             <button type="button" onClick={() => showSection('budget')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
-              Financement
+              {t('navBudget')}
             </button>
             <button type="button" onClick={() => showSection('progress')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
-              État d'avancement
+              {t('navProgress')}
             </button>
           </div>
         </div>
@@ -3364,7 +3480,7 @@ export default function App() {
       {paymentReturnMessage && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
           <div className="rounded-3xl border border-brand-green/20 bg-brand-green/5 text-brand-green p-4 text-sm">
-            <strong className="font-semibold">Résultat de paiement :</strong> {paymentReturnMessage}
+            <strong className="font-semibold">{t('paymentResultTitle')}</strong> {paymentReturnMessage}
             {paymentReturnDetails && <div className="mt-2 text-slate-700">{paymentReturnDetails}</div>}
           </div>
         </div>
@@ -3378,7 +3494,7 @@ export default function App() {
                 <div className="flex items-center gap-4">
                   <div className="h-20 w-20 rounded-full bg-slate-300 overflow-hidden flex items-center justify-center">
                     {profileDraft.photoUrl ? (
-                      <img src={profileDraft.photoUrl} alt="Aperçu profil" className="h-full w-full max-w-full max-h-full object-cover" />
+                      <img src={profileDraft.photoUrl} alt={t('profileImagePreviewAlt')} className="h-full w-full max-w-full max-h-full object-cover" />
                     ) : (
                       <span className="text-lg font-bold text-slate-700">
                         {[profileDraft.firstName, profileDraft.lastName]
@@ -3390,8 +3506,8 @@ export default function App() {
                     )}
                   </div>
                   <div>
-                    <p className="text-sm uppercase tracking-[0.2em] text-slate-500">Édition de profil</p>
-                    <h2 className="text-xl font-bold text-slate-900">Modifier vos informations</h2>
+                    <p className="text-sm uppercase tracking-[0.2em] text-slate-500">{t('profileEditTitle')}</p>
+                    <h2 className="text-xl font-bold text-slate-900">{t('profileEditHeading')}</h2>
                   </div>
                 </div>
 
@@ -3608,15 +3724,15 @@ export default function App() {
               <div className="lg:col-span-7 space-y-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-green/10 text-brand-green text-xs font-semibold uppercase tracking-wider rounded-full border border-brand-green/20">
                   <BadgeCheck className="w-3.5 h-3.5" />
-                  <span>Projet d’Impact Social National</span>
-                </div>
+                    <span>{t('heroFeatureLabel')}</span>
+                  </div>
 
                 <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-100 tracking-tight leading-[1.12]">
-                  Investissez dans l’avenir de l’éducation avec l’Application de suivi scolaire en temps réel.
+                  {t('heroHeading')}
                 </h1>
 
                 <p className="text-slate-300 text-base md:text-lg leading-relaxed font-light">
-                  “Un projet innovant qui améliore la communication entre écoles et parents, réduit l’échec scolaire et garantit un suivi académique efficace.”
+                  “{t('heroDescription')}”
                 </p>
 
                 <div className="flex flex-wrap gap-3.5 pt-2">
@@ -3625,18 +3741,18 @@ export default function App() {
                     onClick={() => showSection('solution')}
                     className="px-6 py-3.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 text-slate-200 font-bold rounded-xl transition-all text-sm block text-center"
                   >
-                    Découvrir la solution
+                    {t('heroDiscoverButton')}
                   </button>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-800">
                   <div>
                     <span className="block text-2xl font-black text-brand-green">100%</span>
-                    <span className="block text-[11px] text-slate-400 mt-0.5">Transparent &amp; Audit prévu</span>
+                    <span className="block text-[11px] text-slate-400 mt-0.5">{t('heroTrustedLabel1')}</span>
                   </div>
                   <div>
                     <span className="block text-2xl font-black text-white">SMS + Web</span>
-                    <span className="block text-[11px] text-slate-400 mt-0.5">Zéro coupure réseau</span>
+                    <span className="block text-[11px] text-slate-400 mt-0.5">{t('heroTrustedLabel2')}</span>
                   </div>
                 </div>
               </div>
@@ -3647,31 +3763,31 @@ export default function App() {
                   
                   {/* Status Badges */}
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-slate-400 font-mono">Simulateur Actif</span>
+                    <span className="text-xs text-slate-400 font-mono">{t('heroStatusActive')}</span>
                   </div>
 
                   {/* Large Metrics */}
                   <div className="space-y-1">
-                    <span className="text-[10px] uppercase text-slate-400 tracking-widest font-semibold block">Collecté</span>
+                    <span className="text-[10px] uppercase text-slate-400 tracking-widest font-semibold block">{t('heroCollectedLabel')}</span>
                     <div className="flex items-baseline gap-2">
                       <span className="text-3xl md:text-4xl font-black text-brand-green tracking-tight font-mono">
                         {formatFCFA(displayedCollectedAmount)}
                       </span>
                     </div>
                     <span className="text-xs text-slate-400 block mt-0.5">
-                      sur un objectif total estimé de <strong>{formatFCFA(CAMPAGNE_GOAL)}</strong>
+                      {t('heroGoalLabel')} <strong>{formatFCFA(CAMPAGNE_GOAL)}</strong>
                     </span>
                     <div className="mt-3 rounded-3xl bg-slate-950/70 border border-slate-800 p-3 space-y-2">
                       <div>
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Montant total de don collecté</span>
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">{t('heroDonatedLabel')}</span>
                         <div className="mt-1 text-xl font-bold text-white">{formatFCFA(projectMetrics?.collectedAmount ?? raisedAmount)}</div>
                       </div>
                       <div>
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Montant total investi</span>
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">{t('heroInvestedLabel')}</span>
                         <div className="mt-1 text-xl font-bold text-white">{formatFCFA(displayedInvestedAmount)}</div>
                       </div>
                       <div>
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Nombre de personnes ayant fait un don</span>
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">{t('heroDonorLabel')}</span>
                         <div className="mt-1 text-xl font-bold text-white">{projectMetrics?.donorCount ?? totalDonorCount}</div>
                       </div>
                     </div>
@@ -3680,8 +3796,8 @@ export default function App() {
                   {/* Visual Progress Bar */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs font-semibold">
-                      <span className="text-slate-400">Progression globale</span>
-                      <span className="text-brand-green font-mono">{percentage}% financé</span>
+                      <span className="text-slate-400">{t('heroProgressLabel')}</span>
+                      <span className="text-brand-green font-mono">{percentage} {t('heroFundedLabel')}</span>
                     </div>
                     <div className="w-full bg-slate-800 h-3.5 rounded-full overflow-hidden">
                       <motion.div 
@@ -3717,7 +3833,7 @@ export default function App() {
                       }}
                       className="w-full py-3.5 bg-brand-green hover:bg-brand-green/95 text-slate-900 font-extrabold rounded-2xl text-lg transition-all shadow-md block text-center"
                     >
-                      Investir dès maintenant
+                      {t('investNowButton')}
                     </button>
                     <button
                       type="button"
@@ -3725,7 +3841,7 @@ export default function App() {
                       disabled={!isDonationAvailable}
                       className={`w-full py-3.5 rounded-2xl text-base font-semibold transition-all shadow-md block text-center ${isDonationAvailable ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-70'}`}
                     >
-                      Faire un don
+                      {t('donateButton')}
                     </button>
                   </div>
 
@@ -4296,7 +4412,7 @@ export default function App() {
             </div>
 
             <p className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-100 max-w-2xl mx-auto leading-relaxed">
-              “Rejoignez-nous pour transformer l’éducation en Afrique. Votre investissement n’est pas seulement financier, il est social et durable.”
+              “{t('heroQuote')}”
             </p>
             <button
               type="button"
@@ -4306,7 +4422,7 @@ export default function App() {
               }}
               className="mt-6 inline-flex items-center justify-center rounded-full bg-brand-green px-6 py-3 text-sm font-bold text-slate-950 hover:bg-brand-green/90 transition-all shadow-xl"
             >
-              Investir dès maintenant
+              {t('investNowButton')}
             </button>
 
           </div>
@@ -4324,15 +4440,15 @@ export default function App() {
               <span className="text-brand-green">E</span>T
             </div>
             <div>
-              <span className="font-bold text-slate-300 text-sm block leading-none">Ecole Track Afrique</span>
-              <span className="text-[9px] text-slate-500 mt-0.5 block">© 2026 AYISSOU Koffi Elom. Tous Droits Réservés.</span>
+              <span className="font-bold text-slate-300 text-sm block leading-none">{t('footerCompanyName')}</span>
+              <span className="text-[9px] text-slate-500 mt-0.5 block">{t('footerCopyright')}</span>
             </div>
           </div>
 
           <div className="text-xs text-slate-400 font-mono flex items-center gap-2">
-            <span>Données cryptées SSL</span>
+            <span>{t('footerEncryptedData')}</span>
             <span>•</span>
-            <span>Simulateur Sandbox local</span>
+            <span>{t('footerSandbox')}</span>
           </div>
 
         </div>
@@ -4343,7 +4459,7 @@ export default function App() {
         target="_blank"
         rel="noreferrer"
         className="fixed right-6 bottom-6 z-50 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-3 shadow-2xl shadow-slate-950/20 text-white text-sm font-semibold transition-transform duration-200 hover:-translate-y-0.5 hover:bg-[#1ebe57]"
-        aria-label="Ouvrir WhatsApp"
+        aria-label={t('openWhatsApp')}
       >
         <svg
           className="w-4 h-4"
