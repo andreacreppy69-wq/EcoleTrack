@@ -391,6 +391,11 @@ const TRANSLATIONS = {
   adminLogout: { fr: "Déconnexion admin", en: "Admin Logout" },
 } as const;
 
+// Create a simple FR mapping from TRANSLATIONS for direct `FR.key` usage
+const FR: { [K in keyof typeof TRANSLATIONS]: string } = Object.fromEntries(
+  Object.entries(TRANSLATIONS).map(([k, v]) => [k, (v as any).fr])
+) as { [K in keyof typeof TRANSLATIONS]: string };
+
 type Language = 'fr' | 'en';
 
 const DIAL_CODE_FLAGS: Record<string, string> = {
@@ -682,21 +687,9 @@ export default function App() {
   const [showUserAccounts, setShowUserAccounts] = useState<boolean>(false);
   const [showPaymentSection, setShowPaymentSection] = useState<boolean>(false);
   const [showPaymentExtensions, setShowPaymentExtensions] = useState<boolean>(false);
-  const [language, setLanguage] = useState<Language>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('siteLanguage') as Language | null;
-      return saved === 'en' ? 'en' : 'fr';
-    }
-    return 'fr';
-  });
+  const language: Language = 'fr';
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('siteLanguage', language);
-    }
-  }, [language]);
-
-  const t = <K extends keyof typeof TRANSLATIONS>(key: K) => TRANSLATIONS[key][language];
+  const t = <K extends keyof typeof TRANSLATIONS>(key: K) => TRANSLATIONS[key]['fr'];
 
   type PaymentExtension = {
     id: string;
@@ -1846,7 +1839,7 @@ export default function App() {
     setEmailNotVerifiedEmail('');
 
     if (!loginEmail.trim() || !loginPassword.trim()) {
-      setLoginError(t('loginFillError'));
+      setLoginError(FR.loginFillError);
       return;
     }
 
@@ -1913,9 +1906,9 @@ export default function App() {
       });
       setLoginError('');
       setEmailNotVerifiedEmail('');
-      alert(t('verificationLinkSent'));
+      alert(FR.verificationLinkSent);
     } catch (error: any) {
-      setLoginError(t('verificationLinkSendError') + ' ' + (error?.message || ''));
+      setLoginError(FR.verificationLinkSendError + ' ' + (error?.message || ''));
     } finally {
       setResendingVerificationEmail(false);
     }
@@ -2183,8 +2176,8 @@ export default function App() {
                 <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-green/10 text-brand-green mb-4">
                   <ShieldCheck className="w-6 h-6" />
                 </span>
-                <h1 className="text-2xl font-extrabold text-white">{t('adminDashboardTitle')}</h1>
-                <p className="text-slate-400 text-sm mt-3">{t('adminDashboardDescription')}</p>
+                <h1 className="text-2xl font-extrabold text-white">{FR.adminDashboardTitle}</h1>
+                <p className="text-slate-400 text-sm mt-3">{FR.adminDashboardDescription}</p>
               </div>
 
               {adminError && (
@@ -2195,7 +2188,7 @@ export default function App() {
 
               <form onSubmit={handleAdminLoginSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-2">{t('adminEmailLabel')}</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">{FR.adminEmailLabel}</label>
                   <input
                     type="email"
                     value={adminEmail}
@@ -2205,7 +2198,7 @@ export default function App() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-2">{t('adminPasswordLabel')}</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">{FR.adminPasswordLabel}</label>
                   <input
                     type="password"
                     value={adminPassword}
@@ -2215,7 +2208,7 @@ export default function App() {
                   />
                 </div>
                 <button type="submit" className="w-full rounded-2xl bg-brand-green px-4 py-3 text-sm font-bold text-slate-950 hover:bg-brand-green/90 transition-all">
-                  {t('adminLoginButton')}
+                  {FR.adminLoginButton}
                 </button>
               </form>
             </div>
@@ -2767,7 +2760,7 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-2">{t('profilePhotoLabel')}</label>
+                    <label className="block text-xs font-semibold text-slate-300 mb-2">{FR.profilePhotoLabel}</label>
                     <input
                       type="file"
                       accept="image/*"
@@ -3082,7 +3075,7 @@ export default function App() {
 
               {showSecureMessages && (
                 <div ref={secureMessagesRef} className="rounded-3xl border border-slate-700 bg-slate-950 p-6 mb-6">
-                  <h2 className="text-lg font-semibold text-white mb-4">{t('adminMessages')}</h2>
+                  <h2 className="text-lg font-semibold text-white mb-4">{FR.adminMessages}</h2>
                   <div className="space-y-3">
                     {adminMessages.length === 0 ? (
                       <p className="text-sm text-slate-400">Aucun message sécurisé reçu pour le moment.</p>
@@ -3105,7 +3098,7 @@ export default function App() {
 
               {showAdminJournal && (
                 <div ref={activityJournalRef} className="rounded-3xl border border-slate-700 bg-slate-950 p-6">
-                  <h2 className="text-lg font-semibold text-white mb-4">{t('adminJournal')}</h2>
+                  <h2 className="text-lg font-semibold text-white mb-4">{FR.adminJournal}</h2>
                   <div className="space-y-3">
                     {userActivity.length === 0 ? (
                       <p className="text-sm text-slate-400">Aucun événement enregistré.</p>
@@ -3140,9 +3133,9 @@ export default function App() {
             <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-green/10 text-brand-green mb-4">
               <ShieldCheck className="w-6 h-6" />
             </span>
-            <h1 className="text-2xl font-extrabold text-white">{t('passwordChangeTitle')}</h1>
+            <h1 className="text-2xl font-extrabold text-white">{FR.passwordChangeTitle}</h1>
             <p className="text-slate-400 text-sm mt-3">
-              {t('passwordChangeSubtitle')}
+              {FR.passwordChangeSubtitle}
             </p>
           </div>
 
@@ -3154,20 +3147,20 @@ export default function App() {
 
           <form onSubmit={handlePasswordChangeSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-2">{t('newPasswordLabel')}</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-2">{FR.newPasswordLabel}</label>
               <div className="relative">
                 <input
                   value={passwordChangeNew}
                   onChange={(e) => setPasswordChangeNew(e.target.value)}
                   className="w-full pr-12 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-green"
-                  placeholder={t('newPasswordPlaceholder')}
+                  placeholder={FR.newPasswordPlaceholder}
                   type={showPasswordChangeFields ? 'text' : 'password'}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPasswordChangeFields((s) => !s)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-                  aria-label={showPasswordChangeFields ? t('hidePassword') : t('showPassword')}
+                  aria-label={showPasswordChangeFields ? FR.hidePassword : FR.showPassword}
                 >
                   {showPasswordChangeFields ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -3175,12 +3168,12 @@ export default function App() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-2">{t('confirmPasswordLabel')}</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-2">{FR.confirmPasswordLabel}</label>
               <input
                 value={passwordChangeConfirm}
                 onChange={(e) => setPasswordChangeConfirm(e.target.value)}
                 className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-green"
-                placeholder={t('confirmPasswordPlaceholder')}
+                placeholder={FR.confirmPasswordPlaceholder}
                 type={showPasswordChangeFields ? 'text' : 'password'}
               />
             </div>
@@ -3189,7 +3182,7 @@ export default function App() {
               type="submit"
               className="w-full rounded-2xl bg-brand-green px-4 py-3 text-sm font-bold text-slate-950 hover:bg-brand-green/90 transition-all"
             >
-              {t('passwordChangeSubmit')}
+              {FR.passwordChangeSubmit}
             </button>
           </form>
         </div>
@@ -3213,9 +3206,9 @@ export default function App() {
               <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-green/10 text-brand-green mb-4">
                 <ShieldCheck className="w-6 h-6" />
               </span>
-              <h1 className="text-2xl font-extrabold text-white">{t('loginTitle')}</h1>
+              <h1 className="text-2xl font-extrabold text-white">{FR.loginTitle}</h1>
               <p className="text-slate-400 text-sm mt-3">
-                {t('loginSubtitle')}
+                {FR.loginSubtitle}
               </p>
             </div>
           </div>
@@ -3232,10 +3225,10 @@ export default function App() {
                 <ShieldCheck className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-amber-200 font-semibold mb-3">
-                    {t('emailVerificationTitle')}
+                    {FR.emailVerificationTitle}
                   </p>
                   <p className="text-amber-100 text-xs mb-4">
-                    {t('emailVerificationMessage')} <strong>{emailNotVerifiedEmail}</strong>.
+                    {FR.emailVerificationMessage} <strong>{emailNotVerifiedEmail}</strong>.
                   </p>
                   <div className="flex gap-2">
                     <button
@@ -3244,7 +3237,7 @@ export default function App() {
                       disabled={resendingVerificationEmail}
                       className="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-500/50 text-slate-950 font-semibold rounded-lg text-xs transition-colors"
                     >
-                      {resendingVerificationEmail ? t('sendingLink') : t('resendLink')}
+                      {resendingVerificationEmail ? FR.sendingLink : FR.resendLink}
                     </button>
                     <button
                       type="button"
@@ -3255,7 +3248,7 @@ export default function App() {
                       }}
                       className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg text-xs transition-colors"
                     >
-                      {t('backButton')}
+                      {FR.backButton}
                     </button>
                   </div>
                 </div>
@@ -3265,16 +3258,16 @@ export default function App() {
 
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-2">{t('emailLabel')}</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-2">{FR.emailLabel}</label>
               <input
                 value={loginEmail}
                 onChange={(e) => {
                   const v = e.target.value;
                   setLoginEmail(v);
-                  setLoginEmailError(v && !isValidEmail(v) ? t('invalidEmailError') : '');
+                  setLoginEmailError(v && !isValidEmail(v) ? FR.invalidEmailError : '');
                 }}
                 className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-green"
-                placeholder={t('emailPlaceholder')}
+                placeholder={FR.emailPlaceholder}
                 type="email"
               />
               {loginEmailError && (
@@ -3283,20 +3276,20 @@ export default function App() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-2">{t('passwordLabel')}</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-2">{FR.passwordLabel}</label>
               <div className="relative">
                 <input
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   className="w-full pr-12 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-brand-green"
-                  placeholder={t('passwordPlaceholder')}
+                  placeholder={FR.passwordPlaceholder}
                   type={showLoginPassword ? 'text' : 'password'}
                 />
                 <button
                   type="button"
                   onClick={() => setShowLoginPassword((s) => !s)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-                  aria-label={showLoginPassword ? t('hidePassword') : t('showPassword')}
+                  aria-label={showLoginPassword ? FR.hidePassword : FR.showPassword}
                 >
                   {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -3307,12 +3300,12 @@ export default function App() {
               type="submit"
               className="w-full rounded-2xl bg-brand-green px-4 py-3 text-sm font-bold text-slate-950 hover:bg-brand-green/90 transition-all"
             >
-              {t('loginSubmit')}
+              {FR.loginSubmit}
             </button>
           </form>
 
           <p className="text-slate-500 text-xs text-center mt-6">
-            {t('loginAdminNotice')}
+            {FR.loginAdminNotice}
           </p>
         </div>
       </div>
@@ -3327,12 +3320,12 @@ export default function App() {
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-1.5 font-medium">
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-brand-green animate-ping" />
-            <span>{t('activeCampaignAlert')}</span>
+            <span>{FR.activeCampaignAlert}</span>
           </div>
           <div className="flex items-center gap-4 text-slate-300">
-            <span>{t('campaignGoalLabel')} {formatFCFA(CAMPAGNE_GOAL)}</span>
+            <span>{FR.campaignGoalLabel} {formatFCFA(CAMPAGNE_GOAL)}</span>
             <span className="hidden md:inline">|</span>
-            <span className="hidden md:inline">{t('launchPlannedLabel')}</span>
+            <span className="hidden md:inline">{FR.launchPlannedLabel}</span>
           </div>
         </div>
       </div>
@@ -3346,25 +3339,25 @@ export default function App() {
             </div>
             <div>
               <span className="font-extrabold text-brand-blue tracking-tight text-lg block leading-none">Ecole Track</span>
-              <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider block mt-0.5">{t('brandTagline')}</span>
+              <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider block mt-0.5">{FR.brandTagline}</span>
             </div>
           </div>
 
           <nav className="hidden lg:flex items-center gap-1 text-xs font-semibold text-slate-600 ml-6">
-            <button type="button" onClick={() => showSection('hero')} className={getNavButtonClasses('hero')}>{t('navHero')}</button>
-            <button type="button" onClick={() => showSection('probleme')} className={getNavButtonClasses('probleme')}>{t('navProbleme')}</button>
-            <button type="button" onClick={() => showSection('solution')} className={getNavButtonClasses('solution')}>{t('navSolution')}</button>
-            <button type="button" onClick={() => showSection('pourquoi')} className={getNavButtonClasses('pourquoi')}>{t('navPourquoi')}</button>
-            <button type="button" onClick={() => showSection('investment')} className={getNavButtonClasses('investment')}>{t('navInvestment')}</button>
-            <button type="button" onClick={() => showSection('budget')} className={getNavButtonClasses('budget')}>{t('navBudget')}</button>
-            <button type="button" onClick={() => showSection('progress')} className={getNavButtonClasses('progress')}>{t('navProgress')}</button>
+            <button type="button" onClick={() => showSection('hero')} className={getNavButtonClasses('hero')}>{FR.navHero}</button>
+            <button type="button" onClick={() => showSection('probleme')} className={getNavButtonClasses('probleme')}>{FR.navProbleme}</button>
+            <button type="button" onClick={() => showSection('solution')} className={getNavButtonClasses('solution')}>{FR.navSolution}</button>
+            <button type="button" onClick={() => showSection('pourquoi')} className={getNavButtonClasses('pourquoi')}>{FR.navPourquoi}</button>
+            <button type="button" onClick={() => showSection('investment')} className={getNavButtonClasses('investment')}>{FR.navInvestment}</button>
+            <button type="button" onClick={() => showSection('budget')} className={getNavButtonClasses('budget')}>{FR.navBudget}</button>
+            <button type="button" onClick={() => showSection('progress')} className={getNavButtonClasses('progress')}>{FR.navProgress}</button>
           </nav>
 
           <button
             type="button"
             onClick={() => setShowMobileNav((prev) => !prev)}
             className="inline-flex items-center justify-center h-10 w-10 rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 lg:hidden"
-            aria-label={t('openMobileMenu')}
+            aria-label={FR.openMobileMenu}
           >
             {showMobileNav ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -3379,7 +3372,7 @@ export default function App() {
                 }}
                 className="px-5 py-2.5 bg-brand-green hover:bg-brand-green/90 text-white hover:text-slate-900 rounded-xl text-xs font-bold transition-all shadow-xs hover:shadow-md flex items-center gap-1.5"
               >
-                <span>{t('investButton')}</span>
+                <span>{FR.investButton}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
               <button
@@ -3388,23 +3381,12 @@ export default function App() {
                 disabled={!isDonationAvailable}
                 className={`px-3 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-xs ${isDonationAvailable ? 'bg-rose-600 hover:bg-rose-700 text-white hover:shadow-md' : 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-70'}`}
               >
-                {t('donateButton')}
+                {FR.donateButton}
               </button>
               {/* WhatsApp header button removed; kept floating admin chat as WhatsApp */}
             </div>
 
-            <div className="flex items-center gap-2">
-              <label htmlFor="language-select" className="hidden sm:inline-flex text-[10px] uppercase tracking-[0.25em] text-slate-500">{t('languageLabel')}</label>
-              <select
-                id="language-select"
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as Language)}
-                className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700"
-              >
-                <option value="fr">FR</option>
-                <option value="en">EN</option>
-              </select>
-            </div>
+            
 
             {isRegistered && (
               <div className="relative" ref={profileMenuRef}>
@@ -3414,7 +3396,7 @@ export default function App() {
                   className="h-10 w-10 rounded-full border border-slate-200 bg-white flex items-center justify-center overflow-hidden shadow-sm"
                 >
                   {profile.photoUrl ? (
-                    <img src={profile.photoUrl} alt={t('profileImageAlt')} className="h-full w-full max-w-full max-h-full object-cover" />
+                    <img src={profile.photoUrl} alt={FR.profileImageAlt} className="h-full w-full max-w-full max-h-full object-cover" />
                   ) : (
                     <UserCheck className="w-5 h-5 text-slate-700" />
                   )}
@@ -3423,8 +3405,8 @@ export default function App() {
                 {showProfileMenu && (
                   <div className="absolute right-0 mt-2 w-52 rounded-3xl bg-white border border-slate-200 shadow-xl text-slate-800 overflow-hidden z-50">
                     <div className="px-4 py-3 border-b border-slate-200">
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{t('profileMenuAccount')}</p>
-                      <p className="font-semibold text-sm mt-2 truncate">{getDisplayName(profile) || t('user')}</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{FR.profileMenuAccount}</p>
+                      <p className="font-semibold text-sm mt-2 truncate">{getDisplayName(profile) || FR.user}</p>
                       <p className="text-xs text-slate-500 truncate">{profile.email}</p>
                     </div>
                     <button
@@ -3432,14 +3414,14 @@ export default function App() {
                       onClick={handleOpenEditProfile}
                       className="w-full px-4 py-3 text-left text-sm hover:bg-slate-100"
                     >
-                      {t('editProfile')}
+                      {FR.editProfile}
                     </button>
                     <button
                       type="button"
                       onClick={handleLogout}
                       className="w-full px-4 py-3 text-left text-sm text-rose-600 hover:bg-slate-100"
                     >
-                      {t('logout')}
+                      {FR.logout}
                     </button>
                   </div>
                 )}
@@ -3453,25 +3435,25 @@ export default function App() {
         <div className="lg:hidden bg-white border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 grid gap-2">
             <button type="button" onClick={() => showSection('hero')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
-              {t('navHero')}
+              {FR.navHero}
             </button>
             <button type="button" onClick={() => showSection('probleme')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
-              {t('navProbleme')}
+              {FR.navProbleme}
             </button>
             <button type="button" onClick={() => showSection('solution')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
-              {t('navSolution')}
+              {FR.navSolution}
             </button>
             <button type="button" onClick={() => showSection('pourquoi')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
-              {t('navPourquoi')}
+              {FR.navPourquoi}
             </button>
             <button type="button" onClick={() => showSection('investment')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
-              {t('navInvestment')}
+              {FR.navInvestment}
             </button>
             <button type="button" onClick={() => showSection('budget')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
-              {t('navBudget')}
+              {FR.navBudget}
             </button>
             <button type="button" onClick={() => showSection('progress')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
-              {t('navProgress')}
+              {FR.navProgress}
             </button>
           </div>
         </div>
@@ -3480,7 +3462,7 @@ export default function App() {
       {paymentReturnMessage && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
           <div className="rounded-3xl border border-brand-green/20 bg-brand-green/5 text-brand-green p-4 text-sm">
-            <strong className="font-semibold">{t('paymentResultTitle')}</strong> {paymentReturnMessage}
+            <strong className="font-semibold">{FR.paymentResultTitle}</strong> {paymentReturnMessage}
             {paymentReturnDetails && <div className="mt-2 text-slate-700">{paymentReturnDetails}</div>}
           </div>
         </div>
@@ -3494,7 +3476,7 @@ export default function App() {
                 <div className="flex items-center gap-4">
                   <div className="h-20 w-20 rounded-full bg-slate-300 overflow-hidden flex items-center justify-center">
                     {profileDraft.photoUrl ? (
-                      <img src={profileDraft.photoUrl} alt={t('profileImagePreviewAlt')} className="h-full w-full max-w-full max-h-full object-cover" />
+                      <img src={profileDraft.photoUrl} alt={FR.profileImagePreviewAlt} className="h-full w-full max-w-full max-h-full object-cover" />
                     ) : (
                       <span className="text-lg font-bold text-slate-700">
                         {[profileDraft.firstName, profileDraft.lastName]
@@ -3506,8 +3488,8 @@ export default function App() {
                     )}
                   </div>
                   <div>
-                    <p className="text-sm uppercase tracking-[0.2em] text-slate-500">{t('profileEditTitle')}</p>
-                    <h2 className="text-xl font-bold text-slate-900">{t('profileEditHeading')}</h2>
+                    <p className="text-sm uppercase tracking-[0.2em] text-slate-500">{FR.profileEditTitle}</p>
+                    <h2 className="text-xl font-bold text-slate-900">{FR.profileEditHeading}</h2>
                   </div>
                 </div>
 
@@ -3724,15 +3706,15 @@ export default function App() {
               <div className="lg:col-span-7 space-y-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-green/10 text-brand-green text-xs font-semibold uppercase tracking-wider rounded-full border border-brand-green/20">
                   <BadgeCheck className="w-3.5 h-3.5" />
-                    <span>{t('heroFeatureLabel')}</span>
+                    <span>{FR.heroFeatureLabel}</span>
                   </div>
 
                 <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-100 tracking-tight leading-[1.12]">
-                  {t('heroHeading')}
+                  {FR.heroHeading}
                 </h1>
 
                 <p className="text-slate-300 text-base md:text-lg leading-relaxed font-light">
-                  “{t('heroDescription')}”
+                  “{FR.heroDescription}”
                 </p>
 
                 <div className="flex flex-wrap gap-3.5 pt-2">
@@ -3741,18 +3723,18 @@ export default function App() {
                     onClick={() => showSection('solution')}
                     className="px-6 py-3.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 text-slate-200 font-bold rounded-xl transition-all text-sm block text-center"
                   >
-                    {t('heroDiscoverButton')}
+                    {FR.heroDiscoverButton}
                   </button>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-800">
                   <div>
                     <span className="block text-2xl font-black text-brand-green">100%</span>
-                    <span className="block text-[11px] text-slate-400 mt-0.5">{t('heroTrustedLabel1')}</span>
+                    <span className="block text-[11px] text-slate-400 mt-0.5">{FR.heroTrustedLabel1}</span>
                   </div>
                   <div>
                     <span className="block text-2xl font-black text-white">SMS + Web</span>
-                    <span className="block text-[11px] text-slate-400 mt-0.5">{t('heroTrustedLabel2')}</span>
+                    <span className="block text-[11px] text-slate-400 mt-0.5">{FR.heroTrustedLabel2}</span>
                   </div>
                 </div>
               </div>
@@ -3763,31 +3745,31 @@ export default function App() {
                   
                   {/* Status Badges */}
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-slate-400 font-mono">{t('heroStatusActive')}</span>
+                    <span className="text-xs text-slate-400 font-mono">{FR.heroStatusActive}</span>
                   </div>
 
                   {/* Large Metrics */}
                   <div className="space-y-1">
-                    <span className="text-[10px] uppercase text-slate-400 tracking-widest font-semibold block">{t('heroCollectedLabel')}</span>
+                    <span className="text-[10px] uppercase text-slate-400 tracking-widest font-semibold block">{FR.heroCollectedLabel}</span>
                     <div className="flex items-baseline gap-2">
                       <span className="text-3xl md:text-4xl font-black text-brand-green tracking-tight font-mono">
                         {formatFCFA(displayedCollectedAmount)}
                       </span>
                     </div>
                     <span className="text-xs text-slate-400 block mt-0.5">
-                      {t('heroGoalLabel')} <strong>{formatFCFA(CAMPAGNE_GOAL)}</strong>
+                      {FR.heroGoalLabel} <strong>{formatFCFA(CAMPAGNE_GOAL)}</strong>
                     </span>
                     <div className="mt-3 rounded-3xl bg-slate-950/70 border border-slate-800 p-3 space-y-2">
                       <div>
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">{t('heroDonatedLabel')}</span>
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">{FR.heroDonatedLabel}</span>
                         <div className="mt-1 text-xl font-bold text-white">{formatFCFA(projectMetrics?.collectedAmount ?? raisedAmount)}</div>
                       </div>
                       <div>
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">{t('heroInvestedLabel')}</span>
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">{FR.heroInvestedLabel}</span>
                         <div className="mt-1 text-xl font-bold text-white">{formatFCFA(displayedInvestedAmount)}</div>
                       </div>
                       <div>
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">{t('heroDonorLabel')}</span>
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">{FR.heroDonorLabel}</span>
                         <div className="mt-1 text-xl font-bold text-white">{projectMetrics?.donorCount ?? totalDonorCount}</div>
                       </div>
                     </div>
@@ -3796,8 +3778,8 @@ export default function App() {
                   {/* Visual Progress Bar */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs font-semibold">
-                      <span className="text-slate-400">{t('heroProgressLabel')}</span>
-                      <span className="text-brand-green font-mono">{percentage} {t('heroFundedLabel')}</span>
+                      <span className="text-slate-400">{FR.heroProgressLabel}</span>
+                      <span className="text-brand-green font-mono">{percentage} {FR.heroFundedLabel}</span>
                     </div>
                     <div className="w-full bg-slate-800 h-3.5 rounded-full overflow-hidden">
                       <motion.div 
@@ -3833,7 +3815,7 @@ export default function App() {
                       }}
                       className="w-full py-3.5 bg-brand-green hover:bg-brand-green/95 text-slate-900 font-extrabold rounded-2xl text-lg transition-all shadow-md block text-center"
                     >
-                      {t('investNowButton')}
+                      {FR.investNowButton}
                     </button>
                     <button
                       type="button"
@@ -3841,7 +3823,7 @@ export default function App() {
                       disabled={!isDonationAvailable}
                       className={`w-full py-3.5 rounded-2xl text-base font-semibold transition-all shadow-md block text-center ${isDonationAvailable ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-70'}`}
                     >
-                      {t('donateButton')}
+                      {FR.donateButton}
                     </button>
                   </div>
 
@@ -4412,7 +4394,7 @@ export default function App() {
             </div>
 
             <p className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-100 max-w-2xl mx-auto leading-relaxed">
-              “{t('heroQuote')}”
+              “{FR.heroQuote}”
             </p>
             <button
               type="button"
@@ -4422,7 +4404,7 @@ export default function App() {
               }}
               className="mt-6 inline-flex items-center justify-center rounded-full bg-brand-green px-6 py-3 text-sm font-bold text-slate-950 hover:bg-brand-green/90 transition-all shadow-xl"
             >
-              {t('investNowButton')}
+              {FR.investNowButton}
             </button>
 
           </div>
@@ -4440,15 +4422,15 @@ export default function App() {
               <span className="text-brand-green">E</span>T
             </div>
             <div>
-              <span className="font-bold text-slate-300 text-sm block leading-none">{t('footerCompanyName')}</span>
-              <span className="text-[9px] text-slate-500 mt-0.5 block">{t('footerCopyright')}</span>
+              <span className="font-bold text-slate-300 text-sm block leading-none">{FR.footerCompanyName}</span>
+              <span className="text-[9px] text-slate-500 mt-0.5 block">{FR.footerCopyright}</span>
             </div>
           </div>
 
           <div className="text-xs text-slate-400 font-mono flex items-center gap-2">
-            <span>{t('footerEncryptedData')}</span>
+            <span>{FR.footerEncryptedData}</span>
             <span>•</span>
-            <span>{t('footerSandbox')}</span>
+            <span>{FR.footerSandbox}</span>
           </div>
 
         </div>
@@ -4459,7 +4441,7 @@ export default function App() {
         target="_blank"
         rel="noreferrer"
         className="fixed right-6 bottom-6 z-50 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-3 shadow-2xl shadow-slate-950/20 text-white text-sm font-semibold transition-transform duration-200 hover:-translate-y-0.5 hover:bg-[#1ebe57]"
-        aria-label={t('openWhatsApp')}
+        aria-label={FR.openWhatsApp}
       >
         <svg
           className="w-4 h-4"
