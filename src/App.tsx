@@ -585,6 +585,7 @@ export default function App() {
   const [showAdminResetPassword, setShowAdminResetPassword] = useState<boolean>(false);
   const [showCreateAccount, setShowCreateAccount] = useState<boolean>(false);
   const [showAdminMenu, setShowAdminMenu] = useState<boolean>(false);
+  const [showUserManagement, setShowUserManagement] = useState<boolean>(false);
   const [showAdminJournal, setShowAdminJournal] = useState<boolean>(false);
   const [showEventLog, setShowEventLog] = useState<boolean>(false);
   const [showUserAccounts, setShowUserAccounts] = useState<boolean>(false);
@@ -2136,19 +2137,6 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => {
-                        setShowCreateAccount(true);
-                        setShowAdminJournal(false);
-                        setShowEventLog(false);
-                        setShowUserAccounts(false);
-                        setShowPaymentSection(false);
-                      }}
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-left text-xs font-semibold text-slate-200 hover:bg-slate-800 transition-all"
-                    >
-                      Créer un utilisateur
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
                         setShowAdminJournal(true);
                         setShowCreateAccount(false);
                         setShowEventLog(false);
@@ -2165,19 +2153,53 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => {
+                        setShowUserManagement((prev) => !prev);
                         setShowCreateAccount(false);
                         setShowAdminJournal(false);
                         setShowEventLog(false);
-                        setShowUserAccounts(true);
+                        setShowUserAccounts(false);
                         setShowPaymentSection(false);
-                        setTimeout(() => {
-                          userAccountsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }, 50);
                       }}
                       className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-left text-xs font-semibold text-slate-200 hover:bg-slate-800 transition-all"
                     >
-                      Comptes utilisateurs
+                      Gestion des utilisateurs
                     </button>
+                    {showUserManagement && (
+                      <div className="pl-4 space-y-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowCreateAccount(false);
+                            setShowAdminJournal(false);
+                            setShowEventLog(false);
+                            setShowUserAccounts(true);
+                            setShowPaymentSection(false);
+                            setTimeout(() => {
+                              userAccountsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }, 50);
+                          }}
+                          className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-left text-xs font-semibold text-slate-200 hover:bg-slate-800 transition-all"
+                        >
+                          Comptes utilisateurs
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowCreateAccount(true);
+                            setShowAdminJournal(false);
+                            setShowEventLog(false);
+                            setShowUserAccounts(false);
+                            setShowPaymentSection(false);
+                            setTimeout(() => {
+                              createAccountRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }, 50);
+                          }}
+                          className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-left text-xs font-semibold text-slate-300 hover:bg-slate-800 transition-all"
+                        >
+                          Créer un utilisateur
+                        </button>
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={() => {
