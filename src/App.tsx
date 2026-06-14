@@ -3091,14 +3091,23 @@ export default function App() {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl p-8">
-          <div className="text-center mb-8">
-            <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-green/10 text-brand-green mb-4">
-              <ShieldCheck className="w-6 h-6" />
-            </span>
-            <h1 className="text-2xl font-extrabold text-white">Se connecter</h1>
-            <p className="text-slate-400 text-sm mt-3">
-              Connectez-vous avec votre email et mot de passe. La création de compte est réservée à l’administrateur.
-            </p>
+          <div className="text-center mb-8 space-y-4">
+            <div className="mx-auto w-full max-w-xs overflow-hidden rounded-3xl border border-slate-700 bg-slate-950 shadow-xl">
+              <img
+                src={classroomStudentsImage}
+                alt="Connexion aux comptes Ecoles Track"
+                className="h-52 w-full object-cover"
+              />
+            </div>
+            <div>
+              <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-green/10 text-brand-green mb-4">
+                <ShieldCheck className="w-6 h-6" />
+              </span>
+              <h1 className="text-2xl font-extrabold text-white">Se connecter</h1>
+              <p className="text-slate-400 text-sm mt-3">
+                Connectez-vous avec votre email et mot de passe. La création de compte est réservée à l’administrateur.
+              </p>
+            </div>
           </div>
 
           {loginError && (
