@@ -588,6 +588,7 @@ export default function App() {
   const [showUserManagement, setShowUserManagement] = useState<boolean>(false);
   const [showAdminJournal, setShowAdminJournal] = useState<boolean>(false);
   const [showEventLog, setShowEventLog] = useState<boolean>(false);
+  const [showSecureMessages, setShowSecureMessages] = useState<boolean>(false);
   const [showUserAccounts, setShowUserAccounts] = useState<boolean>(false);
   const [showPaymentSection, setShowPaymentSection] = useState<boolean>(false);
   const [showPaymentExtensions, setShowPaymentExtensions] = useState<boolean>(false);
@@ -767,6 +768,7 @@ export default function App() {
   const userAccountsSectionRef = useRef<HTMLDivElement | null>(null);
   const activityJournalRef = useRef<HTMLDivElement | null>(null);
   const eventLogRef = useRef<HTMLDivElement | null>(null);
+  const secureMessagesRef = useRef<HTMLDivElement | null>(null);
   const paymentSectionRef = useRef<HTMLDivElement | null>(null);
   const paymentExtensionsRef = useRef<HTMLDivElement | null>(null);
   const [profileDraft, setProfileDraft] = useState<UserProfile>(initialProfile);
@@ -2140,6 +2142,7 @@ export default function App() {
                         setShowAdminJournal(true);
                         setShowCreateAccount(false);
                         setShowEventLog(false);
+                        setShowSecureMessages(false);
                         setShowUserAccounts(false);
                         setShowPaymentSection(false);
                         setTimeout(() => {
@@ -2153,10 +2156,28 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => {
+                        setShowSecureMessages(true);
+                        setShowCreateAccount(false);
+                        setShowAdminJournal(false);
+                        setShowEventLog(false);
+                        setShowUserAccounts(false);
+                        setShowPaymentSection(false);
+                        setTimeout(() => {
+                          secureMessagesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 50);
+                      }}
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-left text-xs font-semibold text-slate-200 hover:bg-slate-800 transition-all"
+                    >
+                      Messages sécurisés reçus
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
                         setShowUserManagement((prev) => !prev);
                         setShowCreateAccount(false);
                         setShowAdminJournal(false);
                         setShowEventLog(false);
+                        setShowSecureMessages(false);
                         setShowUserAccounts(false);
                         setShowPaymentSection(false);
                       }}
@@ -2426,27 +2447,6 @@ export default function App() {
               {showEventLog && (
                 <div ref={eventLogRef} className="rounded-3xl border border-slate-700 bg-slate-950 p-6 mb-6">
                   <h2 className="text-lg font-semibold text-white mb-4">Journal d'événements</h2>
-                  <div className="space-y-3">
-                    {userActivity.length === 0 ? (
-                      <p className="text-sm text-slate-400">Aucun événement enregistré.</p>
-                    ) : (
-                      userActivity.slice(0, 3).map((event, index) => (
-                        <div key={`${event.email}-${index}`} className="rounded-2xl bg-slate-900 p-4">
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-sm text-slate-300">{event.email}</span>
-                            <span className="text-xs text-slate-500">{event.createdAt}</span>
-                          </div>
-                          <p className="mt-2 text-sm text-slate-200">{event.action}</p>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {showAdminJournal && (
-                <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 mb-6">
-                  <h2 className="text-lg font-semibold text-white mb-4">Journal de connexion</h2>
                   <div className="space-y-3">
                     {userActivity.length === 0 ? (
                       <p className="text-sm text-slate-400">Aucun événement enregistré.</p>
@@ -2972,26 +2972,28 @@ export default function App() {
                 }}
               />
 
-              <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 mb-6">
-                <h2 className="text-lg font-semibold text-white mb-4">Messages sécurisés reçus</h2>
-                <div className="space-y-3">
-                  {adminMessages.length === 0 ? (
-                    <p className="text-sm text-slate-400">Aucun message sécurisé reçu pour le moment.</p>
-                  ) : (
-                    adminMessages.map((item, index) => (
-                      <div key={`${item.email}-${index}`} className="rounded-2xl bg-slate-900 p-4">
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <p className="text-sm text-slate-300 font-semibold">{item.name} · {item.email}</p>
-                            <p className="text-xs text-slate-500">{item.createdAt}</p>
+              {showSecureMessages && (
+                <div ref={secureMessagesRef} className="rounded-3xl border border-slate-700 bg-slate-950 p-6 mb-6">
+                  <h2 className="text-lg font-semibold text-white mb-4">Messages sécurisés reçus</h2>
+                  <div className="space-y-3">
+                    {adminMessages.length === 0 ? (
+                      <p className="text-sm text-slate-400">Aucun message sécurisé reçu pour le moment.</p>
+                    ) : (
+                      adminMessages.map((item, index) => (
+                        <div key={`${item.email}-${index}`} className="rounded-2xl bg-slate-900 p-4">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p className="text-sm text-slate-300 font-semibold">{item.name} · {item.email}</p>
+                              <p className="text-xs text-slate-500">{item.createdAt}</p>
+                            </div>
                           </div>
+                          <p className="mt-3 text-sm leading-6 text-slate-200">{item.message}</p>
                         </div>
-                        <p className="mt-3 text-sm leading-6 text-slate-200">{item.message}</p>
-                      </div>
-                    ))
-                  )}
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {showAdminJournal && (
                 <div ref={activityJournalRef} className="rounded-3xl border border-slate-700 bg-slate-950 p-6">
