@@ -150,12 +150,9 @@ export const createUser = async (account: Omit<UserAccount, 'createdAt' | 'mustC
   });
 };
 
-export const resendVerificationEmail = async (email: string): Promise<any> => {
-  return apiFetch('/api/users/resend-verification', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
-  });
+// verification route disabled
+export const resendVerificationEmail = async (_email: string): Promise<any> => {
+  throw new Error('Verification email flow is disabled.');
 };
 
 export const changePassword = async (email: string, newPassword: string): Promise<void> => {

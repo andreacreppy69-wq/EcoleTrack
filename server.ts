@@ -1269,9 +1269,7 @@ app.post('/api/users/login', rateLimit('login', 10, 15 * 60 * 1000), async (req,
       return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
     }
 
-    if (String(user.role || '').toLowerCase() !== 'admin' && !user.verified) {
-      return res.status(403).json({ error: 'Veuillez vérifier votre adresse email avant de vous connecter. Un lien de vérification a été envoyé à votre adresse email.' });
-    }
+    // Remove email verification requirement: all users with valid credentials can log in.
 
     await logActivity(user.email, 'Connexion');
     const token = await createSession(user.email, user.role || 'user');
@@ -1281,63 +1279,6 @@ app.post('/api/users/login', rateLimit('login', 10, 15 * 60 * 1000), async (req,
     return res.status(500).json({ error: error?.message || 'Erreur d\'authentification.' });
   }
 });
-
-app.post('/api/users/resend-verification', rateLimit('resend-verification', 5, 15 * 60 * 1000), async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ error: 'Email requis.' });
-    }
-
-    const normalizedEmail = String(email).trim().toLowerCase();
-    const user = await getUserByEmail(normalizedEmail);
-    if (!user) {
-      return res.status(404).json({ error: 'Aucun compte trouvé avec cet email.' });
-    }
-
-    if (String(user.role || '').toLowerCase() === 'admin') {
-      return res.status(400).json({ error: 'Les administrateurs n’ont pas besoin de vérification d’email.' });
-    }
-
-    if (user.verified) {
-      return res.status(200).json({ success: true, message: 'Email déjà vérifié.' });
-    }
-
-    const token = crypto.randomBytes(24).toString('hex');
-    const now = new Date();
-    const createdAtToken = now.toLocaleString('fr-FR');
-    const expires = new Date(now.getTime() + 1000 * 60 * 60 * 24);
-    const expiresAt = expires.toLocaleString('fr-FR');
-
-    await runWrite('DELETE FROM email_verifications WHERE lower(email) = ?', [normalizedEmail]);
-    await runWrite(
-      `INSERT INTO email_verifications (email, token, createdAt, expiresAt) VALUES (?, ?, ?, ?)`,
-      [normalizedEmail, token, createdAtToken, expiresAt],
-    );
-
-    const emailSent = await emailService.sendVerificationEmail(
-      normalizedEmail,
-      user.firstName || user.name || 'Utilisateur',
-      token
-    );
-
-    if (emailSent) {
-      console.log(`[EMAIL] Verification resend email sent to ${normalizedEmail}`);
-    } else {
-      console.warn(`[EMAIL] Failed to resend verification email to ${normalizedEmail}`);
-    }
-
-    const origin = (req.headers.origin && String(req.headers.origin)) || `http://localhost:${port}`;
-    const verificationLink = `${origin.replace(/\/$/, '')}/api/users/verify?token=${encodeURIComponent(token)}`;
-    await logActivity(normalizedEmail, 'Lien de verification renvoyé');
-
-    return res.json({ success: true, emailSent, verificationLink });
-  } catch (error: any) {
-    console.error('[RESEND VERIFICATION] Error:', error);
-    return res.status(500).json({ error: 'Impossible de renvoyer le lien de vérification.' });
-  }
-});
-
 // Validate token endpoint - returns 200 if token is valid, 401 if invalid/expired
 app.get('/api/validate-token', async (req, res) => {
   const authHeader = req.headers.authorization;
@@ -1461,29 +1402,8 @@ app.post('/api/users/register', rateLimit('register', 5, 15 * 60 * 1000), async 
       throw insertError;
     }
 
-    // create verification token
-    const token = crypto.randomBytes(24).toString('hex');
-    const now = new Date();
-    const createdAtToken = now.toLocaleString('fr-FR');
-    const expires = new Date(now.getTime() + 1000 * 60 * 60 * 24); // 24h
-    const expiresAt = expires.toLocaleString('fr-FR');
-    await runWrite(
-      `INSERT INTO email_verifications (email, token, createdAt, expiresAt) VALUES (?, ?, ?, ?)`,
-      [lowerEmail, token, createdAtToken, expiresAt],
-    );
-
-    // Send verification email via Brevo
-    const emailSent = await emailService.sendVerificationEmail(
-      lowerEmail,
-      resolvedFirstName,
-      token
-    );
-    
-    if (emailSent) {
-      console.log(`[EMAIL] Verification email sent to ${lowerEmail}`);
-    } else {
-      console.warn(`[EMAIL] Failed to send verification email to ${lowerEmail}`);
-    }
+    // mark new user as verified immediately and skip email verification flow
+    const emailSent = false;
 
     // Send admin notification
     const adminNotificationSent = await emailService.sendAdminNotificationNewUser(
@@ -1498,15 +1418,8 @@ app.post('/api/users/register', rateLimit('register', 5, 15 * 60 * 1000), async 
       console.warn(`[EMAIL] Failed to send admin notification for new user ${lowerEmail}`);
     }
 
-    // build verification link (for dev/fallback)
-    const origin = (req.headers.origin && String(req.headers.origin)) || `http://localhost:${port}`;
-    const verificationLink = `${origin.replace(/\/$/, '')}/api/users/verify?token=${encodeURIComponent(token)}`;
-
-    // Log the link for development. In production, users will receive it via email.
-    console.log(`Email verification link for ${lowerEmail}: ${verificationLink}`);
-
-    await logActivity(lowerEmail, 'Inscription publique (verification envoyée)');
-    return res.status(201).json({ success: true, verificationLink, emailSent });
+    await logActivity(lowerEmail, 'Inscription publique');
+    return res.status(201).json({ success: true });
   } catch (error: any) {
     console.error('Erreur lors de l\'inscription publique :', error);
     
@@ -1520,32 +1433,6 @@ app.post('/api/users/register', rateLimit('register', 5, 15 * 60 * 1000), async 
     }
     
     return res.status(500).json({ error: 'Erreur interne lors de l\'inscription.' });
-  }
-});
-
-app.get('/api/users/verify', async (req, res) => {
-  try {
-    const token = String(req.query.token || '').trim();
-    if (!token) return res.status(400).json({ error: 'Token de vérification requis.' });
-
-    const row = await queryOne('SELECT * FROM email_verifications WHERE token = ? LIMIT 1', [token]);
-    if (!row) return res.status(404).json({ error: 'Token invalide ou expiré.' });
-
-    const now = new Date();
-    // expiresAt stored as localized string; we'll be permissive — accept if record exists
-    const email = String(row.email || '').toLowerCase();
-    if (!email) return res.status(400).json({ error: 'Email associé introuvable.' });
-
-    // mark user verified
-    await runWrite('UPDATE users SET verified = 1 WHERE lower(email) = ?', [email]);
-    // remove the token
-    await runWrite('DELETE FROM email_verifications WHERE token = ?', [token]);
-
-    await logActivity(email, 'Email vérifié');
-    return res.json({ success: true, email });
-  } catch (error: any) {
-    console.error('Erreur lors de la vérification email :', error);
-    return res.status(500).json({ error: 'Erreur interne lors de la vérification.' });
   }
 });
 

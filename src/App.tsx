@@ -20,7 +20,6 @@ import {
   loginUser,
   recoverAdminSession,
   registerUser,
-  resendVerificationEmail,
   changePassword,
   resetPassword,
   submitMessage,
@@ -360,8 +359,6 @@ const FR = {
   hidePassword: "Masquer le mot de passe",
   loginSubmit: "Se connecter",
   loginAdminNotice: "Les comptes sont créés uniquement par l’administrateur. Contactez un administrateur si vous n’avez pas encore d’accès.",
-  emailVerificationTitle: "Vérification d'email requise",
-  emailVerificationMessage: "Vous devez vérifier votre adresse email avant de pouvoir vous connecter. Un lien de vérification a été envoyé à",
   sendingLink: "Envoi en cours...",
   resendLink: "Renvoyer le lien",
   backButton: "Retour",
@@ -381,8 +378,7 @@ const FR = {
   passwordPlaceholder: "Votre mot de passe",
   invalidEmailError: "Adresse email invalide.",
   loginFillError: "Veuillez renseigner votre email et votre mot de passe.",
-  verificationLinkSent: "Un nouveau lien de vérification a été envoyé à votre adresse email.",
-  verificationLinkSendError: "Impossible d'envoyer le lien de vérification.",
+  
   languageLabel: "Langue",
   adminJournal: "Journal de connexion",
   adminMessages: "Messages sécurisés reçus",
@@ -809,8 +805,6 @@ export default function App() {
   const [loginError, setLoginError] = useState<string>('');
   const [showLoginPassword, setShowLoginPassword] = useState<boolean>(false);
   const [loginEmailError, setLoginEmailError] = useState<string>('');
-  const [emailNotVerifiedEmail, setEmailNotVerifiedEmail] = useState<string>('');
-  const [resendingVerificationEmail, setResendingVerificationEmail] = useState<boolean>(false);
 
   const getDisplayName = (user: Partial<UserProfile> & { name?: string }) => {
     const firstName = String(user.firstName || '').trim();
@@ -1722,9 +1716,9 @@ export default function App() {
         password: registerPassword.trim() || (isAdminAuthenticated ? '' : registerPassword),
       });
 
-      if (result && result.verificationLink) {
+      if (result && result.success) {
         setRegisterError('');
-        setRegisterSuccess(`Compte créé. Vérifiez l'email à l'adresse suivante: ${result.verificationLink}`);
+        setRegisterSuccess('Compte créé avec succès.');
         setTimeout(() => setRegisterSuccess(''), 20000);
       }
 
@@ -1832,7 +1826,6 @@ export default function App() {
   const handleLoginSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoginError('');
-    setEmailNotVerifiedEmail('');
 
     if (!loginEmail.trim() || !loginPassword.trim()) {
       setLoginError(FR.loginFillError);
@@ -1873,29 +1866,7 @@ export default function App() {
       }
     } catch (error: any) {
       const errorMsg = error?.message || 'Échec de la connexion.';
-      // Check if error is related to email verification
-      if (errorMsg.includes('Veuillez vérifier votre adresse email')) {
-        setEmailNotVerifiedEmail(loginEmail.trim());
-        setLoginError('');
-      } else {
-        setLoginError(errorMsg);
-      }
-    }
-  };
-
-  const handleResendVerificationEmail = async () => {
-    if (!emailNotVerifiedEmail) return;
-
-    setResendingVerificationEmail(true);
-    try {
-      await resendVerificationEmail(emailNotVerifiedEmail);
-      setLoginError('');
-      setEmailNotVerifiedEmail('');
-      alert(FR.verificationLinkSent);
-    } catch (error: any) {
-      setLoginError(FR.verificationLinkSendError + ' ' + (error?.message || ''));
-    } finally {
-      setResendingVerificationEmail(false);
+      setLoginError(errorMsg);
     }
   };
 
@@ -3204,42 +3175,6 @@ export default function App() {
             </div>
           )}
 
-          {emailNotVerifiedEmail && (
-            <div className="mb-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 px-4 py-4 text-sm">
-              <div className="flex items-start gap-3">
-                <ShieldCheck className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-amber-200 font-semibold mb-3">
-                    {FR.emailVerificationTitle}
-                  </p>
-                  <p className="text-amber-100 text-xs mb-4">
-                    {FR.emailVerificationMessage} <strong>{emailNotVerifiedEmail}</strong>.
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={handleResendVerificationEmail}
-                      disabled={resendingVerificationEmail}
-                      className="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-500/50 text-slate-950 font-semibold rounded-lg text-xs transition-colors"
-                    >
-                      {resendingVerificationEmail ? FR.sendingLink : FR.resendLink}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEmailNotVerifiedEmail('');
-                        setLoginEmail('');
-                        setLoginPassword('');
-                      }}
-                      className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg text-xs transition-colors"
-                    >
-                      {FR.backButton}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
