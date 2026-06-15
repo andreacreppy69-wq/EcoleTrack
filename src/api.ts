@@ -8,6 +8,7 @@ export interface UserProfile {
   gender: string;
   photoUrl: string;
   role?: string;
+  verified?: boolean;
   name?: string;
 }
 
@@ -146,6 +147,14 @@ export const createUser = async (account: Omit<UserAccount, 'createdAt' | 'mustC
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(accountWithName),
+  });
+};
+
+export const resendVerificationEmail = async (email: string): Promise<any> => {
+  return apiFetch('/api/users/resend-verification', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
   });
 };
 

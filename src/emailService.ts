@@ -50,7 +50,8 @@ export const sendEmail = async (emailData: EmailData): Promise<boolean> => {
 
 // Email verification template
 export const sendVerificationEmail = async (email: string, firstName: string, verificationToken: string): Promise<boolean> => {
-  const verificationUrl = `${process.env.FRONTEND_URL || 'https://ecolestrack.onrender.com'}/verify?token=${verificationToken}`;
+  const baseUrl = String(process.env.BACKEND_URL || process.env.FRONTEND_URL || 'https://ecolestrack-5481.onrender.com').replace(/\/$/, '');
+  const verificationUrl = `${baseUrl}/api/users/verify?token=${verificationToken}`;
   
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

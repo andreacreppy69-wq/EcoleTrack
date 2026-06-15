@@ -20,6 +20,7 @@ import {
   loginUser,
   recoverAdminSession,
   registerUser,
+  resendVerificationEmail,
   changePassword,
   resetPassword,
   submitMessage,
@@ -682,7 +683,7 @@ export default function App() {
   const [showUserAccounts, setShowUserAccounts] = useState<boolean>(false);
   const [showPaymentSection, setShowPaymentSection] = useState<boolean>(false);
   const [showPaymentExtensions, setShowPaymentExtensions] = useState<boolean>(false);
-  const language: Language = 'fr';
+  const language = 'fr' as Language;
 
   // translation helper removed; use `FR.<key>` directly
 
@@ -1887,18 +1888,7 @@ export default function App() {
 
     setResendingVerificationEmail(true);
     try {
-      // Call the register endpoint with just email to get a new verification token
-      await registerUser({
-        firstName: '',
-        lastName: '',
-        email: emailNotVerifiedEmail,
-        password: '123456',
-        dob: '',
-        profession: '',
-        phoneNumber: '',
-        gender: '',
-        photoUrl: '',
-      });
+      await resendVerificationEmail(emailNotVerifiedEmail);
       setLoginError('');
       setEmailNotVerifiedEmail('');
       alert(FR.verificationLinkSent);

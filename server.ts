@@ -55,6 +55,7 @@ interface UserRecord {
   gender: string;
   photoUrl: string;
   role?: string;
+  verified: boolean;
   password: string;
   createdAt: string;
   mustChangePassword: boolean;
@@ -395,11 +396,14 @@ const ensureDefaultAdmin = async () => {
   if (!existing) {
     const hashed = bcrypt.hashSync(DEFAULT_ADMIN_PASSWORD, 10);
     await runWrite(
-      `INSERT INTO users (name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ['Admin Root', DEFAULT_ADMIN_EMAIL, '', 'Administrator', '', '', 'admin', '', hashed, new Date().toLocaleString('fr-FR'), 0],
+      `INSERT INTO users (name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword, verified)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['Admin Root', DEFAULT_ADMIN_EMAIL, '', 'Administrator', '', '', 'admin', '', hashed, new Date().toLocaleString('fr-FR'), 0, 1],
     );
     console.log(`Default admin created: ${DEFAULT_ADMIN_EMAIL}`);
+  } else if (!existing.verified) {
+    await runWrite('UPDATE users SET verified = 1 WHERE lower(email) = ?', [DEFAULT_ADMIN_EMAIL]);
+    console.log(`Default admin email verified: ${DEFAULT_ADMIN_EMAIL}`);
   }
 };
 // call ensureDefaultAdmin() after helper functions are defined
@@ -622,6 +626,7 @@ const sanitizeUser = (user: UserRecord) => ({
   gender: user.gender || '',
   role: user.role || 'user',
   photoUrl: user.photoUrl || '',
+  verified: Boolean(user.verified),
   createdAt: user.createdAt,
   mustChangePassword: user.mustChangePassword,
 });
@@ -637,6 +642,7 @@ const rowsToUser = (row: any): UserRecord => ({
   gender: row.gender,
   role: row.role || 'user',
   photoUrl: row.photoUrl || row.photourl || '',
+  verified: Boolean(row.verified || row.verified === 1),
   password: row.password,
   createdAt: row.createdAt || row.createdat,
   mustChangePassword: Boolean(row.mustChangePassword || row.mustchangepassword),
@@ -1254,12 +1260,72 @@ app.post('/api/users/login', rateLimit('login', 10, 15 * 60 * 1000), async (req,
       return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
     }
 
+    if (String(user.role || '').toLowerCase() !== 'admin' && !user.verified) {
+      return res.status(403).json({ error: 'Veuillez vérifier votre adresse email avant de vous connecter. Un lien de vérification a été envoyé à votre adresse email.' });
+    }
+
     await logActivity(user.email, 'Connexion');
     const token = await createSession(user.email, user.role || 'user');
     return res.json({ user: sanitizeUser(user), mustChangePassword: user.mustChangePassword, token });
   } catch (error: any) {
     console.error('[LOGIN] Erreur lors de la connexion:', error);
     return res.status(500).json({ error: error?.message || 'Erreur d\'authentification.' });
+  }
+});
+
+app.post('/api/users/resend-verification', rateLimit('resend-verification', 5, 15 * 60 * 1000), async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email requis.' });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const user = await getUserByEmail(normalizedEmail);
+    if (!user) {
+      return res.status(404).json({ error: 'Aucun compte trouvé avec cet email.' });
+    }
+
+    if (String(user.role || '').toLowerCase() === 'admin') {
+      return res.status(400).json({ error: 'Les administrateurs n’ont pas besoin de vérification d’email.' });
+    }
+
+    if (user.verified) {
+      return res.status(200).json({ success: true, message: 'Email déjà vérifié.' });
+    }
+
+    const token = crypto.randomBytes(24).toString('hex');
+    const now = new Date();
+    const createdAtToken = now.toLocaleString('fr-FR');
+    const expires = new Date(now.getTime() + 1000 * 60 * 60 * 24);
+    const expiresAt = expires.toLocaleString('fr-FR');
+
+    await runWrite('DELETE FROM email_verifications WHERE lower(email) = ?', [normalizedEmail]);
+    await runWrite(
+      `INSERT INTO email_verifications (email, token, createdAt, expiresAt) VALUES (?, ?, ?, ?)`,
+      [normalizedEmail, token, createdAtToken, expiresAt],
+    );
+
+    const emailSent = await emailService.sendVerificationEmail(
+      normalizedEmail,
+      user.firstName || user.name || 'Utilisateur',
+      token
+    );
+
+    if (emailSent) {
+      console.log(`[EMAIL] Verification resend email sent to ${normalizedEmail}`);
+    } else {
+      console.warn(`[EMAIL] Failed to resend verification email to ${normalizedEmail}`);
+    }
+
+    const origin = (req.headers.origin && String(req.headers.origin)) || `http://localhost:${port}`;
+    const verificationLink = `${origin.replace(/\/$/, '')}/api/users/verify?token=${encodeURIComponent(token)}`;
+    await logActivity(normalizedEmail, 'Lien de verification renvoyé');
+
+    return res.json({ success: true, emailSent, verificationLink });
+  } catch (error: any) {
+    console.error('[RESEND VERIFICATION] Error:', error);
+    return res.status(500).json({ error: 'Impossible de renvoyer le lien de vérification.' });
   }
 });
 
@@ -1362,8 +1428,8 @@ app.post('/api/users/register', rateLimit('register', 5, 15 * 60 * 1000), async 
     // insert user with mustChangePassword=1 for new accounts
     try {
       await runWrite(
-        `INSERT INTO users (firstName, lastName, name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO users (firstName, lastName, name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword, verified)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           resolvedFirstName,
           resolvedLastName,
@@ -1378,6 +1444,7 @@ app.post('/api/users/register', rateLimit('register', 5, 15 * 60 * 1000), async 
           hashedPassword,
           createdAt,
           1,
+          0,
         ],
       );
     } catch (insertError) {
@@ -1513,8 +1580,8 @@ app.post('/api/users/create', requireAdmin, async (req, res) => {
   const finalRole = allowedRoles.includes(normalizedRole) ? normalizedRole : 'user';
 
   await runWrite(
-    `INSERT INTO users (firstName, lastName, name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO users (firstName, lastName, name, email, dob, profession, phoneNumber, gender, role, photoUrl, password, createdAt, mustChangePassword, verified)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       resolvedFirstName,
       resolvedLastName,
@@ -1529,6 +1596,7 @@ app.post('/api/users/create', requireAdmin, async (req, res) => {
       hashedPassword,
       createdAt,
       mustChange ? 1 : 0,
+      1,
     ],
   );
   // log activity under the admin who made the request (if available)
