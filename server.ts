@@ -115,6 +115,15 @@ app.options('/api/*', cors(corsOptions));
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
+// JSON parse error handler -> return JSON instead of HTML error page
+app.use((err: any, req: any, res: any, next: any) => {
+  if (err && (err instanceof SyntaxError || err.type === 'entity.parse.failed')) {
+    console.warn('[PARSE] JSON parse error:', err.message || err);
+    return res.status(400).json({ error: 'Corps JSON invalide.' });
+  }
+  return next(err);
+});
+
 // Request logger for debugging API calls (method, path, origin)
 app.use((req, res, next) => {
   try {
