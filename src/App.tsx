@@ -2340,12 +2340,12 @@ export default function App() {
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-6">
                 <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 min-w-0">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Montant total du don</p>
-                  <p className="text-3xl font-bold mt-4 text-brand-green break-words">{formatFCFA(totalDonationAmount)}</p>
-                </div>
-                <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 min-w-0">
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Montant total investi</p>
                   <p className="text-3xl font-bold mt-4 text-brand-green break-words">{formatFCFA(totalInvestedAmount)}</p>
+                </div>
+                <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 min-w-0">
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Montant total du don</p>
+                  <p className="text-3xl font-bold mt-4 text-brand-green break-words">{formatFCFA(totalDonationAmount)}</p>
                 </div>
                 <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 min-w-0">
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Nombre de donateurs</p>
