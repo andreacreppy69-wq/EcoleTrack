@@ -339,7 +339,7 @@ const FR = {
   heroCollectedLabel: "Collecté",
   heroGoalLabel: "sur un objectif total estimé de",
   heroDonatedLabel: "Total de don collecté",
-  heroInvestedLabel: "Montant total investi",
+  heroInvestedLabel: "Total investi",
   heroDonorLabel: "Nombre de personnes ayant fait un don",
   heroProgressLabel: "Progression globale",
   heroFundedLabel: "% financé",
