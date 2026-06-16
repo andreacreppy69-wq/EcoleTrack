@@ -106,13 +106,15 @@ const FedaPayAdminDashboard = () => {
           <h2 className="text-xl font-semibold text-white">Suivi des paiements FedaPay</h2>
           <p className="text-sm text-slate-400">Consultez les transactions enregistrées et leur statut.</p>
         </div>
-        <button
-          type="button"
-          onClick={loadTransactions}
-          className="inline-flex items-center justify-center rounded-2xl bg-brand-green px-4 py-3 text-sm font-bold text-slate-950 hover:bg-brand-green/90 transition-all"
-        >
-          Rafraîchir
-        </button>
+        <div>
+          <button
+            type="button"
+            onClick={loadTransactions}
+            className="inline-flex items-center justify-center rounded-2xl bg-brand-green px-4 py-3 text-sm font-bold text-slate-950 hover:bg-brand-green/90 transition-all"
+          >
+            Rafraîchir
+          </button>
+        </div>
       </div>
 
       {loading && (

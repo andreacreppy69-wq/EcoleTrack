@@ -3620,7 +3620,7 @@ export default function App() {
           <div className="absolute bottom-10 right-10 w-[320px] h-[320px] bg-brand-green/10 rounded-full blur-2xl pointer-events-none" />
 
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-stretch">
               
               {/* Left Column: Vision Statement */}
               <div className="lg:col-span-7 space-y-6">
@@ -3772,11 +3772,11 @@ export default function App() {
                 <div className="absolute -inset-4 bg-brand-blue/5 rounded-3xl -rotate-2 transform group-hover:rotate-0 transition-transform duration-300 pointer-events-none" />
                 
                 {/* Photo render */}
-                <div className="relative rounded-2xl overflow-hidden shadow-xl border border-slate-100">
+                <div className="relative rounded-2xl overflow-hidden shadow-xl border border-slate-100 h-auto flex items-center justify-center bg-slate-900">
                   <img 
                     src={classroomStudentsImage}
                     alt="Photo d'élèves africains attentifs et joyeux en classe"
-                    className="w-full h-[320px] md:h-[400px] object-cover hover:scale-101 transition-transform duration-300"
+                    className="w-full h-auto max-h-full object-contain transition-transform duration-300"
                     referrerPolicy="no-referrer"
                   />
                   
