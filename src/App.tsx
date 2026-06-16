@@ -3691,8 +3691,8 @@ export default function App() {
                         </div>
                       </div>
                       <div className="flex justify-between items-end">
-                        <div>
-                          <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">{FR.heroDonatedLabel}</span>
+                        <div className="text-center">
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold whitespace-pre-line">Total de don{'\n'}collecté</span>
                           <div className="mt-1 text-xl font-bold text-white">{formatFCFA(projectMetrics?.collectedAmount ?? raisedAmount)}</div>
                         </div>
                         <div className="text-center">
@@ -3721,15 +3721,9 @@ export default function App() {
 
                   {/* Sub-campaign stats Grid */}
                   <div className="py-1.5 border-y border-slate-800/80">
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <span className="block text-xl font-bold text-slate-100 font-mono">{totalInvestorCount}</span>
-                        <span className="block text-[11px] text-slate-400 mt-0.5">Personnes ayant investi</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="block text-2xl md:text-3xl font-black text-yellow-300 font-mono">{formatFCFA(remainingAmount)}</span>
-                        <span className="block text-[11px] text-slate-400 mt-0.5">Restant à collecter</span>
-                      </div>
+                    <div className="text-center">
+                      <span className="block text-3xl md:text-4xl font-black text-yellow-300 font-mono">{formatFCFA(CAMPAGNE_GOAL)}</span>
+                      <span className="block text-[11px] text-slate-400 mt-0.5">Objectif total</span>
                     </div>
                   </div>
 
