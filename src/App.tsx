@@ -338,7 +338,7 @@ const FR = {
   heroStatusActive: "Simulateur Actif",
   heroCollectedLabel: "Collecté",
   heroGoalLabel: "sur un objectif total estimé de",
-  heroDonatedLabel: Total de don collecté",
+  heroDonatedLabel: "Total de don collecté",
   heroInvestedLabel: "Montant total investi",
   heroDonorLabel: "Nombre de personnes ayant fait un don",
   heroProgressLabel: "Progression globale",
