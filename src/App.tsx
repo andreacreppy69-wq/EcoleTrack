@@ -3681,12 +3681,12 @@ export default function App() {
                     </span>
                     <div className="mt-3 rounded-3xl bg-slate-950/70 border border-slate-800 p-3 space-y-2">
                       <div>
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">{FR.heroDonatedLabel}</span>
-                        <div className="mt-1 text-xl font-bold text-white">{formatFCFA(projectMetrics?.collectedAmount ?? raisedAmount)}</div>
-                      </div>
-                      <div>
                         <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">{FR.heroInvestedLabel}</span>
                         <div className="mt-1 text-xl font-bold text-white">{formatFCFA(displayedInvestedAmount)}</div>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">{FR.heroDonatedLabel}</span>
+                        <div className="mt-1 text-xl font-bold text-white">{formatFCFA(projectMetrics?.collectedAmount ?? raisedAmount)}</div>
                       </div>
                       <div>
                         <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">{FR.heroDonorLabel}</span>
