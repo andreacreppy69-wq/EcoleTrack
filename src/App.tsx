@@ -3680,17 +3680,25 @@ export default function App() {
                       {FR.heroGoalLabel} <strong>{formatFCFA(CAMPAGNE_GOAL)}</strong>
                     </span>
                     <div className="mt-3 rounded-3xl bg-slate-950/70 border border-slate-800 p-3 space-y-2">
-                      <div>
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">{FR.heroInvestedLabel}</span>
-                        <div className="mt-1 text-xl font-bold text-white">{formatFCFA(displayedInvestedAmount)}</div>
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-semibold whitespace-pre-line">Total{'\n'}investi</span>
+                          <div className="mt-1 text-xl font-bold text-white">{formatFCFA(displayedInvestedAmount)}</div>
+                        </div>
+                        <div className="text-center">
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-semibold whitespace-pre-line">Nombre de personnes{'\n'}ayant investi</span>
+                          <div className="mt-1 text-xl font-bold text-white">{totalInvestorCount}</div>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">{FR.heroDonatedLabel}</span>
-                        <div className="mt-1 text-xl font-bold text-white">{formatFCFA(projectMetrics?.collectedAmount ?? raisedAmount)}</div>
-                      </div>
-                      <div>
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">{FR.heroDonorLabel}</span>
-                        <div className="mt-1 text-xl font-bold text-white">{projectMetrics?.donorCount ?? totalDonorCount}</div>
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">{FR.heroDonatedLabel}</span>
+                          <div className="mt-1 text-xl font-bold text-white">{formatFCFA(projectMetrics?.collectedAmount ?? raisedAmount)}</div>
+                        </div>
+                        <div className="text-center">
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-semibold whitespace-pre-line">Nombre de personnes{'\n'}ayant fait un don</span>
+                          <div className="mt-1 text-xl font-bold text-white">{projectMetrics?.donorCount ?? totalDonorCount}</div>
+                        </div>
                       </div>
                     </div>
                   </div>
