@@ -1558,7 +1558,7 @@ export default function App() {
   const backersCount = 12 + (backersList.length - INITIAL_RECENT_BACKERS.length);
   const totalInvestorCount = projectMetrics?.investorCount ?? (fedapayInvestorCount !== null ? fedapayInvestorCount : 0);
   const displayedInvestedAmount = projectMetrics?.investedAmount ?? raisedAmount;
-  const displayedDonatedAmount = projectMetrics?.collectedAmount ?? 0;
+  const displayedDonatedAmount = displayedInvestedAmount; // Aligned with invested amount
   const displayedDonationCount = projectMetrics?.donationCount ?? 0;
   const totalInvestedAmount = displayedInvestedAmount;
   const rawPercentage = (displayedInvestedAmount / CAMPAGNE_GOAL) * 100;
