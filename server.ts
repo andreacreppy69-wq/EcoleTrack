@@ -1244,6 +1244,12 @@ app.post('/api/fedapay/callback', async (req, res) => {
   }
 });
 
+// FedaPay webhook validation endpoint (GET requests)
+app.get('/api/fedapay/webhook', async (req, res) => {
+  console.log('[FEDAPAY] Webhook validation request received (GET)');
+  return res.status(200).json({ success: true, message: 'Webhook endpoint is reachable' });
+});
+
 // Webhook handler for FedaPay (for server-to-server notifications)
 app.post('/api/fedapay/webhook', async (req, res) => {
   try {
