@@ -1242,17 +1242,29 @@ app.get('/api/project-metrics', async (req, res) => {
     const metricCollectedAmount = Number(normalizedMetricsRow.collectedamount ?? 0);
     const metricInvestedAmount = Number(normalizedMetricsRow.investedamount ?? 0);
 
-    const approvedRow = await queryOne(
-      'SELECT SUM(amount) AS approvedCollected FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
-      ['', 0, 'completed', 'success', 'paid', 'authorized', 'captured', 'approved'],
+    // Calculate invested amount (exclude donations)
+    const investedRow = await queryOne(
+      'SELECT SUM(amount) AS investedTotal FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND (lower(trim(purpose)) != ? OR purpose IS NULL) AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
+      ['', 0, 'donation', 'completed', 'success', 'paid', 'authorized', 'captured', 'approved'],
     );
-    const normalizedApprovedRow = normalizeRowKeys(approvedRow);
-    const approvedCollectedAmount = Number(normalizedApprovedRow.approvedcollected ?? 0);
+    const normalizedInvestedRow = normalizeRowKeys(investedRow);
+    const investedTotal = Number(normalizedInvestedRow.investedtotal ?? 0);
 
-    const collectedAmount = approvedCollectedAmount > 0 ? approvedCollectedAmount : metricCollectedAmount;
-    const investedAmount = approvedCollectedAmount > 0 ? approvedCollectedAmount : metricInvestedAmount;
-    if (approvedCollectedAmount !== 0 && approvedCollectedAmount !== metricCollectedAmount) {
-      console.warn('[PROJECT METRICS] Metrics mismatch: project_metrics.collectedAmount=%s but approved tx sum=%s', metricCollectedAmount, approvedCollectedAmount);
+    // Calculate collected amount (donations only)
+    const collectedRow = await queryOne(
+      'SELECT SUM(amount) AS donationTotal FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(purpose)) = ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
+      ['', 0, 'donation', 'completed', 'success', 'paid', 'authorized', 'captured', 'approved'],
+    );
+    const normalizedCollectedRow = normalizeRowKeys(collectedRow);
+    const donationTotal = Number(normalizedCollectedRow.donationtotal ?? 0);
+
+    const collectedAmount = donationTotal > 0 ? donationTotal : metricCollectedAmount;
+    const investedAmount = investedTotal > 0 ? investedTotal : metricInvestedAmount;
+    if (investedTotal !== 0 && investedTotal !== metricInvestedAmount) {
+      console.warn('[PROJECT METRICS] Metrics mismatch: project_metrics.investedAmount=%s but approved investment tx sum=%s', metricInvestedAmount, investedTotal);
+    }
+    if (donationTotal !== 0 && donationTotal !== metricCollectedAmount) {
+      console.warn('[PROJECT METRICS] Metrics mismatch: project_metrics.collectedAmount=%s but approved donation tx sum=%s', metricCollectedAmount, donationTotal);
     }
 
     let investorCount = 0;
