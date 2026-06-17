@@ -313,7 +313,6 @@ const FR = {
   navBudget: "Financement",
   navProgress: "État d'avancement",
   investButton: "J'investis",
-  donateButton: "Faire un don",
   activeCampaignAlert: "Campagne Active : Suivi Scolaire en temps réel.",
   campaignGoalLabel: "Financement visé :",
   launchPlannedLabel: "Lancement prévu : Troisième trimestre 2027",
@@ -734,7 +733,6 @@ export default function App() {
   const [fedaPayError, setFedaPayError] = useState<string>('');
   const [fedaPayRedirectUrl, setFedaPayRedirectUrl] = useState<string>('');
   const [fedaPaySuccess, setFedaPaySuccess] = useState<string>('');
-  const isDonationAvailable = false;
   const [showInvestmentForm, setShowInvestmentForm] = useState<boolean>(false);
 
   const [passwordChangeEmail, setPasswordChangeEmail] = useState<string>('');
@@ -1124,61 +1122,6 @@ export default function App() {
       setFedaPayResponse(JSON.stringify(result, null, 2));
     } catch (error: any) {
       setFedaPayError(error?.message || 'Erreur lors de l’initiation du paiement FedaPay.');
-    } finally {
-      setFedaPayProcessing(false);
-    }
-  };
-
-  const handleDonateClick = async () => {
-    if (!isDonationAvailable) {
-      setFedaPayError('Le don est temporairement désactivé.');
-      setFedaPayResponse('');
-      setFedaPayRedirectUrl('');
-      setFedaPaySuccess('');
-      setFedaPayProcessing(false);
-      return;
-    }
-
-    setFedaPayError('');
-    setFedaPayResponse('');
-    setFedaPayRedirectUrl('');
-    setFedaPaySuccess('');
-    setFedaPayProcessing(true);
-
-    try {
-      const result = await initiateFedaPayTransaction({
-        amount: 1000,
-        phoneNumber: profile.phoneNumber || currentUserEmail || '+228 91551295',
-        currency: 'XOF',
-        description: 'Don volontaire pour le projet Ecole Track Afrique',
-        customerName: profile.name || currentUserEmail || 'Donateur',
-        customerEmail: profile.email || currentUserEmail || 'donateur@ecoletrack.africa',
-        callbackUrl: getFedaPayWebhookUrl(),
-        returnUrl: 'https://ecolestrack.vercel.app/payment-result',
-        failureUrl: 'https://ecolestrack.vercel.app/paiement/echec',
-        purpose: 'donation',
-        userEmail: profile.email || currentUserEmail || 'donateur@ecoletrack.africa',
-        projectId: 'default_project',
-      });
-
-      if (result.success || result.transaction) {
-        const redirectUrl = result.link || result.redirectUrl || result.redirect_url;
-        if (redirectUrl) {
-          setFedaPaySuccess(`Transaction FedaPay initiée! ID: ${result.transaction?.id || 'N/A'}`);
-          setFedaPayRedirectUrl(redirectUrl);
-          setTimeout(() => window.location.assign(redirectUrl), 2000);
-          return;
-        }
-      }
-
-      if (result.error) {
-        setFedaPayError(result.error);
-        return;
-      }
-
-      setFedaPayResponse(JSON.stringify(result, null, 2));
-    } catch (error: any) {
-      setFedaPayError(error?.message || 'Erreur lors de l’initiation du don FedaPay.');
     } finally {
       setFedaPayProcessing(false);
     }
@@ -3295,14 +3238,6 @@ export default function App() {
                 <span>{FR.investButton}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
-              <button
-                type="button"
-                onClick={handleDonateClick}
-                disabled={!isDonationAvailable}
-                className={`px-3 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-xs ${isDonationAvailable ? 'bg-rose-600 hover:bg-rose-700 text-white hover:shadow-md' : 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-70'}`}
-              >
-                {FR.donateButton}
-              </button>
               {/* WhatsApp header button removed; kept floating admin chat as WhatsApp */}
             </div>
 
@@ -3738,14 +3673,6 @@ export default function App() {
                       className="w-full py-3.5 bg-brand-green hover:bg-brand-green/95 text-slate-900 font-extrabold rounded-2xl text-lg transition-all shadow-md block text-center"
                     >
                       {FR.investNowButton}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleDonateClick}
-                      disabled={!isDonationAvailable}
-                      className={`w-full py-3.5 rounded-2xl text-base font-semibold transition-all shadow-md block text-center ${isDonationAvailable ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-70'}`}
-                    >
-                      {FR.donateButton}
                     </button>
                   </div>
 
