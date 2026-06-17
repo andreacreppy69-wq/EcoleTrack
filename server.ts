@@ -1204,15 +1204,15 @@ app.get('/api/fedapay/summary', async (req, res) => {
     const investorCount = Number(normalizedApprovedRow.investorcount ?? 0);
     const approvedTotalAmount = Number(normalizedApprovedRow.totalamount ?? 0);
 
-    const metricsRow = await queryOne('SELECT collectedAmount FROM project_metrics WHERE id = ?', ['default_project']);
+    const metricsRow = await queryOne('SELECT investedAmount FROM project_metrics WHERE id = ?', ['default_project']);
     const normalizedMetricsRow = normalizeRowKeys(metricsRow);
-    const metricTotalAmount = Number(normalizedMetricsRow.collectedamount ?? 0);
+    const metricInvestedAmount = Number(normalizedMetricsRow.investedamount ?? 0);
 
-    const totalAmount = approvedTotalAmount > 0 ? approvedTotalAmount : metricTotalAmount;
-    if (metricTotalAmount !== 0 && metricTotalAmount !== approvedTotalAmount) {
-      console.warn('[FEDAPAY] Metrics mismatch: project_metrics.collectedAmount=%s but approved tx sum=%s', metricTotalAmount, approvedTotalAmount);
+    const totalAmount = metricInvestedAmount > 0 ? metricInvestedAmount : approvedTotalAmount;
+    if (metricInvestedAmount !== 0 && metricInvestedAmount !== approvedTotalAmount) {
+      console.warn('[FEDAPAY] Metrics mismatch: project_metrics.investedAmount=%s but approved tx sum=%s', metricInvestedAmount, approvedTotalAmount);
     }
-    console.log('[FEDAPAY] Summary result:', { investorCount, totalAmount, approvedTotalAmount, metricTotalAmount });
+    console.log('[FEDAPAY] Summary result:', { investorCount, totalAmount, approvedTotalAmount, metricInvestedAmount });
     return res.json({ investorCount, totalAmount });
   } catch (error: any) {
     console.error('[FEDAPAY] Failed to compute summary:', error);
