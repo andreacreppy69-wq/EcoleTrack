@@ -250,6 +250,7 @@ export interface ProjectMetricsResponse {
   collectedAmount: number;
   investedAmount: number;
   investorCount: number;
+  donationCount: number;
 }
 
 export const getFedaPaySummary = async (): Promise<{ investorCount: number; totalAmount: number; investedAmount: number }> => {
@@ -267,6 +268,7 @@ export const getProjectMetrics = async (): Promise<ProjectMetricsResponse> => {
     collectedAmount: Number(data.collectedAmount || 0),
     investedAmount: Number(data.investedAmount || 0),
     investorCount: Number(data.investorCount || 0),
+    donationCount: Number(data.donationCount || 0),
   };
 };
 

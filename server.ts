@@ -1187,6 +1187,20 @@ app.get('/api/fedapay/investor-count', async (req, res) => {
   }
 });
 
+app.get('/api/donation-count', async (req, res) => {
+  try {
+    const row = await queryOne(
+      'SELECT COUNT(DISTINCT lower(trim(email))) AS count FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(purpose)) = ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
+      ['', 0, 'donation', 'completed', 'success', 'paid', 'authorized', 'captured', 'approved'],
+    );
+    const donationCount = Number(row?.count ?? 0);
+    return res.json({ donationCount });
+  } catch (error: any) {
+    console.error('[DONATION] Failed to count donors:', error);
+    return res.status(500).json({ success: false, error: 'Impossible de compter les donateurs.' });
+  }
+});
+
 app.get('/api/fedapay/summary', async (req, res) => {
   try {
     // Debug: Check all transaction statuses
@@ -1252,7 +1266,14 @@ app.get('/api/project-metrics', async (req, res) => {
       investorCount = Number(fallbackRow?.investorcount ?? fallbackRow?.investorCount ?? 0);
     }
 
-    return res.json({ collectedAmount, investedAmount, investorCount });
+    let donationCount = 0;
+    const donationRow = await queryOne(
+      'SELECT COUNT(DISTINCT lower(trim(email))) AS donationCount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(purpose)) = ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
+      ['', 0, 'donation', 'completed', 'success', 'paid', 'authorized', 'captured', 'approved'],
+    );
+    donationCount = Number(donationRow?.donationcount ?? donationRow?.donationCount ?? 0);
+
+    return res.json({ collectedAmount, investedAmount, investorCount, donationCount });
   } catch (error: any) {
     console.error('[PROJECT METRICS] Failed to load project metrics:', error);
     return res.status(500).json({ success: false, error: 'Impossible de charger les métriques de projet.' });
