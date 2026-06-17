@@ -1182,7 +1182,7 @@ app.get('/api/fedapay/summary', async (req, res) => {
   try {
     // Debug: Check all transaction statuses
     const allTx = await queryAll(
-      'SELECT status, COUNT(*) as cnt, SUM(amount) as total FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? GROUP BY lower(trim(status))',
+      'SELECT lower(trim(status)) AS status, COUNT(*) AS cnt, SUM(amount) AS total FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? GROUP BY lower(trim(status))',
       ['', 0],
     );
     console.log('[FEDAPAY] Transaction status breakdown:', JSON.stringify(allTx, null, 2));
