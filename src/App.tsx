@@ -335,11 +335,11 @@ const FR = {
   heroDescription: "Un projet innovant qui améliore la communication entre écoles et parents, réduit l’échec scolaire et garantit un suivi académique efficace.",
   heroDiscoverButton: "Découvrir la solution",
   heroStatusActive: "Simulateur Actif",
-  heroCollectedLabel: "Collecté",
+  heroCollectedLabel: "Investi",
   heroGoalLabel: "sur un objectif total estimé de",
-  heroDonatedLabel: "Total de don collecté",
+  heroDonatedLabel: "Total investi",
   heroInvestedLabel: "Total investi",
-  heroDonorLabel: "Nombre de personnes ayant fait un don",
+  heroDonorLabel: "Nombre d'investisseurs",
   heroProgressLabel: "Progression globale",
   heroFundedLabel: "% financé",
   heroTrustedLabel1: "Transparent & Audit prévu",
@@ -618,11 +618,10 @@ const getDialCodeFlag = (code: string) => {
 export default function App() {
   // Campaign State
   const CAMPAGNE_GOAL = FUNDING_PROGRESS.totalGoal; // 30,000,000 FCFA
-  const DONATION_TOTAL = 0;
   const [raisedAmount, setRaisedAmount] = useState<number>(0);
   const [backersList, setBackersList] = useState<Backer[]>(INITIAL_RECENT_BACKERS);
   const [fedapayInvestorCount, setFedaPayInvestorCount] = useState<number | null>(null);
-  const [projectMetrics, setProjectMetrics] = useState<{ collectedAmount: number; investedAmount: number; donorCount: number } | null>(null);
+  const [projectMetrics, setProjectMetrics] = useState<{ investedAmount: number; investorCount: number } | null>(null);
   const [hasContributed, setHasContributed] = useState<boolean>(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -1152,16 +1151,9 @@ export default function App() {
         callbackUrl: getFedaPayWebhookUrl(),
         returnUrl: 'https://ecolestrack.vercel.app/payment-result',
         failureUrl: 'https://ecolestrack.vercel.app/paiement/echec',
-      });
-
-      // Check for success
-      if (result.success || result.transaction) {
-        setFedaPaySuccess(`Transaction initiée avec succès! ID: ${result.transaction?.id}`);
-        
-        const redirectUrl = result.link || result.redirectUrl || result.redirect_url;
-        if (redirectUrl) {
-          setFedaPayRedirectUrl(redirectUrl);
-          // Redirect après 2 secondes
+      purpose: 'investment',
+      userEmail: payloadData.customerEmail,
+      projectId: 'default_project',
           setTimeout(() => {
             window.location.assign(redirectUrl);
           }, 2000);
@@ -1184,10 +1176,9 @@ export default function App() {
   };
 
   const handleAdminInvestmentLink = () => {
-    const investedAmount = raisedAmount - DONATION_TOTAL;
+    const investedAmount = displayedInvestedAmount;
     setAdminInvestmentLinkMessage(
-      `Montant investi calculé : ${formatFCFA(investedAmount)}. ` +
-      `(${formatFCFA(raisedAmount)} - ${formatFCFA(DONATION_TOTAL)} = ${formatFCFA(investedAmount)})`
+      `Montant investi enregistré : ${formatFCFA(investedAmount)}.`
     );
   };
 
@@ -1425,7 +1416,7 @@ export default function App() {
         const metrics = await getProjectMetrics();
         setProjectMetrics(metrics);
       } catch (error) {
-        console.warn('Impossible de charger les métriques de don :', error);
+        console.warn('Impossible de charger les métriques de projet :', error);
       }
     };
 
@@ -1518,16 +1509,12 @@ export default function App() {
 
   // Compute stats
   const backersCount = 12 + (backersList.length - INITIAL_RECENT_BACKERS.length);
-  const totalDonorCount = projectMetrics?.donorCount ?? (fedapayInvestorCount !== null ? fedapayInvestorCount : 0);
-  const totalInvestorCount = fedapayInvestorCount !== null ? fedapayInvestorCount : 0;
-  const displayedCollectedAmount = projectMetrics?.collectedAmount ?? 0;
-  const totalDonationAmount = displayedCollectedAmount;
+  const totalInvestorCount = projectMetrics?.investorCount ?? (fedapayInvestorCount !== null ? fedapayInvestorCount : 0);
   const displayedInvestedAmount = projectMetrics?.investedAmount ?? raisedAmount;
   const totalInvestedAmount = displayedInvestedAmount;
-  const totalMobilizedAmount = totalDonationAmount + displayedInvestedAmount;
-  const rawPercentage = (displayedCollectedAmount / CAMPAGNE_GOAL) * 100;
+  const rawPercentage = (displayedInvestedAmount / CAMPAGNE_GOAL) * 100;
   const percentage = Math.min(100, Math.round(rawPercentage * 10) / 10);
-  const remainingAmount = Math.max(0, CAMPAGNE_GOAL - displayedCollectedAmount);
+  const remainingAmount = Math.max(0, CAMPAGNE_GOAL - displayedInvestedAmount);
 
   const formatFCFA = (val: number) => {
     return new Intl.NumberFormat(language === 'en' ? 'en-US' : 'fr-FR').format(val) + ' FCFA';
@@ -2287,30 +2274,22 @@ export default function App() {
                   <p className="text-3xl font-bold mt-4 text-brand-green break-words">{formatFCFA(totalInvestedAmount)}</p>
                 </div>
                 <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 min-w-0">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Montant total du don</p>
-                  <p className="text-3xl font-bold mt-4 text-brand-green break-words">{formatFCFA(totalDonationAmount)}</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Nombre d'investisseurs</p>
+                  <p className="text-3xl font-bold mt-4 text-brand-green break-words">{totalInvestorCount}</p>
                 </div>
                 <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 min-w-0">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Nombre de donateurs</p>
-                  <p className="text-3xl font-bold mt-4 text-brand-green break-words">{totalDonorCount}</p>
-                </div>
-                <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 min-w-0">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Montant total mobilisé</p>
-                  <p className="text-3xl font-bold mt-4 text-brand-green break-words">{formatFCFA(totalMobilizedAmount)}</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Pourcentage atteint</p>
+                  <p className="text-3xl font-bold mt-4 text-brand-green break-words">{percentage}%</p>
                 </div>
                 <div className="rounded-3xl border border-amber-300 bg-amber-400/10 p-6 min-w-0">
                   <p className="text-xs uppercase tracking-[0.2em] text-amber-600 font-semibold">Montant restant à collecter</p>
                   <p className="text-3xl font-bold mt-4 text-amber-800 break-words">{formatFCFA(remainingAmount)}</p>
                 </div>
-                <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 min-w-0">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold">Nombre d'investisseurs</p>
-                  <p className="text-3xl font-bold mt-4 text-brand-green break-words">{totalInvestorCount}</p>
-                </div>
               </div>
 
               <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 mb-6">
                 <h2 className="text-lg font-semibold text-white mb-4">Vérification investissement</h2>
-                <p className="text-sm text-slate-400 mb-4">Cliquez sur le lien pour vérifier que la différence entre le montant collecté et le montant du don correspond au montant investi.</p>
+                <p className="text-sm text-slate-400 mb-4">Cliquez sur le lien pour vérifier que le montant investi correspond au montant FedaPay enregistré.</p>
                 <a
                   href="#"
                   onClick={(e) => {
@@ -2319,7 +2298,7 @@ export default function App() {
                   }}
                   className="inline-flex items-center rounded-2xl bg-brand-green px-4 py-3 text-sm font-bold text-slate-950 hover:bg-brand-green/90 transition-all"
                 >
-                  Vérifier le lien collecte / don / investissement
+                  Vérifier l'investissement FedaPay
                 </a>
                 {adminInvestmentLinkMessage && (
                   <div className="mt-4 rounded-2xl bg-slate-900 p-4 text-sm text-slate-200">
@@ -3608,13 +3587,13 @@ export default function App() {
                     <span className="text-[10px] uppercase text-slate-400 tracking-widest font-semibold block">{FR.heroCollectedLabel}</span>
                     <div className="flex items-baseline gap-2">
                       <span className="text-3xl md:text-4xl font-black text-brand-green tracking-tight font-mono">
-                        {formatFCFA(displayedCollectedAmount)}
+                        {formatFCFA(displayedInvestedAmount)}
                       </span>
                     </div>
                     <span className="text-xs text-slate-400 block mt-0.5">
                       {FR.heroGoalLabel} <strong>{formatFCFA(CAMPAGNE_GOAL)}</strong>
                     </span>
-                    <div className="mt-3 rounded-3xl bg-slate-950/70 border border-slate-800 p-3 space-y-2">
+                    <div className="mt-3 rounded-3xl bg-slate-950/70 border border-slate-800 p-3">
                       <div className="flex justify-between items-end">
                         <div>
                           <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-semibold whitespace-pre-line">Total{'\n'}investi</span>
@@ -3632,7 +3611,7 @@ export default function App() {
                         </div>
                         <div className="text-left">
                           <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-semibold whitespace-pre-line">Nombre de personnes{'\n'}ayant fait un don</span>
-                          <div className="mt-1 text-xl font-bold text-white">{projectMetrics?.donorCount ?? totalDonorCount}</div>
+                          <div className="mt-1 text-xl font-bold text-white">{totalInvestorCount}</div>
                         </div>
                       </div>
                     </div>

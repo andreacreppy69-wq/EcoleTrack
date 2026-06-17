@@ -1240,18 +1240,18 @@ app.get('/api/project-metrics', async (req, res) => {
       console.warn('[PROJECT METRICS] Metrics mismatch: project_metrics.collectedAmount=%s but approved tx sum=%s', metricCollectedAmount, approvedCollectedAmount);
     }
 
-    let donorCount = 0;
-    const donorRow = await queryOne(
-      'SELECT COUNT(DISTINCT lower(trim(email))) AS donorCount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
+    let investorCount = 0;
+    const investorRow = await queryOne(
+      'SELECT COUNT(DISTINCT lower(trim(email))) AS investorCount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
       ['', 0, 'completed', 'success', 'paid', 'authorized', 'captured', 'approved'],
     );
-    donorCount = Number(donorRow?.donorCount ?? 0);
-    if (donorCount === 0) {
-      const fallbackRow = await queryOne('SELECT COUNT(*) AS donorCount FROM users WHERE totalCollected > ?', [0]);
-      donorCount = Number(fallbackRow?.donorCount ?? 0);
+    investorCount = Number(investorRow?.investorcount ?? investorRow?.investorCount ?? 0);
+    if (investorCount === 0) {
+      const fallbackRow = await queryOne('SELECT COUNT(*) AS investorCount FROM users WHERE totalCollected > ?', [0]);
+      investorCount = Number(fallbackRow?.investorcount ?? fallbackRow?.investorCount ?? 0);
     }
 
-    return res.json({ collectedAmount, investedAmount, donorCount });
+    return res.json({ investedAmount, investorCount });
   } catch (error: any) {
     console.error('[PROJECT METRICS] Failed to load project metrics:', error);
     return res.status(500).json({ success: false, error: 'Impossible de charger les métriques de projet.' });
