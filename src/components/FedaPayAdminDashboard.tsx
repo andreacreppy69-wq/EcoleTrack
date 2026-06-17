@@ -9,6 +9,19 @@ const formatFCFA = (value: number) => {
   }).format(value);
 };
 
+const formatDateValue = (value: string | number | null | undefined) => {
+  if (value === undefined || value === null || value === '') {
+    return 'Inconnue';
+  }
+
+  const date = typeof value === 'number' ? new Date(value) : new Date(String(value));
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleString('fr-FR');
+};
+
 const statusLabels: Record<string, string> = {
   pending: 'En attente',
   completed: 'Complété',
@@ -160,7 +173,7 @@ const FedaPayAdminDashboard = () => {
                     <td className="px-4 py-3 text-xs lg:text-sm text-slate-200 break-words">{formatFCFA(transaction.amount)}</td>
                     <td className="px-4 py-3 text-xs lg:text-sm text-slate-200">{transaction.currency}</td>
                     <td className="px-4 py-3 text-xs lg:text-sm text-slate-200 break-words">{statusLabels[transaction.status] || transaction.status}</td>
-                    <td className="px-4 py-3 text-xs lg:text-sm text-slate-300 break-words">{new Date(transaction.createdAt).toLocaleString('fr-FR')}</td>
+                    <td className="px-4 py-3 text-xs lg:text-sm text-slate-300 break-words">{formatDateValue(transaction.createdAt)}</td>
                   </tr>
                 ))
               )}
