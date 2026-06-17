@@ -1270,7 +1270,7 @@ app.post('/api/fedapay/webhook', async (req, res) => {
     }
 
     const event = req.body;
-    console.log('[FEDAPAY] Webhook reçu:', event?.type);
+    console.log('[FEDAPAY] BODY COMPLET:', JSON.stringify(req.body, null, 2));
 
     if (event?.type === 'transaction.success' || event?.type === 'transaction.completed') {
       const transaction = event.data;
