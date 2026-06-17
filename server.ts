@@ -945,7 +945,7 @@ app.post('/api/fedapay', rateLimit('fedapay', 15, 60 * 1000), async (req, res) =
 
     const fedapayApiKey = FEDAPAY_SECRET_KEY;
     const fedapayWebhookUrl = process.env.FEDAPAY_WEBHOOK_URL || 'https://ecoletrack-5481.onrender.com/api/fedapay/webhook';
-    const fedapayFailureUrl = failureUrl || process.env.FEDAPAY_FAILURE_URL || 'https://ecolestrack.vercel.app/paiement/echec';
+    const fedapayFailureUrl = failureUrl || process.env.FEDAPAY_FAILURE_URL || process.env.FRONTEND_URL || 'https://invecolestrack.vercel.app/payment-result?status=failed';
     if (!fedapayApiKey) {
       console.error('[FEDAPAY] Clé secrète non configurée (FEDAPAY_SECRET_KEY ou FEDAPAY_API_KEY requise).');
       return res.status(500).json({ error: 'Clé secrète FedaPay non configurée.' });
@@ -1045,7 +1045,7 @@ app.post('/api/fedapay', rateLimit('fedapay', 15, 60 * 1000), async (req, res) =
       transactionPayload.append('customer[id]', String(customerId));
       transactionPayload.append('callback_url', callbackUrl || fedapayWebhookUrl);
       transactionPayload.append('webhook_url', fedapayWebhookUrl);
-      transactionPayload.append('return_url', returnUrl || 'https://invecolestrack.vercel.app/payment-result');
+      transactionPayload.append('return_url', returnUrl || process.env.FEDAPAY_RETURN_URL || 'https://invecolestrack.vercel.app/payment-result?status=success');
       transactionPayload.append('failure_url', fedapayFailureUrl);
       transactionPayload.append('cancel_url', fedapayFailureUrl);
       transactionPayload.append('metadata[email]', customerEmailValue || String(phoneNumber));

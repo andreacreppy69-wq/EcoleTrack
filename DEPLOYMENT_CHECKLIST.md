@@ -109,8 +109,8 @@ curl -s -X GET ${RENDER_URL}/api/users \
 ### Configurer les URLs de retour Paiement
 
 1. **Frontend** (ex: Vercel) doit rediriger vers:
-   - Succès: `https://your-frontend.vercel.app/paiement/succes?transactionId=...`
-   - Échec: `https://your-frontend.vercel.app/paiement/echec`
+  - Succès: `https://your-frontend.vercel.app/payment-result?status=success&transactionId=...`
+  - Échec: `https://your-frontend.vercel.app/payment-result?status=failed`
 
 2. **Backend** doit être configuré dans FedaPay:
    - Failure URL: voir le code `server.ts` ligne ~700

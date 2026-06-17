@@ -24,7 +24,7 @@ View your app in AI Studio: https://ai.studio/apps/fa4f6bd3-5be5-4e38-9c78-4c13d
 3. Optionally set `VITE_FEDAPAY_PUBLIC_KEY` and `FEDAPAY_WEBHOOK_URL` in `.env.local`.
    - `VITE_FEDAPAY_PUBLIC_KEY="pk_sandbox_5bWbetzgQxOXxvjJm4rw19X5"`
    - `FEDAPAY_WEBHOOK_URL="https://ecoletrack-5481.onrender.com/api/fedapay/webhook"`
-   - `FEDAPAY_FAILURE_URL="https://invecolestrack.vercel.app/paiement/echec"`
+   - `FEDAPAY_FAILURE_URL="https://invecolestrack.vercel.app/payment-result?status=failed"`
 4. Run the app:
    `npm run dev`
 "# EcoleTrack" 

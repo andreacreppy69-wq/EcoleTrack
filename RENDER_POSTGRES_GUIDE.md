@@ -100,7 +100,7 @@ curl -X POST https://your-service-url.onrender.com/api/users/login \
 
 3. **Configurer les URLs de retour**:
    - Success: `https://your-frontend-url.vercel.app/paiement/succes`
-   - Failure: `https://your-frontend-url.vercel.app/paiement/echec`
+   - Failure: `https://your-frontend-url.vercel.app/payment-result?status=failed`
 
 ### 5. Dépannage
 
