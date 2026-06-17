@@ -1159,7 +1159,8 @@ app.post('/api/fedapay', rateLimit('fedapay', 15, 60 * 1000), async (req, res) =
 app.get('/api/fedapay/transactions', requireAdmin, async (req, res) => {
   try {
     const transactions = await queryAll(
-      'SELECT fedapayTransactionId AS transactionId, reference, email, amount, currency, status, purpose, projectId, createdAt, updatedAt FROM transactions ORDER BY createdAt DESC',
+      'SELECT fedapayTransactionId AS transactionId, reference, email, amount, currency, status, purpose, projectId, createdAt, updatedAt FROM transactions WHERE lower(trim(status)) IN (?, ?, ?, ?, ?, ?) ORDER BY createdAt DESC',
+      ['completed', 'success', 'paid', 'authorized', 'captured', 'approved']
     );
     console.log('[FEDAPAY] Total transactions in DB:', transactions.length);
     if (transactions.length > 0) {
@@ -1419,8 +1420,11 @@ app.post('/api/fedapay/webhook', async (req, res) => {
 // Diagnostic endpoint for FedaPay debugging
 app.get('/api/fedapay/diagnostic', requireAdmin, async (req, res) => {
   try {
-    // Count all transactions
-    const totalTx = await queryOne('SELECT COUNT(*) as count FROM transactions');
+    // Count only approved transactions (considered as the authoritative total)
+    const totalTx = await queryOne(
+      'SELECT COUNT(*) as count FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
+      ['', 0, 'completed', 'success', 'paid', 'authorized', 'captured', 'approved']
+    );
     const totalCount = Number(totalTx?.count ?? 0);
 
     // Get all unique statuses
