@@ -1186,13 +1186,16 @@ app.get('/api/fedapay/summary', async (req, res) => {
       ['', 0],
     );
     console.log('[FEDAPAY] Transaction status breakdown:', JSON.stringify(allTx, null, 2));
+    // Use project_metrics.collectedAmount as source of truth for total collected
+    const metricsRow = await queryOne('SELECT collectedAmount FROM project_metrics WHERE id = ?', ['default_project']);
+    const totalAmount = Number(metricsRow?.collectedAmount ?? 0);
 
-    const row = await queryOne(
-      'SELECT COUNT(*) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
+    // Count unique investors based on approved transactions
+    const invRow = await queryOne(
+      'SELECT COUNT(DISTINCT lower(trim(email))) AS investorCount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
       ['', 0, 'completed', 'success', 'paid', 'authorized', 'captured', 'approved'],
     );
-    const investorCount = Number(row?.investorCount ?? 0);
-    const totalAmount = Number(row?.totalAmount ?? 0);
+    const investorCount = Number(invRow?.investorCount ?? 0);
     console.log('[FEDAPAY] Summary result:', { investorCount, totalAmount });
     return res.json({ investorCount, totalAmount });
   } catch (error: any) {
