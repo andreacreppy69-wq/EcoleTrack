@@ -1,0 +1,13 @@
+{
+  "metrics": {
+    "id": "default_project",
+    "name": "Projet principal",
+    "collectedamount": 66100,
+    "investedamount": 66100,
+    "updatedat": "2026-06-17T20:39:20.622Z"
+  },
+  "approvedSummary": {
+    "investorCount": 3,
+    "totalAmount": 66100
+  }
+}
