@@ -1159,7 +1159,7 @@ app.post('/api/fedapay', rateLimit('fedapay', 15, 60 * 1000), async (req, res) =
 app.get('/api/fedapay/transactions', requireAdmin, async (req, res) => {
   try {
     const transactions = await queryAll(
-      'SELECT fedapayTransactionId AS transactionId, reference, email, amount, currency, status, purpose, projectId, createdAt, updatedAt FROM transactions WHERE lower(trim(status)) IN (?, ?, ?, ?, ?, ?) ORDER BY createdAt DESC',
+      'SELECT fedapayTransactionId AS "transactionId", reference AS "reference", email AS "email", amount AS "amount", currency AS "currency", status AS "status", purpose AS "purpose", projectId AS "projectId", createdAt AS "createdAt", updatedAt AS "updatedAt" FROM transactions WHERE lower(trim(status)) IN (?, ?, ?, ?, ?, ?) ORDER BY createdAt DESC',
       ['completed', 'success', 'paid', 'authorized', 'captured', 'approved']
     );
     console.log('[FEDAPAY] Total transactions in DB:', transactions.length);
@@ -1439,7 +1439,7 @@ app.get('/api/fedapay/diagnostic', requireAdmin, async (req, res) => {
 
     // Get first 10 approved transactions
     const recentTx = await queryAll(
-      'SELECT fedapayTransactionId, reference, email, amount, status, createdAt FROM transactions WHERE lower(trim(status)) IN (?, ?, ?, ?, ?, ?) ORDER BY createdAt DESC LIMIT 10',
+      'SELECT fedapayTransactionId AS "transactionId", reference AS "reference", email AS "email", amount AS "amount", status AS "status", createdAt AS "createdAt" FROM transactions WHERE lower(trim(status)) IN (?, ?, ?, ?, ?, ?) ORDER BY createdAt DESC LIMIT 10',
       ['completed', 'success', 'paid', 'authorized', 'captured', 'approved']
     );
 
