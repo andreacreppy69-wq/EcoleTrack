@@ -3689,7 +3689,7 @@ export default function App() {
                           <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-semibold whitespace-pre-line">Nombre de personnes{'\n'}ayant investi</span>
                           <div className="mt-1 text-xl font-bold text-white">{totalInvestorCount}</div>
                         </div>
-                      </div}
+                      </div>
                       <div className="flex justify-between items-end">
                         <div className="text-left">
                           <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold whitespace-pre-line">Total de don{'\n'}collecté</span>
