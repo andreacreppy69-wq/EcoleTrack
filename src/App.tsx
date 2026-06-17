@@ -3584,7 +3584,7 @@ export default function App() {
 
                   {/* Large Metrics */}
                   <div className="space-y-1">
-                    <span className="text-[10px] uppercase text-slate-400 tracking-widest font-semibold block">{FR.heroCollectedLabel}</span>
+                    <span className="text-[10px] uppercase text-slate-400 tracking-widest font-semibold block">{FR.heroInvestedLabel}</span>
                     <div className="flex items-baseline gap-2">
                       <span className="text-3xl md:text-4xl font-black text-brand-green tracking-tight font-mono">
                         {formatFCFA(displayedInvestedAmount)}
@@ -3600,17 +3600,7 @@ export default function App() {
                           <div className="mt-1 text-xl font-bold text-white">{formatFCFA(displayedInvestedAmount)}</div>
                         </div>
                         <div className="text-left">
-                          <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-semibold whitespace-pre-line">Nombre de personnes{'\n'}ayant investi</span>
-                          <div className="mt-1 text-xl font-bold text-white">{totalInvestorCount}</div>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-end">
-                        <div className="text-left">
-                          <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold whitespace-pre-line">Total de don{'\n'}collecté</span>
-                          <div className="mt-1 text-xl font-bold text-white">{formatFCFA(projectMetrics?.collectedAmount ?? raisedAmount)}</div>
-                        </div>
-                        <div className="text-left">
-                          <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-semibold whitespace-pre-line">Nombre de personnes{'\n'}ayant fait un don</span>
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-semibold whitespace-pre-line">Nombre d'investisseurs</span>
                           <div className="mt-1 text-xl font-bold text-white">{totalInvestorCount}</div>
                         </div>
                       </div>

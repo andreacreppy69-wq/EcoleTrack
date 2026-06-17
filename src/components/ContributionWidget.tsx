@@ -495,10 +495,10 @@ export default function ContributionWidget({
                 <span className="font-bold text-brand-green">{formattedAmount(getSelectedAmount())}</span>
               </div>
               <p className="text-slate-200">
-                Donateur : <strong className="text-white">{fullName}</strong>
+                Investisseur : <strong className="text-white">{fullName}</strong>
               </p>
               <p className="text-slate-400">
-                Impact direct : Ce don finance la mise en service des modules d’alerte directe pour environ <strong className="text-white">{Math.max(1, Math.floor(getSelectedAmount() / 5000))} classes d’école d’Afrique subsaharienne</strong>.
+                Impact direct : Cet investissement finance la mise en service des modules d’alerte directe pour environ <strong className="text-white">{Math.max(1, Math.floor(getSelectedAmount() / 5000))} classes d’école d’Afrique subsaharienne</strong>.
               </p>
               <p className="text-[10px] italic text-slate-500">
                 « Changer l'éducation, c'est semer pour demain. »
