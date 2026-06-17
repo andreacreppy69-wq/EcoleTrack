@@ -769,7 +769,7 @@ export default function App() {
     solution: true,
     pourquoi: true,
     investment: true,
-    donation: true,
+    donation: false,
     budget: true,
     contact: true,
     progress: true,
@@ -3238,7 +3238,9 @@ export default function App() {
             <button type="button" onClick={() => showSection('solution')} className={getNavButtonClasses('solution')}>{FR.navSolution}</button>
             <button type="button" onClick={() => showSection('pourquoi')} className={getNavButtonClasses('pourquoi')}>{FR.navPourquoi}</button>
             <button type="button" onClick={() => showSection('investment')} className={getNavButtonClasses('investment')}>{FR.navInvestment}</button>
+            {visibleSections.donation && (
             <button type="button" onClick={() => showSection('donation')} className={getNavButtonClasses('donation')}>{FR.navDonate}</button>
+          )}
             <button type="button" onClick={() => showSection('budget')} className={getNavButtonClasses('budget')}>{FR.navBudget}</button>
             <button type="button" onClick={() => showSection('progress')} className={getNavButtonClasses('progress')}>{FR.navProgress}</button>
           </nav>
@@ -3268,7 +3270,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={handleDonationClick}
-                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs hover:shadow-md"
+                className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs hover:shadow-md"
               >
                 {FR.donateButton}
               </button>
@@ -3337,9 +3339,11 @@ export default function App() {
             <button type="button" onClick={() => showSection('investment')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
               {FR.navInvestment}
             </button>
-            <button type="button" onClick={() => showSection('donation')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
-              {FR.navDonate}
-            </button>
+            {visibleSections.donation && (
+              <button type="button" onClick={() => showSection('donation')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
+                {FR.navDonate}
+              </button>
+            )}
             <button type="button" onClick={() => showSection('budget')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
               {FR.navBudget}
             </button>
@@ -4355,16 +4359,25 @@ export default function App() {
             <p className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-100 max-w-2xl mx-auto leading-relaxed">
               “{FR.heroQuote}”
             </p>
-            <button
-              type="button"
-              onClick={() => {
-                showSection('investment');
-                setShowInvestmentForm(true);
-              }}
-              className="mt-6 inline-flex items-center justify-center rounded-full bg-brand-green px-6 py-3 text-sm font-bold text-slate-950 hover:bg-brand-green/90 transition-all shadow-xl"
-            >
-              {FR.investNowButton}
-            </button>
+            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button
+                type="button"
+                onClick={() => {
+                  showSection('investment');
+                  setShowInvestmentForm(true);
+                }}
+                className="inline-flex items-center justify-center rounded-full bg-brand-green px-6 py-3 text-sm font-bold text-slate-950 hover:bg-brand-green/90 transition-all shadow-xl"
+              >
+                {FR.investNowButton}
+              </button>
+              <button
+                type="button"
+                onClick={handleDonationClick}
+                className="inline-flex items-center justify-center rounded-full bg-rose-600 px-6 py-3 text-sm font-bold text-white hover:bg-rose-700 transition-all shadow-xl"
+              >
+                {FR.donateButton}
+              </button>
+            </div>
 
           </div>
         </section>
