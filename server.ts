@@ -1278,6 +1278,12 @@ app.post('/api/fedapay/webhook', async (req, res) => {
       event?.name === 'transaction.completed'
     ) {
       const transaction = event.entity;
+      console.log(
+        '[FEDAPAY] Paiement approuvé:',
+        transaction.id,
+        transaction.amount,
+        transaction.customer?.email
+      );
       const email = transaction?.customer?.email || 'webhook@fedapay';
       const firstName = transaction?.customer?.name || 'Investisseur';
       const projectId = String(transaction?.metadata?.projectId || 'default_project');
