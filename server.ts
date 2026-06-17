@@ -254,6 +254,14 @@ const queryOne = async (sql: string, params: any[] = []) => {
   return rows[0];
 };
 
+const normalizeRowKeys = (row: any) => {
+  if (!row || typeof row !== 'object') return {};
+  return Object.entries(row).reduce((normalized: Record<string, any>, [key, value]) => {
+    normalized[String(key).toLowerCase()] = value;
+    return normalized;
+  }, {});
+};
+
 const initDb = async () => {
   if (useSqliteFallback) {
     // SQLite-compatible schema
@@ -1186,17 +1194,25 @@ app.get('/api/fedapay/summary', async (req, res) => {
       ['', 0],
     );
     console.log('[FEDAPAY] Transaction status breakdown:', JSON.stringify(allTx, null, 2));
-    // Use project_metrics.collectedAmount as source of truth for total collected
-    const metricsRow = await queryOne('SELECT collectedAmount FROM project_metrics WHERE id = ?', ['default_project']);
-    const totalAmount = Number(metricsRow?.collectedAmount ?? 0);
 
-    // Count unique investors based on approved transactions
-    const invRow = await queryOne(
-      'SELECT COUNT(DISTINCT lower(trim(email))) AS investorCount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
+    // Compute actual approved transaction totals
+    const approvedRow = await queryOne(
+      'SELECT COUNT(DISTINCT lower(trim(email))) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
       ['', 0, 'completed', 'success', 'paid', 'authorized', 'captured', 'approved'],
     );
-    const investorCount = Number(invRow?.investorCount ?? 0);
-    console.log('[FEDAPAY] Summary result:', { investorCount, totalAmount });
+    const normalizedApprovedRow = normalizeRowKeys(approvedRow);
+    const investorCount = Number(normalizedApprovedRow.investorcount ?? 0);
+    const approvedTotalAmount = Number(normalizedApprovedRow.totalamount ?? 0);
+
+    const metricsRow = await queryOne('SELECT collectedAmount FROM project_metrics WHERE id = ?', ['default_project']);
+    const normalizedMetricsRow = normalizeRowKeys(metricsRow);
+    const metricTotalAmount = Number(normalizedMetricsRow.collectedamount ?? 0);
+
+    const totalAmount = approvedTotalAmount > 0 ? approvedTotalAmount : metricTotalAmount;
+    if (metricTotalAmount !== 0 && metricTotalAmount !== approvedTotalAmount) {
+      console.warn('[FEDAPAY] Metrics mismatch: project_metrics.collectedAmount=%s but approved tx sum=%s', metricTotalAmount, approvedTotalAmount);
+    }
+    console.log('[FEDAPAY] Summary result:', { investorCount, totalAmount, approvedTotalAmount, metricTotalAmount });
     return res.json({ investorCount, totalAmount });
   } catch (error: any) {
     console.error('[FEDAPAY] Failed to compute summary:', error);
@@ -1207,8 +1223,22 @@ app.get('/api/fedapay/summary', async (req, res) => {
 app.get('/api/project-metrics', async (req, res) => {
   try {
     const metricsRow = await queryOne('SELECT collectedAmount, investedAmount FROM project_metrics WHERE id = ?', ['default_project']);
-    const collectedAmount = Number(metricsRow?.collectedAmount ?? 0);
-    const investedAmount = Number(metricsRow?.investedAmount ?? 0);
+    const normalizedMetricsRow = normalizeRowKeys(metricsRow);
+    const metricCollectedAmount = Number(normalizedMetricsRow.collectedamount ?? 0);
+    const metricInvestedAmount = Number(normalizedMetricsRow.investedamount ?? 0);
+
+    const approvedRow = await queryOne(
+      'SELECT SUM(amount) AS approvedCollected FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
+      ['', 0, 'completed', 'success', 'paid', 'authorized', 'captured', 'approved'],
+    );
+    const normalizedApprovedRow = normalizeRowKeys(approvedRow);
+    const approvedCollectedAmount = Number(normalizedApprovedRow.approvedcollected ?? 0);
+
+    const collectedAmount = approvedCollectedAmount > 0 ? approvedCollectedAmount : metricCollectedAmount;
+    const investedAmount = approvedCollectedAmount > 0 ? approvedCollectedAmount : metricInvestedAmount;
+    if (approvedCollectedAmount !== 0 && approvedCollectedAmount !== metricCollectedAmount) {
+      console.warn('[PROJECT METRICS] Metrics mismatch: project_metrics.collectedAmount=%s but approved tx sum=%s', metricCollectedAmount, approvedCollectedAmount);
+    }
 
     let donorCount = 0;
     const donorRow = await queryOne(
@@ -1401,6 +1431,7 @@ app.get('/api/fedapay/diagnostic', requireAdmin, async (req, res) => {
       'SELECT COUNT(*) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
       ['', 0, 'completed', 'success', 'paid', 'authorized', 'captured', 'approved']
     );
+    const normalizedApprovedSummary = normalizeRowKeys(approvedSummary);
 
     // Get first 10 transactions
     const recentTx = await queryAll('SELECT fedapayTransactionId, reference, email, amount, status, createdAt FROM transactions ORDER BY createdAt DESC LIMIT 10');
@@ -1409,8 +1440,8 @@ app.get('/api/fedapay/diagnostic', requireAdmin, async (req, res) => {
       totalTransactions: totalCount,
       statusBreakdown: statuses,
       approvedSummary: {
-        investorCount: Number(approvedSummary?.investorCount ?? 0),
-        totalAmount: Number(approvedSummary?.totalAmount ?? 0)
+        investorCount: Number(normalizedApprovedSummary.investorcount ?? 0),
+        totalAmount: Number(normalizedApprovedSummary.totalamount ?? 0)
       },
       recentTransactions: recentTx.slice(0, 10),
       databaseStatus: totalCount === 0 ? 'EMPTY - No transactions found' : `OK - ${totalCount} transactions in database`
