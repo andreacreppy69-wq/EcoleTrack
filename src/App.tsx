@@ -310,9 +310,11 @@ const FR = {
   navSolution: "Notre Solution",
   navPourquoi: "Pourquoi Investir ?",
   navInvestment: "Revenus sur investissement",
+  navDonate: "Faire un don",
   navBudget: "Financement",
   navProgress: "État d'avancement",
   investButton: "J'investis",
+  donateButton: "Faire un don",
   activeCampaignAlert: "Campagne Active : Suivi Scolaire en temps réel.",
   campaignGoalLabel: "Financement visé :",
   launchPlannedLabel: "Lancement prévu : Troisième trimestre 2027",
@@ -733,6 +735,13 @@ export default function App() {
   const [fedaPayRedirectUrl, setFedaPayRedirectUrl] = useState<string>('');
   const [fedaPaySuccess, setFedaPaySuccess] = useState<string>('');
   const [showInvestmentForm, setShowInvestmentForm] = useState<boolean>(false);
+  const [showDonationForm, setShowDonationForm] = useState<boolean>(false);
+  const [donationAmount, setDonationAmount] = useState<number>(5000);
+  const [donationName, setDonationName] = useState<string>('');
+  const [donationEmail, setDonationEmail] = useState<string>('');
+  const [donationMessage, setDonationMessage] = useState<string>('');
+  const [donationSuccess, setDonationSuccess] = useState<string>('');
+  const [donationError, setDonationError] = useState<string>('');
 
   const [passwordChangeEmail, setPasswordChangeEmail] = useState<string>('');
   const [passwordChangeNew, setPasswordChangeNew] = useState<string>('');
@@ -753,13 +762,14 @@ export default function App() {
     return localStorage.getItem('siteCurrentUserEmail') || '';
   });
 
-  type SectionKey = 'hero' | 'probleme' | 'solution' | 'pourquoi' | 'investment' | 'budget' | 'contact' | 'progress';
+  type SectionKey = 'hero' | 'probleme' | 'solution' | 'pourquoi' | 'investment' | 'donation' | 'budget' | 'contact' | 'progress';
   const [visibleSections, setVisibleSections] = useState<Record<SectionKey, boolean>>({
     hero: true,
     probleme: true,
     solution: true,
     pourquoi: true,
     investment: true,
+    donation: true,
     budget: true,
     contact: true,
     progress: true,
@@ -771,6 +781,14 @@ export default function App() {
     setVisibleSections((prev) => ({ ...prev, [sectionId]: true }));
     setCurrentSection(sectionId);
     setShowMobileNav(false);
+    if (sectionId === 'donation') {
+      setShowDonationForm(true);
+      setShowInvestmentForm(false);
+    }
+    if (sectionId === 'investment') {
+      setShowInvestmentForm(true);
+      setShowDonationForm(false);
+    }
     setTimeout(() => {
       const element = document.getElementById(sectionId);
       if (element) {
@@ -1124,6 +1142,30 @@ export default function App() {
     } finally {
       setFedaPayProcessing(false);
     }
+  };
+
+  const handleDonationClick = () => {
+    setDonationSuccess('');
+    setDonationError('');
+    showSection('donation');
+    setShowDonationForm(true);
+  };
+
+  const handleDonationSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    setDonationError('');
+    setDonationSuccess('');
+
+    if (!donationName || !donationEmail || donationAmount <= 0) {
+      setDonationError('Veuillez remplir votre nom, email et un montant de don valide.');
+      return;
+    }
+
+    setDonationSuccess(`Merci ${donationName.trim()} ! Votre demande de don de ${donationAmount.toLocaleString('fr-FR')} XOF a bien été prise en compte.`);
+    setDonationAmount(5000);
+    setDonationName('');
+    setDonationEmail('');
+    setDonationMessage('');
   };
 
   const handleFedaPayInitiation = async (payloadData: {
@@ -3196,6 +3238,7 @@ export default function App() {
             <button type="button" onClick={() => showSection('solution')} className={getNavButtonClasses('solution')}>{FR.navSolution}</button>
             <button type="button" onClick={() => showSection('pourquoi')} className={getNavButtonClasses('pourquoi')}>{FR.navPourquoi}</button>
             <button type="button" onClick={() => showSection('investment')} className={getNavButtonClasses('investment')}>{FR.navInvestment}</button>
+            <button type="button" onClick={() => showSection('donation')} className={getNavButtonClasses('donation')}>{FR.navDonate}</button>
             <button type="button" onClick={() => showSection('budget')} className={getNavButtonClasses('budget')}>{FR.navBudget}</button>
             <button type="button" onClick={() => showSection('progress')} className={getNavButtonClasses('progress')}>{FR.navProgress}</button>
           </nav>
@@ -3222,7 +3265,13 @@ export default function App() {
                 <span>{FR.investButton}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
-              {/* WhatsApp header button removed; kept floating admin chat as WhatsApp */}
+              <button
+                type="button"
+                onClick={handleDonationClick}
+                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs hover:shadow-md"
+              >
+                {FR.donateButton}
+              </button>
             </div>
 
             
@@ -3287,6 +3336,9 @@ export default function App() {
             </button>
             <button type="button" onClick={() => showSection('investment')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
               {FR.navInvestment}
+            </button>
+            <button type="button" onClick={() => showSection('donation')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
+              {FR.navDonate}
             </button>
             <button type="button" onClick={() => showSection('budget')} className="w-full text-left rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
               {FR.navBudget}
@@ -3931,14 +3983,23 @@ export default function App() {
                       className="mt-2 w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-brand-green"
                     />
                   </label>
-                  <button
-                    type="button"
-                    onClick={handleParticipateClick}
-                    disabled={fedaPayProcessing || fedaPayAmount <= 0}
-                    className="w-full rounded-2xl bg-brand-green px-6 py-3 text-sm font-bold text-slate-950 hover:bg-brand-green/90 transition-all disabled:opacity-60"
-                  >
-                    {fedaPayProcessing ? 'Chargement...' : 'Payer avec FedaPay'}
-                  </button>
+                  <div className="grid gap-3">
+                    <button
+                      type="button"
+                      onClick={handleParticipateClick}
+                      disabled={fedaPayProcessing || fedaPayAmount <= 0}
+                      className="w-full rounded-2xl bg-brand-green px-6 py-3 text-sm font-bold text-slate-950 hover:bg-brand-green/90 transition-all disabled:opacity-60"
+                    >
+                      {fedaPayProcessing ? 'Chargement...' : 'Payer avec FedaPay'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDonationClick}
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-6 py-3 text-sm font-bold text-white hover:bg-slate-800 transition-all"
+                    >
+                      Faire un don
+                    </button>
+                  </div>
                 </div>
                 {fedaPayError && <p className="mt-4 text-sm text-red-400">{fedaPayError}</p>}
                 {fedaPaySuccess && <p className="mt-4 text-sm text-emerald-300">{fedaPaySuccess}</p>}
@@ -3951,6 +4012,80 @@ export default function App() {
             <InvestmentTable />
           </div>
         </section>
+        )}
+
+        {visibleSections.donation && (
+          <section id="donation" className="py-16 bg-slate-50">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6">
+              <div className="mb-10 text-center scroll-mt-24">
+                <span className="text-xs font-bold text-brand-green uppercase tracking-widest block mb-2">Soutien & Don</span>
+                <h2 className="text-3xl font-extrabold text-brand-blue tracking-tight leading-snug">Faire un don pour accompagner le projet</h2>
+                <p className="text-slate-600 text-sm mt-3 max-w-2xl mx-auto">
+                  Votre don permet de couvrir des besoins complémentaires : formation, équipements, communication et support aux écoles partenaires.
+                </p>
+              </div>
+
+              <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-lg">
+                <form onSubmit={handleDonationSubmit} className="space-y-6">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="block text-sm text-slate-700">
+                      Votre nom
+                      <input
+                        type="text"
+                        value={donationName}
+                        onChange={(e) => setDonationName(e.target.value)}
+                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-brand-green"
+                        placeholder="Nom complet"
+                      />
+                    </label>
+                    <label className="block text-sm text-slate-700">
+                      Votre email
+                      <input
+                        type="email"
+                        value={donationEmail}
+                        onChange={(e) => setDonationEmail(e.target.value)}
+                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-brand-green"
+                        placeholder="email@exemple.com"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
+                    <label className="block text-sm text-slate-700">
+                      Montant du don (XOF)
+                      <input
+                        type="number"
+                        value={donationAmount}
+                        onChange={(e) => setDonationAmount(Number(e.target.value))}
+                        min={100}
+                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-brand-green"
+                      />
+                    </label>
+                    <button
+                      type="submit"
+                      className="mt-6 w-full rounded-2xl bg-brand-blue px-6 py-3 text-sm font-bold text-white hover:bg-brand-blue/90 transition-all"
+                    >
+                      {FR.donateButton}
+                    </button>
+                  </div>
+
+                  <label className="block text-sm text-slate-700">
+                    Message (optionnel)
+                    <textarea
+                      value={donationMessage}
+                      onChange={(e) => setDonationMessage(e.target.value)}
+                      rows={4}
+                      className="mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-brand-green"
+                      placeholder="Un mot pour l'équipe ou les écoles partenaires"
+                    />
+                  </label>
+
+                  {donationError && <p className="text-sm text-rose-600">{donationError}</p>}
+                  {donationSuccess && <p className="text-sm text-emerald-600">{donationSuccess}</p>}
+                </form>
+              </div>
+            </div>
+          </section>
         )}
 
         {/* SECTION 4: BUDGET & OBJECTIFS DE COLLECTE */}
