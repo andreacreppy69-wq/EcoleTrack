@@ -1151,12 +1151,17 @@ export default function App() {
         callbackUrl: getFedaPayWebhookUrl(),
         returnUrl: 'https://ecolestrack.vercel.app/payment-result',
         failureUrl: import.meta.env.VITE_FEDAPAY_FAILURE_URL || 'https://invecolestrack.vercel.app/payment-result?status=failed',
-      purpose: 'investment',
-      userEmail: payloadData.customerEmail,
-      projectId: 'default_project',
-          setTimeout(() => {
-            window.location.assign(redirectUrl);
-          }, 2000);
+        purpose: 'investment',
+        userEmail: payloadData.customerEmail,
+        projectId: 'default_project',
+      });
+
+      if (result && (result.success || result.transaction)) {
+        const redirectUrl = result.link || result.redirectUrl || result.redirect_url;
+        if (redirectUrl) {
+          setFedaPaySuccess(`Transaction FedaPay initiée! ID: ${result.transaction?.id || 'N/A'}`);
+          setFedaPayRedirectUrl(redirectUrl);
+          setTimeout(() => window.location.assign(redirectUrl), 2000);
           return;
         }
       }
