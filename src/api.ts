@@ -247,6 +247,7 @@ export const getFedaPayInvestorCount = async (): Promise<number> => {
 };
 
 export interface ProjectMetricsResponse {
+  collectedAmount: number;
   investedAmount: number;
   investorCount: number;
 }
@@ -263,6 +264,7 @@ export const getFedaPaySummary = async (): Promise<{ investorCount: number; tota
 export const getProjectMetrics = async (): Promise<ProjectMetricsResponse> => {
   const data = await apiFetch<ProjectMetricsResponse>('/api/project-metrics');
   return {
+    collectedAmount: Number(data.collectedAmount || 0),
     investedAmount: Number(data.investedAmount || 0),
     investorCount: Number(data.investorCount || 0),
   };

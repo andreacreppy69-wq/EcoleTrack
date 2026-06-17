@@ -1252,7 +1252,7 @@ app.get('/api/project-metrics', async (req, res) => {
       investorCount = Number(fallbackRow?.investorcount ?? fallbackRow?.investorCount ?? 0);
     }
 
-    return res.json({ investedAmount, investorCount });
+    return res.json({ collectedAmount, investedAmount, investorCount });
   } catch (error: any) {
     console.error('[PROJECT METRICS] Failed to load project metrics:', error);
     return res.status(500).json({ success: false, error: 'Impossible de charger les métriques de projet.' });

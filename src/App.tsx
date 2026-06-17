@@ -623,7 +623,7 @@ export default function App() {
   const [raisedAmount, setRaisedAmount] = useState<number>(0);
   const [backersList, setBackersList] = useState<Backer[]>(INITIAL_RECENT_BACKERS);
   const [fedapayInvestorCount, setFedaPayInvestorCount] = useState<number | null>(null);
-  const [projectMetrics, setProjectMetrics] = useState<{ investedAmount: number; investorCount: number } | null>(null);
+  const [projectMetrics, setProjectMetrics] = useState<{ collectedAmount: number; investedAmount: number; investorCount: number } | null>(null);
   const [hasContributed, setHasContributed] = useState<boolean>(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -1558,6 +1558,7 @@ export default function App() {
   const backersCount = 12 + (backersList.length - INITIAL_RECENT_BACKERS.length);
   const totalInvestorCount = projectMetrics?.investorCount ?? (fedapayInvestorCount !== null ? fedapayInvestorCount : 0);
   const displayedInvestedAmount = projectMetrics?.investedAmount ?? raisedAmount;
+  const displayedDonatedAmount = projectMetrics?.collectedAmount ?? 0;
   const totalInvestedAmount = displayedInvestedAmount;
   const rawPercentage = (displayedInvestedAmount / CAMPAGNE_GOAL) * 100;
   const percentage = Math.min(100, Math.round(rawPercentage * 10) / 10);
@@ -3655,12 +3656,16 @@ export default function App() {
                       {FR.heroGoalLabel} <strong>{formatFCFA(CAMPAGNE_GOAL)}</strong>
                     </span>
                     <div className="mt-3 rounded-3xl bg-slate-950/70 border border-slate-800 p-3">
-                      <div className="flex justify-between items-end">
+                      <div className="grid grid-cols-3 gap-3 items-end">
                         <div>
                           <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-semibold whitespace-pre-line">Total{'\n'}investi</span>
                           <div className="mt-1 text-xl font-bold text-white">{formatFCFA(displayedInvestedAmount)}</div>
                         </div>
-                        <div className="text-left">
+                        <div className="text-center">
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-semibold whitespace-pre-line">Don{'\n'}collecté</span>
+                          <div className="mt-1 text-xl font-bold text-white">{formatFCFA(displayedDonatedAmount)}</div>
+                        </div>
+                        <div className="text-right">
                           <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-semibold whitespace-pre-line">Nombre d'investisseurs</span>
                           <div className="mt-1 text-xl font-bold text-white">{totalInvestorCount}</div>
                         </div>
