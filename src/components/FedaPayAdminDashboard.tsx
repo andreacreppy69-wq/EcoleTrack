@@ -64,12 +64,13 @@ const FedaPayAdminDashboard = () => {
   }, []);
 
   const summary = useMemo(() => {
-    const totalAmount = transactions.reduce((sum, item) => sum + (item.amount || 0), 0);
-    const totalCount = transactions.length;
-    const confirmedStatuses = new Set(['completed', 'success', 'paid', 'authorized', 'captured']);
-    const investorCount = transactions.filter(
+    const confirmedStatuses = new Set(['completed', 'success', 'paid', 'authorized', 'captured', 'approved']);
+    const approvedTransactions = transactions.filter(
       (item) => confirmedStatuses.has(String(item.status || '').toLowerCase()) && (item.amount || 0) > 0
-    ).length;
+    );
+    const totalAmount = approvedTransactions.reduce((sum, item) => sum + (item.amount || 0), 0);
+    const totalCount = approvedTransactions.length;
+    const investorCount = approvedTransactions.length;
     const byStatus = transactions.reduce<Record<string, number>>((acc, item) => {
       const key = item.status || 'unknown';
       acc[key] = (acc[key] || 0) + 1;
