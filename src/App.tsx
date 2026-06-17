@@ -1471,7 +1471,7 @@ export default function App() {
       try {
         const summary = await getFedaPaySummary();
         setFedaPayInvestorCount(summary.investorCount);
-        setRaisedAmount(summary.totalAmount);
+        setRaisedAmount(summary.investedAmount);
       } catch (error) {
         console.warn('Impossible de charger le résumé FedaPay :', error);
       }
@@ -1577,10 +1577,10 @@ export default function App() {
   const backersCount = 12 + (backersList.length - INITIAL_RECENT_BACKERS.length);
   const totalDonorCount = projectMetrics?.donorCount ?? (fedapayInvestorCount !== null ? fedapayInvestorCount : 0);
   const totalInvestorCount = fedapayInvestorCount !== null ? fedapayInvestorCount : 0;
-  const displayedCollectedAmount = projectMetrics?.collectedAmount ?? raisedAmount;
+  const displayedCollectedAmount = projectMetrics?.collectedAmount ?? 0;
   const totalDonationAmount = displayedCollectedAmount;
-  const displayedInvestedAmount = projectMetrics?.investedAmount ?? Math.max(0, raisedAmount - displayedCollectedAmount);
-  const totalInvestedAmount = Math.max(0, raisedAmount - displayedCollectedAmount);
+  const displayedInvestedAmount = projectMetrics?.investedAmount ?? raisedAmount;
+  const totalInvestedAmount = displayedInvestedAmount;
   const totalMobilizedAmount = totalDonationAmount + displayedInvestedAmount;
   const rawPercentage = (displayedCollectedAmount / CAMPAGNE_GOAL) * 100;
   const percentage = Math.min(100, Math.round(rawPercentage * 10) / 10);

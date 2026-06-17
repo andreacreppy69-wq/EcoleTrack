@@ -1175,7 +1175,7 @@ app.get('/api/fedapay/transactions', requireAdmin, async (req, res) => {
 app.get('/api/fedapay/investor-count', async (req, res) => {
   try {
     const row = await queryOne(
-      'SELECT COUNT(*) AS count FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
+      'SELECT COUNT(DISTINCT lower(trim(email))) AS count FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
       ['', 0, 'completed', 'success', 'paid', 'authorized', 'captured', 'approved'],
     );
     const investorCount = Number(row?.count ?? 0);
@@ -1213,7 +1213,7 @@ app.get('/api/fedapay/summary', async (req, res) => {
       console.warn('[FEDAPAY] Metrics mismatch: project_metrics.investedAmount=%s but approved tx sum=%s', metricInvestedAmount, approvedTotalAmount);
     }
     console.log('[FEDAPAY] Summary result:', { investorCount, totalAmount, approvedTotalAmount, metricInvestedAmount });
-    return res.json({ investorCount, totalAmount });
+    return res.json({ investorCount, totalAmount, investedAmount: totalAmount });
   } catch (error: any) {
     console.error('[FEDAPAY] Failed to compute summary:', error);
     return res.status(500).json({ success: false, error: 'Impossible de calculer le total des transactions FedaPay.' });
@@ -1428,7 +1428,7 @@ app.get('/api/fedapay/diagnostic', requireAdmin, async (req, res) => {
 
     // Get transactions that WILL be counted in the summary
     const approvedSummary = await queryOne(
-      'SELECT COUNT(*) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
+      'SELECT COUNT(DISTINCT lower(trim(email))) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
       ['', 0, 'completed', 'success', 'paid', 'authorized', 'captured', 'approved']
     );
     const normalizedApprovedSummary = normalizeRowKeys(approvedSummary);

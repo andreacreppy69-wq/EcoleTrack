@@ -252,11 +252,12 @@ export interface ProjectMetricsResponse {
   donorCount: number;
 }
 
-export const getFedaPaySummary = async (): Promise<{ investorCount: number; totalAmount: number }> => {
-  const data = await apiFetch<{ investorCount: number; totalAmount: number }>('/api/fedapay/summary');
+export const getFedaPaySummary = async (): Promise<{ investorCount: number; totalAmount: number; investedAmount: number }> => {
+  const data = await apiFetch<{ investorCount: number; totalAmount: number; investedAmount: number }>('/api/fedapay/summary');
   return {
     investorCount: Number(data.investorCount || 0),
     totalAmount: Number(data.totalAmount || 0),
+    investedAmount: Number(data.investedAmount || data.totalAmount || 0),
   };
 };
 
