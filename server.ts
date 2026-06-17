@@ -1188,8 +1188,8 @@ app.get('/api/fedapay/summary', async (req, res) => {
     console.log('[FEDAPAY] Transaction status breakdown:', JSON.stringify(allTx, null, 2));
 
     const row = await queryOne(
-      'SELECT COUNT(*) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) NOT IN (?, ?, ?, ?, ?, ?, ?)',
-      ['', 0, 'failed', 'cancelled', 'pending', 'declined', 'unknown', 'void', 'refused'],
+      'SELECT COUNT(*) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
+      ['', 0, 'completed', 'success', 'paid', 'authorized', 'captured', 'approved'],
     );
     const investorCount = Number(row?.investorCount ?? 0);
     const totalAmount = Number(row?.totalAmount ?? 0);
@@ -1209,8 +1209,8 @@ app.get('/api/project-metrics', async (req, res) => {
 
     let donorCount = 0;
     const donorRow = await queryOne(
-      'SELECT COUNT(DISTINCT lower(trim(email))) AS donorCount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) NOT IN (?, ?, ?)',
-      ['', 0, 'failed', 'cancelled', 'pending'],
+      'SELECT COUNT(DISTINCT lower(trim(email))) AS donorCount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
+      ['', 0, 'completed', 'success', 'paid', 'authorized', 'captured', 'approved'],
     );
     donorCount = Number(donorRow?.donorCount ?? 0);
     if (donorCount === 0) {
@@ -1395,8 +1395,8 @@ app.get('/api/fedapay/diagnostic', requireAdmin, async (req, res) => {
 
     // Get transactions that WILL be counted in the summary
     const approvedSummary = await queryOne(
-      'SELECT COUNT(*) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) NOT IN (?, ?, ?, ?, ?, ?, ?)',
-      ['', 0, 'failed', 'cancelled', 'pending', 'declined', 'unknown', 'void', 'refused']
+      'SELECT COUNT(*) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
+      ['', 0, 'completed', 'success', 'paid', 'authorized', 'captured', 'approved']
     );
 
     // Get first 10 transactions
@@ -1453,8 +1453,8 @@ app.post('/api/fedapay/test-transaction', requireAdmin, async (req, res) => {
 
     // Fetch new summary
     const summary = await queryOne(
-      'SELECT COUNT(*) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) NOT IN (?, ?, ?, ?, ?, ?, ?)',
-      ['', 0, 'failed', 'cancelled', 'pending', 'declined', 'unknown', 'void', 'refused']
+      'SELECT COUNT(*) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) IN (?, ?, ?, ?, ?, ?)',
+      ['', 0, 'completed', 'success', 'paid', 'authorized', 'captured', 'approved']
     );
 
     return res.json({
