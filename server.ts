@@ -516,7 +516,8 @@ const addConfirmedInvestment = async (email: string, amount: number, projectId =
   const nowIso = new Date().toISOString();
   await runWrite('UPDATE users SET investedAmount = investedAmount + ? WHERE email = ?', [amount, email]);
   await runWrite('UPDATE users SET totalCollected = totalCollected + ? WHERE email = ?', [amount, email]);
-  await runWrite('UPDATE project_metrics SET collectedAmount = collectedAmount + ?, investedAmount = investedAmount + ?, updatedAt = ? WHERE id = ?', [amount, amount, nowIso, projectId]);
+  // ONLY update investedAmount, NOT collectedAmount (which is for donations only)
+  await runWrite('UPDATE project_metrics SET investedAmount = investedAmount + ?, updatedAt = ? WHERE id = ?', [amount, nowIso, projectId]);
 };
 
 // Clean up expired sessions on startup
@@ -1258,7 +1259,7 @@ app.get('/api/project-metrics', async (req, res) => {
     const normalizedCollectedRow = normalizeRowKeys(collectedRow);
     const donationTotal = Number(normalizedCollectedRow.donationtotal ?? 0);
 
-    const collectedAmount = donationTotal > 0 ? donationTotal : metricCollectedAmount;
+    const collectedAmount = donationTotal; // Always use actual donation transactions, never fallback to DB value
     const investedAmount = investedTotal > 0 ? investedTotal : metricInvestedAmount;
     if (investedTotal !== 0 && investedTotal !== metricInvestedAmount) {
       console.warn('[PROJECT METRICS] Metrics mismatch: project_metrics.investedAmount=%s but approved investment tx sum=%s', metricInvestedAmount, investedTotal);
