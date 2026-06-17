@@ -3772,10 +3772,11 @@ export default function App() {
                 <div className="absolute -inset-4 bg-brand-blue/5 rounded-3xl -rotate-2 transform group-hover:rotate-0 transition-transform duration-300 pointer-events-none" />
                 
                 {/* Photo render */}
-                <div className="relative rounded-2xl overflow-hidden shadow-xl border border-slate-100 h-auto flex items-center justify-center bg-slate-900">
+                <div className="relative rounded-2xl overflow-hidden shadow-xl border border-slate-100 h-auto flex items-center justify-center bg-slate-900" style={{ minHeight: 'calc(100% + 2cm)' }}>
                   <img 
                     src={classroomStudentsImage}
                     alt="Photo d'élèves africains attentifs et joyeux en classe"
+                    style={{ maxHeight: 'calc(100% + 3cm)' }}
                     className="w-full h-auto max-h-full object-contain transition-transform duration-300"
                     referrerPolicy="no-referrer"
                   />
