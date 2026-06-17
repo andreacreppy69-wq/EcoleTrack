@@ -138,31 +138,69 @@ app.use((req, res, next) => {
 // Ensure preflight OPTIONS requests to API routes are handled
 app.options('/api/*', cors());
 
-// Validate DATABASE_URL is configured
+// Validate DATABASE_URL is configured or enable sqlite fallback for development
 const DATABASE_URL = process.env.DATABASE_URL;
+let useSqliteFallback = false;
+let sqlJsDb: any = null;
+let pool: any = null;
+
 if (!DATABASE_URL) {
-  console.error('[DB] ❌ FATAL: DATABASE_URL environment variable is not set!');
-  console.error('[DB] Expected format: postgresql://user:password@host:port/database');
-  console.error('[DB] ');
-  console.error('[DB] **On Render, this should be automatically injected by the pgsql service.**');
-  console.error('[DB] **If you\'re seeing this error, the Blueprint did not create the pgsql service correctly.**');
-  console.error('[DB] ');
-  console.error('[DB] Solutions:');
-  console.error('[DB] 1. Delete the current web service in Render');
-  console.error('[DB] 2. Delete the current pgsql service in Render (if it exists)');
-  console.error('[DB] 3. Create a NEW Blueprint and let Render create both services');
-  console.error('[DB] 4. Make sure render.yaml is present in your repository');
-  process.exit(1);
+  console.warn('[DB] DATABASE_URL not set; using in-memory sqlite fallback for development.');
+  useSqliteFallback = true;
+  try {
+    const sqljsModule = await import('sql.js');
+    const initSqlJs = sqljsModule && (sqljsModule.default || sqljsModule);
+    const SQL = await initSqlJs();
+    sqlJsDb = new SQL.Database();
+    console.log('[DB] sqlite fallback initialized (sql.js)');
+
+    // Provide a minimal `pool` API compatible with pg.Pool used elsewhere in the code.
+    pool = {
+      query: async (sql: string, params: any[] = []) => {
+        // sql.js uses ? placeholders; ensure params are passed
+        try {
+          // Try select-style queries with prepare
+          const stmt = sqlJsDb.prepare(sql);
+          if (params && params.length) stmt.bind(params);
+          const rows: any[] = [];
+          while (stmt.step()) rows.push(stmt.getAsObject());
+          stmt.free();
+          return { rows };
+        } catch (e) {
+          // Fallback to exec for DDL/DML
+          try {
+            sqlJsDb.run(sql, params);
+            return { rows: [] };
+          } catch (err) {
+            throw err;
+          }
+        }
+      },
+      connect: async () => ({
+        query: async (q: string, p: any[] = []) => pool.query(q, p),
+        release: () => {},
+      }),
+    };
+
+  } catch (e) {
+    console.error('[DB] Failed to initialize sql.js fallback:', e?.message || e);
+    process.exit(1);
+  }
+} else {
+  console.log('[DB] DATABASE_URL configured (host:', DATABASE_URL.split('@')[1]?.split(':')[0] || 'unknown', ')');
+  // PostgreSQL connection pool
+  pool = new Pool({ connectionString: DATABASE_URL });
 }
-
-console.log('[DB] DATABASE_URL configured (host:', DATABASE_URL.split('@')[1]?.split(':')[0] || 'unknown', ')');
-
-// PostgreSQL connection pool
-const pool = new Pool({ connectionString: DATABASE_URL });
 
 // Verify database connection with retry logic
 let dbConnectionReady = false;
 const verifyDatabaseConnection = async (retries = 10, delayMs = 2000) => {
+  if (useSqliteFallback) {
+    console.log('[DB] Using sqlite fallback - skipping PostgreSQL connectivity checks');
+    dbConnectionReady = true;
+    return true;
+  }
+
   for (let i = 0; i < retries; i++) {
     try {
       const client = await pool.connect();
@@ -191,7 +229,8 @@ const verifyDatabaseConnection = async (retries = 10, delayMs = 2000) => {
   return false;
 };
 
-const paramize = (sql: string) => {
+const paramize = (sql: string, forPg = true) => {
+  if (!forPg) return sql;
   let i = 0;
   return sql.replace(/\?/g, () => `$${++i}`);
 };
@@ -200,12 +239,12 @@ const paramize = (sql: string) => {
 
 
 const runWrite = async (sql: string, params: any[] = []) => {
-  const q = paramize(sql);
+  const q = paramize(sql, !useSqliteFallback);
   await pool.query(q, params);
 };
 
 const queryAll = async (sql: string, params: any[] = []) => {
-  const q = paramize(sql);
+  const q = paramize(sql, !useSqliteFallback);
   const res = await pool.query(q, params);
   return res.rows;
 };
@@ -216,106 +255,191 @@ const queryOne = async (sql: string, params: any[] = []) => {
 };
 
 const initDb = async () => {
-  await pool.query(`CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    firstName TEXT,
-    lastName TEXT,
-    name TEXT,
-    email TEXT UNIQUE,
-    dob TEXT,
-    profession TEXT,
-    phoneNumber TEXT,
-    gender TEXT,
-    role TEXT DEFAULT 'user',
-    photoUrl TEXT,
-    password TEXT,
-    createdAt TEXT,
-    mustChangePassword INTEGER,
-    verified INTEGER DEFAULT 0,
-    investedAmount INTEGER DEFAULT 0,
-    totalCollected INTEGER DEFAULT 0
-  )`);
-  await pool.query(`UPDATE users SET email = trim(email) WHERE email IS NOT NULL`);
+  if (useSqliteFallback) {
+    // SQLite-compatible schema
+    await runWrite(`CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      firstName TEXT,
+      lastName TEXT,
+      name TEXT,
+      email TEXT UNIQUE,
+      dob TEXT,
+      profession TEXT,
+      phoneNumber TEXT,
+      gender TEXT,
+      role TEXT DEFAULT 'user',
+      photoUrl TEXT,
+      password TEXT,
+      createdAt TEXT,
+      mustChangePassword INTEGER,
+      verified INTEGER DEFAULT 0,
+      investedAmount INTEGER DEFAULT 0,
+      totalCollected INTEGER DEFAULT 0
+    )`);
+    await runWrite(`UPDATE users SET email = trim(email) WHERE email IS NOT NULL`);
 
-  await pool.query(`CREATE TABLE IF NOT EXISTS activity (
-    id SERIAL PRIMARY KEY,
-    email TEXT,
-    action TEXT,
-    createdAt TEXT
-  )`);
+    await runWrite(`CREATE TABLE IF NOT EXISTS activity (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT,
+      action TEXT,
+      createdAt TEXT
+    )`);
 
-  await pool.query(`CREATE TABLE IF NOT EXISTS messages (
-    id SERIAL PRIMARY KEY,
-    name TEXT,
-    email TEXT,
-    message TEXT,
-    createdAt TEXT
-  )`);
+    await runWrite(`CREATE TABLE IF NOT EXISTS messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      email TEXT,
+      message TEXT,
+      createdAt TEXT
+    )`);
 
-  await pool.query(`CREATE TABLE IF NOT EXISTS tier_progress (
-    id INTEGER PRIMARY KEY,
-    p1 INTEGER NOT NULL,
-    p2 INTEGER NOT NULL,
-    p3 INTEGER NOT NULL,
-    p4 INTEGER NOT NULL
-  )`);
+    await runWrite(`CREATE TABLE IF NOT EXISTS tier_progress (
+      id INTEGER PRIMARY KEY,
+      p1 INTEGER NOT NULL,
+      p2 INTEGER NOT NULL,
+      p3 INTEGER NOT NULL,
+      p4 INTEGER NOT NULL
+    )`);
 
-  await pool.query(`CREATE TABLE IF NOT EXISTS email_verifications (
-    id SERIAL PRIMARY KEY,
-    email TEXT,
-    token TEXT UNIQUE,
-    createdAt TEXT,
-    expiresAt TEXT
-  )`);
+    await runWrite(`CREATE TABLE IF NOT EXISTS email_verifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT,
+      token TEXT UNIQUE,
+      createdAt TEXT,
+      expiresAt TEXT
+    )`);
 
-  await pool.query(`CREATE TABLE IF NOT EXISTS sessions (
-    token TEXT PRIMARY KEY,
-    email TEXT NOT NULL,
-    role TEXT NOT NULL,
-    createdAt BIGINT NOT NULL
-  )`);
+    await runWrite(`CREATE TABLE IF NOT EXISTS sessions (
+      token TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      role TEXT NOT NULL,
+      createdAt INTEGER NOT NULL
+    )`);
 
-  await pool.query(`CREATE TABLE IF NOT EXISTS transactions (
-    id SERIAL PRIMARY KEY,
-    fedapayTransactionId TEXT UNIQUE,
-    reference TEXT,
-    email TEXT,
-    amount INTEGER,
-    currency TEXT,
-    status TEXT,
-    purpose TEXT,
-    projectId TEXT,
-    createdAt TEXT,
-    updatedAt TEXT
-  )`);
+    await runWrite(`CREATE TABLE IF NOT EXISTS transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      fedapayTransactionId TEXT UNIQUE,
+      reference TEXT,
+      email TEXT,
+      amount INTEGER,
+      currency TEXT,
+      status TEXT,
+      purpose TEXT,
+      projectId TEXT,
+      createdAt TEXT,
+      updatedAt TEXT
+    )`);
 
-  await pool.query(`CREATE TABLE IF NOT EXISTS project_metrics (
-    id TEXT PRIMARY KEY,
-    name TEXT,
-    collectedAmount INTEGER DEFAULT 0,
-    investedAmount INTEGER DEFAULT 0,
-    updatedAt TEXT
-  )`);
+    await runWrite(`CREATE TABLE IF NOT EXISTS project_metrics (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      collectedAmount INTEGER DEFAULT 0,
+      investedAmount INTEGER DEFAULT 0,
+      updatedAt TEXT
+    )`);
+  } else {
+    // PostgreSQL schema (original)
+    await runWrite(`CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      firstName TEXT,
+      lastName TEXT,
+      name TEXT,
+      email TEXT UNIQUE,
+      dob TEXT,
+      profession TEXT,
+      phoneNumber TEXT,
+      gender TEXT,
+      role TEXT DEFAULT 'user',
+      photoUrl TEXT,
+      password TEXT,
+      createdAt TEXT,
+      mustChangePassword INTEGER,
+      verified INTEGER DEFAULT 0,
+      investedAmount INTEGER DEFAULT 0,
+      totalCollected INTEGER DEFAULT 0
+    )`);
+    await runWrite(`UPDATE users SET email = trim(email) WHERE email IS NOT NULL`);
 
-  // Ensure optional columns exist (safe in PostgreSQL with IF NOT EXISTS)
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS verified INTEGER DEFAULT 0");
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS phoneNumber TEXT DEFAULT ''");
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS investedAmount INTEGER DEFAULT 0");
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS totalCollected INTEGER DEFAULT 0");
+    await runWrite(`CREATE TABLE IF NOT EXISTS activity (
+      id SERIAL PRIMARY KEY,
+      email TEXT,
+      action TEXT,
+      createdAt TEXT
+    )`);
 
-  // Ensure common user columns exist for older schemas
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT");
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT");
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT");
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user'");
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS createdAt TEXT");
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS mustChangePassword INTEGER DEFAULT 0");
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS firstName TEXT");
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS lastName TEXT");
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS dob TEXT");
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS profession TEXT");
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS gender TEXT");
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS photoUrl TEXT");
+    await runWrite(`CREATE TABLE IF NOT EXISTS messages (
+      id SERIAL PRIMARY KEY,
+      name TEXT,
+      email TEXT,
+      message TEXT,
+      createdAt TEXT
+    )`);
+
+    await runWrite(`CREATE TABLE IF NOT EXISTS tier_progress (
+      id INTEGER PRIMARY KEY,
+      p1 INTEGER NOT NULL,
+      p2 INTEGER NOT NULL,
+      p3 INTEGER NOT NULL,
+      p4 INTEGER NOT NULL
+    )`);
+
+    await runWrite(`CREATE TABLE IF NOT EXISTS email_verifications (
+      id SERIAL PRIMARY KEY,
+      email TEXT,
+      token TEXT UNIQUE,
+      createdAt TEXT,
+      expiresAt TEXT
+    )`);
+
+    await runWrite(`CREATE TABLE IF NOT EXISTS sessions (
+      token TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      role TEXT NOT NULL,
+      createdAt BIGINT NOT NULL
+    )`);
+
+    await runWrite(`CREATE TABLE IF NOT EXISTS transactions (
+      id SERIAL PRIMARY KEY,
+      fedapayTransactionId TEXT UNIQUE,
+      reference TEXT,
+      email TEXT,
+      amount INTEGER,
+      currency TEXT,
+      status TEXT,
+      purpose TEXT,
+      projectId TEXT,
+      createdAt TEXT,
+      updatedAt TEXT
+    )`);
+
+    await runWrite(`CREATE TABLE IF NOT EXISTS project_metrics (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      collectedAmount INTEGER DEFAULT 0,
+      investedAmount INTEGER DEFAULT 0,
+      updatedAt TEXT
+    )`);
+
+    // Ensure optional columns exist (safe in PostgreSQL with IF NOT EXISTS)
+    await runWrite("ALTER TABLE users ADD COLUMN IF NOT EXISTS verified INTEGER DEFAULT 0");
+    await runWrite("ALTER TABLE users ADD COLUMN IF NOT EXISTS phoneNumber TEXT DEFAULT ''");
+    await runWrite("ALTER TABLE users ADD COLUMN IF NOT EXISTS investedAmount INTEGER DEFAULT 0");
+    await runWrite("ALTER TABLE users ADD COLUMN IF NOT EXISTS totalCollected INTEGER DEFAULT 0");
+
+    // Ensure common user columns exist for older schemas
+    await runWrite("ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT");
+    await runWrite("ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT");
+    await runWrite("ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT");
+    await runWrite("ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user'");
+    await runWrite("ALTER TABLE users ADD COLUMN IF NOT EXISTS createdAt TEXT");
+    await runWrite("ALTER TABLE users ADD COLUMN IF NOT EXISTS mustChangePassword INTEGER DEFAULT 0");
+    await runWrite("ALTER TABLE users ADD COLUMN IF NOT EXISTS firstName TEXT");
+    await runWrite("ALTER TABLE users ADD COLUMN IF NOT EXISTS lastName TEXT");
+    await runWrite("ALTER TABLE users ADD COLUMN IF NOT EXISTS dob TEXT");
+    await runWrite("ALTER TABLE users ADD COLUMN IF NOT EXISTS profession TEXT");
+    await runWrite("ALTER TABLE users ADD COLUMN IF NOT EXISTS gender TEXT");
+    await runWrite("ALTER TABLE users ADD COLUMN IF NOT EXISTS photoUrl TEXT");
+  }
 
   // Ensure default project metrics row
   const existing = await queryOne('SELECT id FROM project_metrics WHERE id = ?', ['default_project']);
