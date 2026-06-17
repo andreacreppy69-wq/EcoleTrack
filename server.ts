@@ -1437,8 +1437,11 @@ app.get('/api/fedapay/diagnostic', requireAdmin, async (req, res) => {
     );
     const normalizedApprovedSummary = normalizeRowKeys(approvedSummary);
 
-    // Get first 10 transactions
-    const recentTx = await queryAll('SELECT fedapayTransactionId, reference, email, amount, status, createdAt FROM transactions ORDER BY createdAt DESC LIMIT 10');
+    // Get first 10 approved transactions
+    const recentTx = await queryAll(
+      'SELECT fedapayTransactionId, reference, email, amount, status, createdAt FROM transactions WHERE lower(trim(status)) IN (?, ?, ?, ?, ?, ?) ORDER BY createdAt DESC LIMIT 10',
+      ['completed', 'success', 'paid', 'authorized', 'captured', 'approved']
+    );
 
     return res.json({
       totalTransactions: totalCount,
