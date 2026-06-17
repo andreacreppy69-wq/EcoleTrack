@@ -1153,6 +1153,10 @@ app.get('/api/fedapay/transactions', requireAdmin, async (req, res) => {
     const transactions = await queryAll(
       'SELECT fedapayTransactionId AS transactionId, reference, email, amount, currency, status, purpose, projectId, createdAt, updatedAt FROM transactions ORDER BY createdAt DESC',
     );
+    console.log('[FEDAPAY] Total transactions in DB:', transactions.length);
+    if (transactions.length > 0) {
+      console.log('[FEDAPAY] First 5 transactions:', JSON.stringify(transactions.slice(0, 5), null, 2));
+    }
     return res.json({ transactions });
   } catch (error: any) {
     console.error('[FEDAPAY] Failed to load transactions:', error);
@@ -1176,12 +1180,20 @@ app.get('/api/fedapay/investor-count', async (req, res) => {
 
 app.get('/api/fedapay/summary', async (req, res) => {
   try {
+    // Debug: Check all transaction statuses
+    const allTx = await queryAll(
+      'SELECT status, COUNT(*) as cnt, SUM(amount) as total FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? GROUP BY lower(trim(status))',
+      ['', 0],
+    );
+    console.log('[FEDAPAY] Transaction status breakdown:', JSON.stringify(allTx, null, 2));
+
     const row = await queryOne(
       'SELECT COUNT(*) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) NOT IN (?, ?, ?, ?, ?, ?, ?)',
       ['', 0, 'failed', 'cancelled', 'pending', 'declined', 'unknown', 'void', 'refused'],
     );
     const investorCount = Number(row?.investorCount ?? 0);
     const totalAmount = Number(row?.totalAmount ?? 0);
+    console.log('[FEDAPAY] Summary result:', { investorCount, totalAmount });
     return res.json({ investorCount, totalAmount });
   } catch (error: any) {
     console.error('[FEDAPAY] Failed to compute summary:', error);
@@ -1253,9 +1265,17 @@ app.get('/api/fedapay/webhook', async (req, res) => {
 // Webhook handler for FedaPay (for server-to-server notifications)
 app.post('/api/fedapay/webhook', async (req, res) => {
   try {
+    console.log('[FEDAPAY WEBHOOK] Received event from FedaPay');
+    
     const fedapayWebhookSecret = process.env.FEDAPAY_WEBHOOK_SECRET || FEDAPAY_SECRET_KEY;
     const headerSecret = String(req.headers['x-fedapay-webhook-secret'] || req.headers['x-fedapay-signature'] || '');
     const requireWebhookSecret = process.env.NODE_ENV === 'production' || Boolean(process.env.FEDAPAY_WEBHOOK_SECRET);
+
+    console.log('[FEDAPAY WEBHOOK] Secret validation:', { 
+      requireWebhookSecret, 
+      hasSecret: !!fedapayWebhookSecret, 
+      headerPresent: !!headerSecret 
+    });
 
     if (requireWebhookSecret) {
       if (!fedapayWebhookSecret) {
@@ -1270,7 +1290,8 @@ app.post('/api/fedapay/webhook', async (req, res) => {
     }
 
     const event = req.body;
-    console.log('[FEDAPAY] BODY COMPLET:', JSON.stringify(req.body, null, 2));
+    console.log('[FEDAPAY] Event name:', event?.name);
+    console.log('[FEDAPAY] Full event body:', JSON.stringify(req.body, null, 2));
 
     if (
       event?.name === 'transaction.approved' ||
@@ -1279,7 +1300,7 @@ app.post('/api/fedapay/webhook', async (req, res) => {
     ) {
       const transaction = event.entity;
       console.log(
-        '[FEDAPAY] Paiement approuvé:',
+        '[FEDAPAY] Processing approved payment:',
         transaction.id,
         transaction.amount,
         transaction.customer?.email
@@ -1292,22 +1313,40 @@ app.post('/api/fedapay/webhook', async (req, res) => {
       const reference = String(transaction?.reference || '');
       const transactionId = String(transaction?.id || transaction?.transaction_id || '');
 
+      console.log('[FEDAPAY] Transaction details:', { transactionId, reference, email, amount, status, projectId });
+
       if (transactionId) {
-        createTransactionRecord({
-          transactionId,
-          reference,
-          email,
-          amount,
-          currency: String(transaction?.currency || 'XOF'),
-          status,
-          purpose: String(transaction?.metadata?.purpose || 'investment'),
-          projectId,
-        });
-        await updateTransactionStatus(transactionId, status);
+        try {
+          await createTransactionRecord({
+            transactionId,
+            reference,
+            email,
+            amount,
+            currency: String(transaction?.currency || 'XOF'),
+            status,
+            purpose: String(transaction?.metadata?.purpose || 'investment'),
+            projectId,
+          });
+          console.log('[FEDAPAY] Transaction record created:', transactionId);
+        } catch (err: any) {
+          console.error('[FEDAPAY] Failed to create transaction record:', err.message);
+        }
+
+        try {
+          await updateTransactionStatus(transactionId, status);
+          console.log('[FEDAPAY] Transaction status updated:', { transactionId, status });
+        } catch (err: any) {
+          console.error('[FEDAPAY] Failed to update transaction status:', err.message);
+        }
       }
 
       if (email && amount > 0) {
-        await addConfirmedInvestment(email, amount, projectId);
+        try {
+          await addConfirmedInvestment(email, amount, projectId);
+          console.log('[FEDAPAY] Confirmed investment added:', { email, amount, projectId });
+        } catch (err: any) {
+          console.error('[FEDAPAY] Failed to add confirmed investment:', err.message);
+        }
       }
 
       const createdAt = new Date().toLocaleString('fr-FR');
@@ -1333,12 +1372,103 @@ app.post('/api/fedapay/webhook', async (req, res) => {
           console.warn(`[EMAIL] Failed to send payment confirmation to ${email}`);
         }
       }
+    } else {
+      console.log('[FEDAPAY] Ignoring event (not an approval):', event?.name);
     }
 
     return res.json({ success: true, received: true });
   } catch (error: any) {
     console.error('[FEDAPAY] Erreur webhook:', error);
     return res.status(500).json({ success: false, error: 'Erreur webhook' });
+  }
+});
+
+// Diagnostic endpoint for FedaPay debugging
+app.get('/api/fedapay/diagnostic', requireAdmin, async (req, res) => {
+  try {
+    // Count all transactions
+    const totalTx = await queryOne('SELECT COUNT(*) as count FROM transactions');
+    const totalCount = Number(totalTx?.count ?? 0);
+
+    // Get all unique statuses
+    const statuses = await queryAll('SELECT DISTINCT lower(trim(status)) as status, COUNT(*) as cnt, SUM(amount) as total FROM transactions GROUP BY lower(trim(status))');
+
+    // Get transactions that WILL be counted in the summary
+    const approvedSummary = await queryOne(
+      'SELECT COUNT(*) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) NOT IN (?, ?, ?, ?, ?, ?, ?)',
+      ['', 0, 'failed', 'cancelled', 'pending', 'declined', 'unknown', 'void', 'refused']
+    );
+
+    // Get first 10 transactions
+    const recentTx = await queryAll('SELECT fedapayTransactionId, reference, email, amount, status, createdAt FROM transactions ORDER BY createdAt DESC LIMIT 10');
+
+    return res.json({
+      totalTransactions: totalCount,
+      statusBreakdown: statuses,
+      approvedSummary: {
+        investorCount: Number(approvedSummary?.investorCount ?? 0),
+        totalAmount: Number(approvedSummary?.totalAmount ?? 0)
+      },
+      recentTransactions: recentTx.slice(0, 10),
+      databaseStatus: totalCount === 0 ? 'EMPTY - No transactions found' : `OK - ${totalCount} transactions in database`
+    });
+  } catch (error: any) {
+    console.error('[FEDAPAY] Diagnostic error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Test endpoint: Insert a test transaction (for development/testing only)
+app.post('/api/fedapay/test-transaction', requireAdmin, async (req, res) => {
+  try {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({ success: false, error: 'Test endpoint not available in production' });
+    }
+
+    const {
+      transactionId = 'TEST_' + Date.now(),
+      reference = 'TEST_REF_' + Date.now(),
+      email = 'test@example.com',
+      amount = 10000,
+      status = 'completed',
+      projectId = 'default_project'
+    } = req.body;
+
+    await createTransactionRecord({
+      transactionId,
+      reference,
+      email,
+      amount: Number(amount),
+      currency: 'XOF',
+      status: String(status),
+      purpose: 'test',
+      projectId,
+    });
+
+    await updateTransactionStatus(transactionId, String(status));
+
+    if (email && amount > 0) {
+      await addConfirmedInvestment(email, Number(amount), projectId);
+    }
+
+    // Fetch new summary
+    const summary = await queryOne(
+      'SELECT COUNT(*) AS investorCount, SUM(amount) AS totalAmount FROM transactions WHERE email IS NOT NULL AND trim(email) != ? AND amount > ? AND lower(trim(status)) NOT IN (?, ?, ?, ?, ?, ?, ?)',
+      ['', 0, 'failed', 'cancelled', 'pending', 'declined', 'unknown', 'void', 'refused']
+    );
+
+    return res.json({
+      success: true,
+      message: 'Test transaction created',
+      transaction: { transactionId, reference, email, amount, status },
+      newSummary: {
+        investorCount: Number(summary?.investorCount ?? 0),
+        totalAmount: Number(summary?.totalAmount ?? 0)
+      }
+    });
+  } catch (error: any) {
+    console.error('[FEDAPAY TEST] Error:', error);
+    return res.status(500).json({ success: false, error: error.message });
   }
 });
 
