@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getFedaPaySummary, getFedaPayTransactions, FedaPayTransactionRecord } from '../api';
+import { deleteFedaPayTransaction, getFedaPaySummary, getFedaPayTransactions, FedaPayTransactionRecord } from '../api';
 
 const formatFCFA = (value: number) => {
   return new Intl.NumberFormat('fr-FR', {
@@ -35,6 +35,7 @@ const FedaPayAdminDashboard = () => {
   const [summaryData, setSummaryData] = useState<{ investorCount: number; totalAmount: number } | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
+  const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null);
 
   const loadTransactions = async () => {
     setLoading(true);
@@ -55,6 +56,24 @@ const FedaPayAdminDashboard = () => {
       setSummaryData(result);
     } catch (err: any) {
       setError(err?.message || 'Impossible de charger le résumé FedaPay.');
+    }
+  };
+
+  const handleDeleteTransaction = async (transactionId: string) => {
+    const shouldDelete = window.confirm('Supprimer cette transaction FedaPay ? Cette action est irréversible.');
+    if (!shouldDelete) return;
+
+    setDeletingTransactionId(transactionId);
+    setError('');
+
+    try {
+      await deleteFedaPayTransaction(transactionId);
+      await loadTransactions();
+      await loadSummary();
+    } catch (err: any) {
+      setError(err?.message || 'Impossible de supprimer la transaction FedaPay.');
+    } finally {
+      setDeletingTransactionId(null);
     }
   };
 
@@ -161,6 +180,7 @@ const FedaPayAdminDashboard = () => {
                 <th className="border-b border-slate-700 px-4 py-3">Devise</th>
                 <th className="border-b border-slate-700 px-4 py-3">Statut</th>
                 <th className="border-b border-slate-700 px-4 py-3">Date</th>
+                <th className="border-b border-slate-700 px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -180,6 +200,16 @@ const FedaPayAdminDashboard = () => {
                     <td className="px-4 py-3 text-xs lg:text-sm text-slate-200">{transaction.currency}</td>
                     <td className="px-4 py-3 text-xs lg:text-sm text-slate-200 break-words">{statusLabels[transaction.status] || transaction.status}</td>
                     <td className="px-4 py-3 text-xs lg:text-sm text-slate-300 break-words">{formatDateValue(transaction.createdAt)}</td>
+                    <td className="px-4 py-3 text-xs lg:text-sm text-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTransaction(transaction.transactionId)}
+                        disabled={deletingTransactionId === transaction.transactionId}
+                        className="rounded-2xl bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-200 hover:bg-red-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {deletingTransactionId === transaction.transactionId ? 'Suppression...' : 'Supprimer'}
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}

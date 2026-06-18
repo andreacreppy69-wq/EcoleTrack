@@ -1174,6 +1174,21 @@ app.get('/api/fedapay/transactions', requireAdmin, async (req, res) => {
   }
 });
 
+app.delete('/api/fedapay/transactions/:transactionId', requireAdmin, async (req, res) => {
+  try {
+    const { transactionId } = req.params;
+    if (!transactionId) {
+      return res.status(400).json({ success: false, error: 'ID de transaction manquant.' });
+    }
+    const result = await runWrite('DELETE FROM transactions WHERE fedapayTransactionId = ?', [transactionId]);
+    console.log('[FEDAPAY] Deleted transaction:', transactionId);
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error('[FEDAPAY] Failed to delete transaction:', error);
+    return res.status(500).json({ success: false, error: 'Impossible de supprimer la transaction FedaPay.' });
+  }
+});
+
 app.get('/api/fedapay/investor-count', async (req, res) => {
   try {
     const row = await queryOne(

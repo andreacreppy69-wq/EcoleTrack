@@ -241,6 +241,12 @@ export const getFedaPayTransactions = async (): Promise<FedaPayTransactionRecord
   return data.transactions;
 };
 
+export const deleteFedaPayTransaction = async (transactionId: string): Promise<void> => {
+  await apiFetch(`/api/fedapay/transactions/${encodeURIComponent(transactionId)}`, {
+    method: 'DELETE',
+  });
+};
+
 export const getFedaPayInvestorCount = async (): Promise<number> => {
   const data = await apiFetch<{ investorCount: number }>('/api/fedapay/investor-count');
   return Number(data.investorCount || 0);
