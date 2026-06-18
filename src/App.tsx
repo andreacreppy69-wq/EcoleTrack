@@ -73,7 +73,7 @@ import classroomStudentsImage from './assets/images/classroom_students_178031025
 import logoEcolesTrackImage from './assets/images/logo_ecoles_track.png';
 
 const getFedaPayWebhookUrl = (): string => {
-  return String(import.meta.env.VITE_FEDAPAY_WEBHOOK_URL || 'https://ecoletrack-5481.onrender.com/api/fedapay/webhook');
+  return String(import.meta.env.VITE_FEDAPAY_WEBHOOK_URL || 'https://ecoletrack-5481.onrender.com/paiement/succes');
 };
 
 const PALIER_DETAILS = [
