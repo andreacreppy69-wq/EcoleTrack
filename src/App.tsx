@@ -2150,7 +2150,7 @@ export default function App() {
           ) : (
             <div>
               <div className="grid gap-6 lg:grid-cols-[280px_1fr] mb-6">
-                <aside className="rounded-3xl border border-slate-700 bg-slate-950 p-6">
+                <aside className="rounded-3xl border border-slate-700 bg-slate-950 p-6 min-w-0">
                   <div className="mb-6">
                     <h1 className="text-2xl font-extrabold text-white">Tableau de bord administrateur</h1>
                     <p className="text-slate-400 text-sm mt-2">Gestion des comptes utilisateurs et suivi des connexions.</p>
@@ -2300,7 +2300,7 @@ export default function App() {
                     </button>
                   </nav>
                 </aside>
-                <div className="space-y-6">
+                <div className="space-y-6 min-w-0">
 
               {(adminResetSuccess || adminResetError) && (
                 <div className="mb-6 space-y-3">
@@ -2722,27 +2722,27 @@ export default function App() {
               </div>
 
               {showUserAccounts && (
-                <div ref={userAccountsSectionRef} className="rounded-3xl border border-slate-700 bg-slate-950 p-6 mb-6">
+                <div ref={userAccountsSectionRef} className="rounded-3xl border border-slate-700 bg-slate-950 p-6 mb-6 min-w-0">
                   <h2 className="text-lg font-semibold text-white mb-4">Comptes utilisateurs</h2>
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto min-w-0">
                   <table className="min-w-full text-left text-sm text-slate-300">
                     <thead>
                       <tr>
-                        <th className="px-3 py-2 font-semibold">Nom</th>
-                        <th className="px-3 py-2 font-semibold">Email</th>
-                        <th className="px-3 py-2 font-semibold">Profession</th>
-                        <th className="px-3 py-2 font-semibold">Créé le</th>
-                        <th className="px-3 py-2 font-semibold">État</th>
-                        <th className="px-3 py-2 font-semibold">Actions</th>
+                        <th className="px-3 py-2 font-semibold whitespace-normal break-words min-w-0">Nom</th>
+                        <th className="px-3 py-2 font-semibold whitespace-normal break-words min-w-0">Email</th>
+                        <th className="px-3 py-2 font-semibold whitespace-normal break-words min-w-0">Profession</th>
+                        <th className="px-3 py-2 font-semibold whitespace-normal break-words min-w-0">Créé le</th>
+                        <th className="px-3 py-2 font-semibold whitespace-normal break-words min-w-0">État</th>
+                        <th className="px-3 py-2 font-semibold whitespace-normal break-words min-w-0">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {users.map((user) => (
                         <tr key={user.email} className="border-t border-slate-700">
-                          <td className="px-3 py-3">{getDisplayName(user)}</td>
-                          <td className="px-3 py-3">{user.email}</td>
-                          <td className="px-3 py-3">{user.profession}</td>
-                          <td className="px-3 py-3">{user.createdAt}</td>
+                          <td className="px-3 py-3 whitespace-normal break-words min-w-0">{getDisplayName(user)}</td>
+                          <td className="px-3 py-3 whitespace-normal break-words min-w-0">{user.email}</td>
+                          <td className="px-3 py-3 whitespace-normal break-words min-w-0">{user.profession}</td>
+                          <td className="px-3 py-3 whitespace-normal break-words min-w-0">{user.createdAt}</td>
                           <td className="px-3 py-3">
                             {user.mustChangePassword ? (
                               <span className="rounded-full bg-amber-500/10 px-2 py-1 text-[11px] font-semibold text-amber-300">
@@ -2879,16 +2879,16 @@ export default function App() {
                       <p className="text-sm text-slate-400">Aucune extension configurée.</p>
                     ) : (
                       paymentExtensions.map((ext) => (
-                        <div key={ext.id} className="rounded-2xl bg-slate-900 p-4 flex items-start justify-between">
-                          <div>
-                            <div className="flex items-center gap-3">
+                        <div key={ext.id} className="rounded-2xl bg-slate-900 p-4 flex flex-col gap-4 sm:flex-row items-start justify-between min-w-0">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-3">
                               <strong className="text-sm text-white">{ext.name}</strong>
                               <span className="text-xs text-slate-400">{ext.provider}</span>
                               <span className="text-xs text-slate-500">· {ext.createdAt}</span>
                             </div>
-                            <pre className="mt-2 text-xs text-slate-300 break-words max-h-28 overflow-auto">{ext.config || '—'}</pre>
+                            <pre className="mt-2 text-xs text-slate-300 break-words whitespace-pre-wrap max-h-28 overflow-auto">{ext.config || '—'}</pre>
                           </div>
-                          <div className="flex flex-col items-end gap-2">
+                          <div className="flex flex-col items-end gap-2 min-w-0">
                             <button type="button" onClick={() => toggleExtensionActive(ext.id)} className={`rounded-xl px-3 py-2 text-xs font-semibold ${ext.active ? 'bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'}`}>
                               {ext.active ? 'Active' : 'Désactivée'}
                             </button>
