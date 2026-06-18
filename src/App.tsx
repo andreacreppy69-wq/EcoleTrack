@@ -621,6 +621,7 @@ export default function App() {
   // Campaign State
   const CAMPAGNE_GOAL = FUNDING_PROGRESS.totalGoal; // 30,000,000 FCFA
   const [raisedAmount, setRaisedAmount] = useState<number>(0);
+  const [hasFedaPaySummary, setHasFedaPaySummary] = useState<boolean>(false);
   const [backersList, setBackersList] = useState<Backer[]>(INITIAL_RECENT_BACKERS);
   const [fedapayInvestorCount, setFedaPayInvestorCount] = useState<number | null>(null);
   const [projectMetrics, setProjectMetrics] = useState<{ collectedAmount: number; investedAmount: number; investorCount: number; donationCount: number } | null>(null);
@@ -1453,6 +1454,7 @@ export default function App() {
         const summary = await getFedaPaySummary();
         setFedaPayInvestorCount(summary.investorCount);
         setRaisedAmount(summary.investedAmount);
+        setHasFedaPaySummary(true);
       } catch (error) {
         console.warn('Impossible de charger le résumé FedaPay :', error);
       }
@@ -1557,7 +1559,7 @@ export default function App() {
   // Compute stats
   const backersCount = 12 + (backersList.length - INITIAL_RECENT_BACKERS.length);
   const totalInvestorCount = projectMetrics?.investorCount ?? (fedapayInvestorCount !== null ? fedapayInvestorCount : 0);
-  const displayedInvestedAmount = projectMetrics?.investedAmount ?? raisedAmount;
+  const displayedInvestedAmount = hasFedaPaySummary || projectMetrics === null ? raisedAmount : projectMetrics.investedAmount;
   const displayedDonatedAmount = projectMetrics?.collectedAmount ?? 0; // Donations separate from investments
   const displayedDonationCount = projectMetrics?.donationCount ?? 0;
   const totalInvestedAmount = displayedInvestedAmount;
