@@ -1224,12 +1224,12 @@ app.get('/api/fedapay/summary', async (req, res) => {
     const normalizedMetricsRow = normalizeRowKeys(metricsRow);
     const metricInvestedAmount = Number(normalizedMetricsRow.investedamount ?? 0);
 
-    const totalAmount = metricInvestedAmount > 0 ? metricInvestedAmount : approvedTotalAmount;
+    const totalAmount = approvedTotalAmount;
     if (metricInvestedAmount !== 0 && metricInvestedAmount !== approvedTotalAmount) {
       console.warn('[FEDAPAY] Metrics mismatch: project_metrics.investedAmount=%s but approved tx sum=%s', metricInvestedAmount, approvedTotalAmount);
     }
     console.log('[FEDAPAY] Summary result:', { investorCount, totalAmount, approvedTotalAmount, metricInvestedAmount });
-    return res.json({ investorCount, totalAmount, investedAmount: totalAmount });
+    return res.json({ investorCount, totalAmount, investedAmount: approvedTotalAmount });
   } catch (error: any) {
     console.error('[FEDAPAY] Failed to compute summary:', error);
     return res.status(500).json({ success: false, error: 'Impossible de calculer le total des transactions FedaPay.' });
